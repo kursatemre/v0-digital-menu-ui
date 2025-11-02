@@ -110,6 +110,11 @@ const getStatusLabel = (status: string) => {
 }
 
 export default function AdminPanel() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [username, setUsername] = useState("")
+  const [password, setPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
+
   const [activeTab, setActiveTab] = useState<"orders" | "products" | "categories" | "appearance" | "qr">("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -159,6 +164,38 @@ export default function AdminPanel() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+
+  // Check if user is already logged in
+  useEffect(() => {
+    const loggedIn = localStorage.getItem("admin_logged_in")
+    if (loggedIn === "true") {
+      setIsAuthenticated(true)
+    }
+  }, [])
+
+  // Login handler
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Default credentials - you can change these
+    const ADMIN_USERNAME = "admin"
+    const ADMIN_PASSWORD = "admin123"
+
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true)
+      localStorage.setItem("admin_logged_in", "true")
+      setLoginError("")
+    } else {
+      setLoginError("Kullanıcı adı veya şifre hatalı!")
+    }
+  }
+
+  // Logout handler
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    localStorage.removeItem("admin_logged_in")
+    setUsername("")
+    setPassword("")
+  }
 
   // Upload image to Supabase Storage
   const uploadImage = async (file: File): Promise<string | null> => {
@@ -1347,6 +1384,70 @@ export default function AdminPanel() {
     </div>
   )
 
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 to-secondary/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="space-y-1">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center">
+                <QrCode className="w-10 h-10 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-2xl text-center">Admin Paneli</CardTitle>
+            <CardDescription className="text-center">
+              Devam etmek için giriş yapın
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">Kullanıcı Adı</label>
+                <Input
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Kullanıcı adınızı girin"
+                  required
+                  autoComplete="username"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Şifre</label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Şifrenizi girin"
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+              {loginError && (
+                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
+                  {loginError}
+                </div>
+              )}
+              <Button type="submit" className="w-full">
+                Giriş Yap
+              </Button>
+            </form>
+            <div className="mt-6 p-4 bg-muted rounded-lg">
+              <p className="text-xs text-muted-foreground text-center">
+                <strong>Varsayılan Giriş Bilgileri:</strong>
+                <br />
+                Kullanıcı Adı: admin
+                <br />
+                Şifre: admin123
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="w-20 md:w-64 bg-white border-r border-border p-4 flex flex-col">
@@ -1392,7 +1493,7 @@ export default function AdminPanel() {
           />
         </nav>
 
-        <div className="pt-4 border-t">
+        <div className="pt-4 border-t space-y-2">
           <a
             href="/"
             className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
@@ -1400,6 +1501,20 @@ export default function AdminPanel() {
             <span className="hidden md:block">← Menüye Dön</span>
             <span className="md:hidden">←</span>
           </a>
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center justify-center md:justify-start gap-2 px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
+            </svg>
+            <span className="hidden md:block">Çıkış Yap</span>
+          </button>
         </div>
       </aside>
 

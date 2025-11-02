@@ -262,18 +262,32 @@ export default function MenuPage() {
                   {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category.id)}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-primary/5 transition-colors accent-left-border"
+                    className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-primary/5 transition-colors accent-left-border"
                   >
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-bold text-foreground">{category.name}</h2>
-                      <span className="text-sm text-muted-foreground bg-primary/10 px-3 py-1 rounded-full font-medium">
-                        {categoryProducts.length} ürün
-                      </span>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      {/* Category Image */}
+                      {category.image ? (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                          📋
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <h2 className="text-lg sm:text-xl font-bold text-foreground">{category.name}</h2>
+                        <span className="text-xs sm:text-sm text-muted-foreground bg-primary/10 px-2 sm:px-3 py-1 rounded-full font-medium">
+                          {categoryProducts.length}
+                        </span>
+                      </div>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="w-6 h-6 text-primary" />
+                      <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="w-6 h-6 text-primary" />
+                      <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
                     )}
                   </button>
 
