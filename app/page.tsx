@@ -279,51 +279,62 @@ export default function MenuPage() {
 
                   {/* Category Products */}
                   {isExpanded && (
-                    <div className="border-t border-primary/10 divide-y divide-primary/10">
+                    <div className="border-t border-primary/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 p-4 sm:p-6">
                       {categoryProducts.length > 0 ? (
                         categoryProducts.map((product) => (
                           <div
                             key={product.id}
-                            className="px-6 py-4 hover:bg-primary/3 transition-colors flex gap-4 sm:gap-6 items-start"
+                            className="bg-white border border-primary/10 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row"
                           >
                             {/* Product Image */}
-                            <div className="flex-shrink-0">
+                            <div className="relative flex-shrink-0 sm:w-48">
                               {product.image ? (
                                 <img
                                   src={product.image || "/placeholder.svg"}
                                   alt={product.name}
-                                  className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg"
+                                  className="w-full h-48 sm:h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-primary/10 rounded-lg flex items-center justify-center text-3xl">
+                                <div className="w-full h-48 sm:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-5xl">
                                   🍽️
                                 </div>
                               )}
+                              {/* Favorite button - positioned on image */}
+                              <button
+                                onClick={() => toggleFavorite(product.id)}
+                                className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full text-primary hover:bg-white transition-all shadow-md"
+                              >
+                                <Heart
+                                  className={`w-5 h-5 transition-all ${
+                                    favorites.has(product.id) ? "fill-current" : ""
+                                  }`}
+                                />
+                              </button>
                             </div>
 
                             {/* Product Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4 mb-2">
-                                <h3 className="text-lg font-bold text-foreground break-words">{product.name}</h3>
-                                <button
-                                  onClick={() => toggleFavorite(product.id)}
-                                  className="flex-shrink-0 text-primary hover:text-primary/80 transition-colors"
-                                >
-                                  <Heart
-                                    className={`w-5 h-5 transition-all ${
-                                      favorites.has(product.id) ? "fill-current" : ""
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{product.description}</p>
+                            <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                              {/* Product Name */}
+                              <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 line-clamp-2">
+                                {product.name}
+                              </h3>
 
-                              {/* Price and button */}
-                              <div className="flex items-center justify-between">
-                                <p className="text-2xl font-bold text-primary">₺{product.price.toFixed(2)}</p>
+                              {/* Product Description */}
+                              <p className="text-sm sm:text-base text-muted-foreground mb-4 line-clamp-2 flex-1">
+                                {product.description}
+                              </p>
+
+                              {/* Price and Add to Cart Button */}
+                              <div className="flex items-center gap-3 mt-auto">
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-1">Fiyat</p>
+                                  <p className="text-2xl sm:text-3xl font-bold text-primary">
+                                    ₺{product.price.toFixed(2)}
+                                  </p>
+                                </div>
                                 <button
                                   onClick={() => addToCart(product, 1)}
-                                  className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 rounded-lg hover:opacity-90 transition-all text-sm sm:text-base font-semibold"
+                                  className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 active:scale-95 transition-all text-sm sm:text-base font-semibold shadow-md hover:shadow-lg whitespace-nowrap"
                                 >
                                   Sepete Ekle
                                 </button>
@@ -332,7 +343,7 @@ export default function MenuPage() {
                           </div>
                         ))
                       ) : (
-                        <div className="px-6 py-8 text-center text-muted-foreground">
+                        <div className="col-span-full px-6 py-8 text-center text-muted-foreground">
                           Bu kategoride ürün bulunmamaktadır.
                         </div>
                       )}
