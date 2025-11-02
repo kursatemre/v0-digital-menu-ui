@@ -26,6 +26,8 @@ import {
   ShoppingCart,
   Layers,
   QrCode,
+  Users,
+  Key,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -53,6 +55,15 @@ type Product = {
   categoryId: string
   image: string
   display_order?: number
+  badge?: string | null
+}
+
+type AdminUser = {
+  id: string
+  username: string
+  password_hash: string
+  display_name: string | null
+  created_at: string
 }
 
 type Category = {
@@ -111,11 +122,14 @@ const getStatusLabel = (status: string) => {
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null)
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
 
-  const [activeTab, setActiveTab] = useState<"orders" | "products" | "categories" | "appearance" | "qr">("orders")
+  const [activeTab, setActiveTab] = useState<
+    "orders" | "products" | "categories" | "appearance" | "qr" | "users" | "settings"
+  >("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
@@ -147,6 +161,7 @@ export default function AdminPanel() {
     price: 0,
     categoryId: "",
     image: "",
+    badge: null,
   })
 
   const [categoryForm, setCategoryForm] = useState<Omit<Category, "id">>({
@@ -158,6 +173,20 @@ export default function AdminPanel() {
     title: "Menümüz",
     subtitle: "Lezzetli yemeklerimizi keşfedin!",
     logo: "",
+  })
+
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
+  const [showUserForm, setShowUserForm] = useState(false)
+  const [userForm, setUserForm] = useState({
+    username: "",
+    password: "",
+    display_name: "",
+  })
+  const [showPasswordForm, setShowPasswordForm] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   })
 
   const supabase = createClient()
@@ -174,27 +203,163 @@ export default function AdminPanel() {
   }, [])
 
   // Login handler
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Default credentials - you can change these
-    const ADMIN_USERNAME = "admin"
-    const ADMIN_PASSWORD = "admin123"
+    setLoginError("")
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    try {
+      // Check Supabase for user
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("*")
+        .eq("username", username)
+        .eq("password_hash", password)
+        .single()
+
+      if (error || !data) {
+        setLoginError("Kullanıcı adı veya şifre hatalı!")
+        return
+      }
+
       setIsAuthenticated(true)
+      setCurrentUser(data)
       localStorage.setItem("admin_logged_in", "true")
+      localStorage.setItem("admin_user_id", data.id)
       setLoginError("")
-    } else {
-      setLoginError("Kullanıcı adı veya şifre hatalı!")
+    } catch (err) {
+      console.error("Login error:", err)
+      setLoginError("Giriş yapılırken bir hata oluştu!")
     }
   }
 
   // Logout handler
   const handleLogout = () => {
     setIsAuthenticated(false)
+    setCurrentUser(null)
     localStorage.removeItem("admin_logged_in")
+    localStorage.removeItem("admin_user_id")
     setUsername("")
     setPassword("")
+  }
+
+  // Load admin users
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadAdminUsers()
+    }
+  }, [isAuthenticated])
+
+  const loadAdminUsers = async () => {
+    try {
+      const { data, error } = await supabase.from("admin_users").select("*").order("created_at", { ascending: true })
+
+      if (error) throw error
+      if (data) {
+        setAdminUsers(data)
+      }
+    } catch (error) {
+      console.error("Error loading admin users:", error)
+    }
+  }
+
+  // Add new admin user
+  const handleAddUser = async () => {
+    if (!userForm.username || !userForm.password) {
+      alert("Kullanıcı adı ve şifre gereklidir!")
+      return
+    }
+
+    try {
+      const { error } = await supabase.from("admin_users").insert([
+        {
+          username: userForm.username,
+          password_hash: userForm.password,
+          display_name: userForm.display_name || userForm.username,
+        },
+      ])
+
+      if (error) throw error
+
+      alert("Kullanıcı başarıyla eklendi!")
+      setUserForm({ username: "", password: "", display_name: "" })
+      setShowUserForm(false)
+      loadAdminUsers()
+    } catch (error: any) {
+      console.error("Error adding user:", error)
+      alert("Kullanıcı eklenirken hata: " + error.message)
+    }
+  }
+
+  // Delete admin user
+  const handleDeleteUser = async (id: string) => {
+    if (currentUser?.id === id) {
+      alert("Kendi hesabınızı silemezsiniz!")
+      return
+    }
+
+    if (!confirm("Bu kullanıcıyı silmek istediğinizden emin misiniz?")) {
+      return
+    }
+
+    try {
+      const { error } = await supabase.from("admin_users").delete().eq("id", id)
+
+      if (error) throw error
+
+      alert("Kullanıcı silindi!")
+      loadAdminUsers()
+    } catch (error) {
+      console.error("Error deleting user:", error)
+      alert("Kullanıcı silinirken hata oluştu!")
+    }
+  }
+
+  // Change password
+  const handleChangePassword = async () => {
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      alert("Tüm alanları doldurun!")
+      return
+    }
+
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      alert("Yeni şifreler eşleşmiyor!")
+      return
+    }
+
+    if (!currentUser) {
+      alert("Kullanıcı bulunamadı!")
+      return
+    }
+
+    try {
+      // Verify current password
+      const { data: userData, error: verifyError } = await supabase
+        .from("admin_users")
+        .select("*")
+        .eq("id", currentUser.id)
+        .eq("password_hash", passwordForm.currentPassword)
+        .single()
+
+      if (verifyError || !userData) {
+        alert("Mevcut şifre hatalı!")
+        return
+      }
+
+      // Update password
+      const { error: updateError } = await supabase
+        .from("admin_users")
+        .update({ password_hash: passwordForm.newPassword, updated_at: new Date().toISOString() })
+        .eq("id", currentUser.id)
+
+      if (updateError) throw updateError
+
+      alert("Şifre başarıyla değiştirildi!")
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
+      setShowPasswordForm(false)
+    } catch (error) {
+      console.error("Error changing password:", error)
+      alert("Şifre değiştirilirken hata oluştu!")
+    }
   }
 
   // Upload image to Supabase Storage
@@ -313,6 +478,7 @@ export default function AdminPanel() {
             categoryId: prod.category_id,
             image: prod.image || "",
             display_order: prod.display_order,
+            badge: prod.badge || null,
           }))
           setProducts(formattedProducts)
         }
@@ -448,6 +614,7 @@ export default function AdminPanel() {
             price: productForm.price,
             category_id: productForm.categoryId,
             image: productForm.image,
+            badge: productForm.badge || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingProduct.id)
@@ -466,6 +633,7 @@ export default function AdminPanel() {
             price: productForm.price,
             category_id: productForm.categoryId,
             image: productForm.image,
+            badge: productForm.badge || null,
             display_order: products.length,
           },
         ])
@@ -475,7 +643,7 @@ export default function AdminPanel() {
         console.error("Error adding product:", error)
       }
     }
-    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "" })
+    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null })
     setShowProductForm(false)
   }
 
@@ -589,6 +757,10 @@ export default function AdminPanel() {
         return renderAppearanceTab()
       case "qr":
         return renderQRTab()
+      case "users":
+        return renderUsersTab()
+      case "settings":
+        return renderSettingsTab()
       default:
         return null
     }
@@ -868,6 +1040,20 @@ export default function AdminPanel() {
                   ))}
                 </select>
               </div>
+              <div>
+                <label className="text-sm font-medium">Etiket</label>
+                <select
+                  value={productForm.badge || ""}
+                  onChange={(e) => setProductForm({ ...productForm, badge: e.target.value || null })}
+                  className="w-full border rounded px-3 py-2 bg-background"
+                >
+                  <option value="">Etiket Yok</option>
+                  <option value="gunun_urunu">Günün Ürünü</option>
+                  <option value="sefin_onerisi">Şefin Önerisi</option>
+                  <option value="yeni">Yeni</option>
+                  <option value="populer">Popüler</option>
+                </select>
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Resim</label>
@@ -915,7 +1101,7 @@ export default function AdminPanel() {
                 onClick={() => {
                   setShowProductForm(false)
                   setEditingProduct(null)
-                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "" })
+                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null })
                 }}
               >
                 İptal
@@ -1384,6 +1570,183 @@ export default function AdminPanel() {
     </div>
   )
 
+  const renderUsersTab = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Users className="w-6 h-6 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">Kullanıcı Yönetimi</h2>
+            <p className="text-sm text-muted-foreground">Admin kullanıcılarını yönetin</p>
+          </div>
+        </div>
+        <Button onClick={() => setShowUserForm(true)} className="gap-2">
+          <Plus className="w-4 h-4" />
+          Yeni Kullanıcı Ekle
+        </Button>
+      </div>
+
+      {showUserForm && (
+        <Card className="mb-6 bg-muted/50">
+          <CardHeader>
+            <CardTitle>Yeni Kullanıcı Ekle</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Kullanıcı Adı</label>
+              <Input
+                value={userForm.username}
+                onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
+                placeholder="kullanici_adi"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Şifre</label>
+              <Input
+                type="password"
+                value={userForm.password}
+                onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                placeholder="Şifre"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Görünen Ad (Opsiyonel)</label>
+              <Input
+                value={userForm.display_name}
+                onChange={(e) => setUserForm({ ...userForm, display_name: e.target.value })}
+                placeholder="Ad Soyad"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={handleAddUser}>Ekle</Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowUserForm(false)
+                  setUserForm({ username: "", password: "", display_name: "" })
+                }}
+              >
+                İptal
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {adminUsers.map((user) => (
+          <Card key={user.id}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div>
+                  <CardTitle className="text-lg">{user.display_name || user.username}</CardTitle>
+                  <CardDescription>@{user.username}</CardDescription>
+                </div>
+                {currentUser?.id !== user.id && (
+                  <Button size="sm" variant="destructive" onClick={() => handleDeleteUser(user.id)}>
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              <p className="text-xs text-muted-foreground">
+                Oluşturma: {new Date(user.created_at).toLocaleDateString("tr-TR")}
+              </p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderSettingsTab = () => (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <Key className="w-6 h-6 text-primary" />
+        <div>
+          <h2 className="text-2xl font-bold">Ayarlar</h2>
+          <p className="text-sm text-muted-foreground">Hesap ayarlarınızı yönetin</p>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Şifre Değiştir</CardTitle>
+          <CardDescription>Hesap şifrenizi güncelleyin</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {!showPasswordForm ? (
+            <Button onClick={() => setShowPasswordForm(true)} className="gap-2">
+              <Key className="w-4 h-4" />
+              Şifre Değiştir
+            </Button>
+          ) : (
+            <>
+              <div>
+                <label className="text-sm font-medium">Mevcut Şifre</label>
+                <Input
+                  type="password"
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                  placeholder="Mevcut şifrenizi girin"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Yeni Şifre</label>
+                <Input
+                  type="password"
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  placeholder="Yeni şifrenizi girin"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Yeni Şifre (Tekrar)</label>
+                <Input
+                  type="password"
+                  value={passwordForm.confirmPassword}
+                  onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  placeholder="Yeni şifrenizi tekrar girin"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleChangePassword}>Değiştir</Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowPasswordForm(false)
+                    setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" })
+                  }}
+                >
+                  İptal
+                </Button>
+              </div>
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {currentUser && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Hesap Bilgileri</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <div>
+              <p className="text-sm font-medium">Kullanıcı Adı</p>
+              <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium">Görünen Ad</p>
+              <p className="text-sm text-muted-foreground">{currentUser.display_name || "Belirtilmemiş"}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  )
+
   // Show login screen if not authenticated
   if (!isAuthenticated) {
     return (
@@ -1433,15 +1796,6 @@ export default function AdminPanel() {
                 Giriş Yap
               </Button>
             </form>
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground text-center">
-                <strong>Varsayılan Giriş Bilgileri:</strong>
-                <br />
-                Kullanıcı Adı: admin
-                <br />
-                Şifre: admin123
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -1490,6 +1844,18 @@ export default function AdminPanel() {
             label="QR Kod"
             active={activeTab === "qr"}
             onClick={() => setActiveTab("qr")}
+          />
+          <NavItem
+            icon={<Users className="w-5 h-5" />}
+            label="Kullanıcılar"
+            active={activeTab === "users"}
+            onClick={() => setActiveTab("users")}
+          />
+          <NavItem
+            icon={<Key className="w-5 h-5" />}
+            label="Ayarlar"
+            active={activeTab === "settings"}
+            onClick={() => setActiveTab("settings")}
           />
         </nav>
 

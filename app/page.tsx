@@ -5,7 +5,7 @@ import { MenuHeader } from "@/components/menu-header"
 import { CartButton } from "@/components/cart-button"
 import { CartDetailView } from "@/components/cart-detail-view"
 import { OrderForm } from "@/components/order-form"
-import { Heart, ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 type CartItem = {
@@ -22,6 +22,7 @@ type Product = {
   price: number
   categoryId: string
   image: string
+  badge?: string | null
 }
 
 type Category = {
@@ -37,7 +38,6 @@ export default function MenuPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -104,6 +104,7 @@ export default function MenuPage() {
             price: prod.price,
             categoryId: prod.category_id,
             image: prod.image || "",
+            badge: prod.badge || null,
           }))
           setProducts(formattedProducts)
         }
@@ -137,15 +138,6 @@ export default function MenuPage() {
     }
 
     loadData()
-
-    const storedFavorites = localStorage.getItem("restaurant_favorites")
-    if (storedFavorites) {
-      try {
-        setFavorites(new Set(JSON.parse(storedFavorites)))
-      } catch (e) {
-        console.error("Failed to load favorites:", e)
-      }
-    }
   }, [supabase])
 
   const addToCart = (product: { id: string; name: string; price: number }, quantity: number) => {
@@ -173,19 +165,6 @@ export default function MenuPage() {
     } else {
       setCart((prevCart) => prevCart.map((item) => (item.id === productId ? { ...item, quantity } : item)))
     }
-  }
-
-  const toggleFavorite = (productId: string) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev)
-      if (newFavorites.has(productId)) {
-        newFavorites.delete(productId)
-      } else {
-        newFavorites.add(productId)
-      }
-      localStorage.setItem("restaurant_favorites", JSON.stringify(Array.from(newFavorites)))
-      return newFavorites
-    })
   }
 
   const toggleCategory = (categoryId: string) => {
@@ -313,17 +292,15 @@ export default function MenuPage() {
                                   🍽️
                                 </div>
                               )}
-                              {/* Favorite button - positioned on image */}
-                              <button
-                                onClick={() => toggleFavorite(product.id)}
-                                className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full text-primary hover:bg-white transition-all shadow-md"
-                              >
-                                <Heart
-                                  className={`w-4 h-4 transition-all ${
-                                    favorites.has(product.id) ? "fill-current" : ""
-                                  }`}
-                                />
-                              </button>
+                              {/* Product Badge */}
+                              {product.badge && (
+                                <div className="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-semibold shadow-md">
+                                  {product.badge === "gunun_urunu" && "Günün Ürünü"}
+                                  {product.badge === "sefin_onerisi" && "Şefin Önerisi"}
+                                  {product.badge === "yeni" && "Yeni"}
+                                  {product.badge === "populer" && "Popüler"}
+                                </div>
+                              )}
                             </div>
 
                             {/* Product Info */}
