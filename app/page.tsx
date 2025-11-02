@@ -6,6 +6,7 @@ import { CartButton } from "@/components/cart-button"
 import { CartDetailView } from "@/components/cart-detail-view"
 import { OrderForm } from "@/components/order-form"
 import { Heart, ChevronDown, ChevronUp } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 type CartItem = {
   id: string
@@ -39,29 +40,103 @@ export default function MenuPage() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
+  const [theme, setTheme] = useState({
+    primaryColor: "#8B5A3C",
+    secondaryColor: "#C9A961",
+    backgroundColor: "#FFFFFF",
+    textColor: "#1A1A1A",
+  })
+
+  const supabase = createClient()
 
   useEffect(() => {
-    const storedCategories = localStorage.getItem("restaurant_categories")
-    if (storedCategories) {
+    const loadData = async () => {
       try {
-        const cats = JSON.parse(storedCategories)
-        setCategories(cats)
-        if (cats.length > 0) {
-          setExpandedCategories(new Set([cats[0].id]))
+        const { data: themeData } = await supabase.from("settings").select("*").eq("key", "theme").single()
+
+        if (themeData?.value) {
+          setTheme(themeData.value)
+          // Apply theme to document
+          document.documentElement.style.setProperty("--primary", themeData.value.primaryColor)
+          document.documentElement.style.setProperty("--secondary", themeData.value.secondaryColor)
+        } else {
+          const storedTheme = localStorage.getItem("restaurant_theme")
+          if (storedTheme) {
+            const parsedTheme = JSON.parse(storedTheme)
+            setTheme(parsedTheme)
+            document.documentElement.style.setProperty("--primary", parsedTheme.primaryColor)
+            document.documentElement.style.setProperty("--secondary", parsedTheme.secondaryColor)
+          }
         }
-      } catch (e) {
-        console.error("Failed to load categories:", e)
+
+        // Load categories from Supabase
+        const { data: categoriesData, error: catError } = await supabase
+          .from("categories")
+          .select("*")
+          .order("display_order", { ascending: true })
+
+        if (catError) throw catError
+        if (categoriesData) {
+          const formattedCategories = categoriesData.map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            image: cat.image || "",
+          }))
+          setCategories(formattedCategories)
+          if (formattedCategories.length > 0) {
+            setExpandedCategories(new Set([formattedCategories[0].id]))
+          }
+        }
+
+        // Load products from Supabase
+        const { data: productsData, error: prodError } = await supabase
+          .from("products")
+          .select("*")
+          .order("display_order", { ascending: true })
+
+        if (prodError) throw prodError
+        if (productsData) {
+          const formattedProducts = productsData.map((prod: any) => ({
+            id: prod.id,
+            name: prod.name,
+            description: prod.description || "",
+            price: prod.price,
+            categoryId: prod.category_id,
+            image: prod.image || "",
+          }))
+          setProducts(formattedProducts)
+        }
+      } catch (error) {
+        console.error("Error loading data from Supabase:", error)
+        // Fallback to localStorage
+        const storedCategories = localStorage.getItem("restaurant_categories")
+        if (storedCategories) {
+          try {
+            const cats = JSON.parse(storedCategories)
+            setCategories(cats)
+            if (cats.length > 0) {
+              setExpandedCategories(new Set([cats[0].id]))
+            }
+          } catch (e) {
+            console.error("Failed to load categories:", e)
+          }
+        }
+
+        const storedProducts = localStorage.getItem("restaurant_products")
+        if (storedProducts) {
+          try {
+            setProducts(JSON.parse(storedProducts))
+          } catch (e) {
+            console.error("Failed to load products:", e)
+          }
+        }
+      } finally {
+        setIsLoading(false)
       }
     }
 
-    const storedProducts = localStorage.getItem("restaurant_products")
-    if (storedProducts) {
-      try {
-        setProducts(JSON.parse(storedProducts))
-      } catch (e) {
-        console.error("Failed to load products:", e)
-      }
-    }
+    loadData()
 
     const storedFavorites = localStorage.getItem("restaurant_favorites")
     if (storedFavorites) {
@@ -71,7 +146,7 @@ export default function MenuPage() {
         console.error("Failed to load favorites:", e)
       }
     }
-  }, [])
+  }, [supabase])
 
   const addToCart = (product: { id: string; name: string; price: number }, quantity: number) => {
     setCart((prevCart) => {

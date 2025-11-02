@@ -14,9 +14,10 @@ interface OrderFormProps {
   onSubmit?: (data: any) => void
   total: number
   items: Array<{ id: string; name: string; price: number; quantity: number }>
+  onSuccess?: (message: string) => void
 }
 
-export function OrderForm({ onClose, total, items }: OrderFormProps) {
+export function OrderForm({ onClose, total, items, onSuccess }: OrderFormProps) {
   const [tableNumber, setTableNumber] = useState("")
   const [name, setName] = useState("")
   const [notes, setNotes] = useState("")
@@ -24,6 +25,7 @@ export function OrderForm({ onClose, total, items }: OrderFormProps) {
   const [phoneNumber, setPhoneNumber] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [successMessage, setSuccessMessage] = useState("")
   const supabase = createClient()
 
   const validate = () => {
@@ -55,7 +57,7 @@ export function OrderForm({ onClose, total, items }: OrderFormProps) {
         customer_name: name,
         phone_number: isDelivery ? phoneNumber : null,
         is_delivery: isDelivery,
-        items: orderItems, // Ensure items is always an array
+        items: orderItems,
         notes: notes || null,
         total: total,
         status: "pending",
@@ -67,7 +69,16 @@ export function OrderForm({ onClose, total, items }: OrderFormProps) {
         setErrors({ submit: "Sipariş kaydedilemedi. Lütfen tekrar deneyin." })
       } else {
         console.log("[v0] Order saved successfully!")
-        onClose()
+        const successMsg = isDelivery
+          ? `Ön siparişiniz başarıyla alındı! Telefon numarası: ${phoneNumber}`
+          : `Siparişiniz başarıyla gönderildi! Masa: ${tableNumber}`
+        setSuccessMessage(successMsg)
+        if (onSuccess) onSuccess(successMsg)
+
+        setTimeout(() => {
+          setSuccessMessage("")
+          onClose()
+        }, 2000)
       }
     } catch (err) {
       console.error("[v0] Unexpected error:", err)
@@ -75,6 +86,27 @@ export function OrderForm({ onClose, total, items }: OrderFormProps) {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  if (successMessage) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-8 text-center space-y-4">
+          <div className="flex justify-center mb-4">
+            <svg className="w-16 h-16 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold text-green-600">Sipariş Başarılı!</h2>
+          <p className="text-foreground text-lg">{successMessage}</p>
+          <p className="text-sm text-muted-foreground">Form kapatılıyor...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

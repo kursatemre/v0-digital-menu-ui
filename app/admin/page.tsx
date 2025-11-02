@@ -149,6 +149,12 @@ export default function AdminPanel() {
     image: "",
   })
 
+  const [headerSettings, setHeaderSettings] = useState({
+    title: "Menümüz",
+    subtitle: "Lezzetli yemeklerimizi keşfedin!",
+    logo: "",
+  })
+
   const supabase = createClient()
 
   useEffect(() => {
@@ -195,24 +201,122 @@ export default function AdminPanel() {
   }
 
   useEffect(() => {
-    const storedProducts = localStorage.getItem("restaurant_products")
-    if (storedProducts) {
+    const loadProducts = async () => {
       try {
-        setProducts(JSON.parse(storedProducts))
-      } catch (e) {
-        console.error("Failed to load products:", e)
+        const { data, error } = await supabase.from("products").select("*").order("display_order", { ascending: true })
+
+        if (error) throw error
+        if (data) {
+          const formattedProducts = data.map((prod: any) => ({
+            id: prod.id,
+            name: prod.name,
+            description: prod.description || "",
+            price: prod.price,
+            categoryId: prod.category_id,
+            image: prod.image || "",
+            display_order: prod.display_order,
+          }))
+          setProducts(formattedProducts)
+        }
+      } catch (error) {
+        console.error("Error loading products:", error)
       }
     }
 
-    const storedCategories = localStorage.getItem("restaurant_categories")
-    if (storedCategories) {
+    loadProducts()
+  }, [supabase])
+
+  useEffect(() => {
+    const loadCategories = async () => {
       try {
-        setCategories(JSON.parse(storedCategories))
-      } catch (e) {
-        console.error("Failed to load categories:", e)
+        const { data, error } = await supabase
+          .from("categories")
+          .select("*")
+          .order("display_order", { ascending: true })
+
+        if (error) throw error
+        if (data) {
+          const formattedCategories = data.map((cat: any) => ({
+            id: cat.id,
+            name: cat.name,
+            image: cat.image || "",
+            display_order: cat.display_order,
+          }))
+          setCategories(formattedCategories)
+        }
+      } catch (error) {
+        console.error("Error loading categories:", error)
       }
     }
 
+    loadCategories()
+  }, [supabase])
+
+  useEffect(() => {
+    const loadSettings = async () => {
+      try {
+        const { data: themeData, error: themeError } = await supabase
+          .from("settings")
+          .select("*")
+          .eq("key", "theme")
+          .single()
+
+        if (themeData?.value) {
+          setTheme(themeData.value)
+        }
+
+        const { data: headerData, error: headerError } = await supabase
+          .from("settings")
+          .select("*")
+          .eq("key", "header")
+          .single()
+
+        if (headerData?.value) {
+          setHeaderSettings(headerData.value)
+        }
+      } catch (error) {
+        console.error("Error loading settings:", error)
+        const storedTheme = localStorage.getItem("restaurant_theme")
+        const storedHeader = localStorage.getItem("restaurant_header")
+        if (storedTheme) setTheme(JSON.parse(storedTheme))
+        if (storedHeader) setHeaderSettings(JSON.parse(storedHeader))
+      }
+    }
+
+    loadSettings()
+  }, [supabase])
+
+  useEffect(() => {
+    const saveSettings = async () => {
+      try {
+        await supabase.from("settings").upsert({ key: "theme", value: theme }, { onConflict: "key" })
+
+        localStorage.setItem("restaurant_theme", JSON.stringify(theme))
+        document.documentElement.style.setProperty("--primary", theme.primaryColor)
+        document.documentElement.style.setProperty("--secondary", theme.secondaryColor)
+      } catch (error) {
+        console.error("Error saving theme:", error)
+      }
+    }
+
+    saveSettings()
+  }, [theme, supabase])
+
+  useEffect(() => {
+    const saveHeaderSettings = async () => {
+      try {
+        await supabase.from("settings").upsert({ key: "header", value: headerSettings }, { onConflict: "key" })
+
+        localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
+      } catch (error) {
+        console.error("Error saving header:", error)
+      }
+    }
+
+    saveHeaderSettings()
+  }, [headerSettings, supabase])
+
+  useEffect(() => {
     const storedTheme = localStorage.getItem("restaurant_theme")
     if (storedTheme) {
       try {
@@ -230,12 +334,6 @@ export default function AdminPanel() {
   useEffect(() => {
     localStorage.setItem("restaurant_categories", JSON.stringify(categories))
   }, [categories])
-
-  useEffect(() => {
-    localStorage.setItem("restaurant_theme", JSON.stringify(theme))
-    document.documentElement.style.setProperty("--primary", theme.primaryColor)
-    document.documentElement.style.setProperty("--secondary", theme.secondaryColor)
-  }, [theme])
 
   const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
     try {
@@ -269,50 +367,103 @@ export default function AdminPanel() {
     }
   }
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (editingProduct) {
-      setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? { ...editingProduct, ...productForm } : p)))
-      setEditingProduct(null)
-    } else {
-      const newProduct: Product = {
-        id: Date.now().toString(),
-        ...productForm,
-        display_order: products.length,
+      try {
+        const { error } = await supabase
+          .from("products")
+          .update({
+            name: productForm.name,
+            description: productForm.description,
+            price: productForm.price,
+            category_id: productForm.categoryId,
+            image: productForm.image,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingProduct.id)
+
+        if (error) throw error
+        setEditingProduct(null)
+      } catch (error) {
+        console.error("Error updating product:", error)
       }
-      setProducts((prev) => [...prev, newProduct])
+    } else {
+      try {
+        const { error } = await supabase.from("products").insert([
+          {
+            name: productForm.name,
+            description: productForm.description,
+            price: productForm.price,
+            category_id: productForm.categoryId,
+            image: productForm.image,
+            display_order: products.length,
+          },
+        ])
+
+        if (error) throw error
+      } catch (error) {
+        console.error("Error adding product:", error)
+      }
     }
     setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "" })
     setShowProductForm(false)
   }
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts((prev) => prev.filter((p) => p.id !== id))
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      const { error } = await supabase.from("products").delete().eq("id", id)
+      if (error) throw error
+    } catch (error) {
+      console.error("Error deleting product:", error)
+    }
   }
 
-  const handleAddCategory = () => {
+  const handleAddCategory = async () => {
     if (editingCategory) {
-      setCategories((prev) =>
-        prev.map((c) => (c.id === editingCategory.id ? { ...editingCategory, ...categoryForm } : c)),
-      )
-      setEditingCategory(null)
-    } else {
-      const newCategory: Category = {
-        id: Date.now().toString(),
-        ...categoryForm,
-        display_order: categories.length,
+      try {
+        const { error } = await supabase
+          .from("categories")
+          .update({
+            name: categoryForm.name,
+            image: categoryForm.image,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", editingCategory.id)
+
+        if (error) throw error
+        setEditingCategory(null)
+      } catch (error) {
+        console.error("Error updating category:", error)
       }
-      setCategories((prev) => [...prev, newCategory])
+    } else {
+      try {
+        const { error } = await supabase.from("categories").insert([
+          {
+            name: categoryForm.name,
+            image: categoryForm.image,
+            display_order: categories.length,
+          },
+        ])
+
+        if (error) throw error
+      } catch (error) {
+        console.error("Error adding category:", error)
+      }
     }
     setCategoryForm({ name: "", image: "" })
     setShowCategoryForm(false)
   }
 
-  const handleDeleteCategory = (id: string) => {
-    setCategories((prev) => prev.filter((c) => c.id !== id))
-    setProducts((prev) => prev.filter((p) => p.categoryId !== id))
+  const handleDeleteCategory = async (id: string) => {
+    try {
+      const { error } = await supabase.from("categories").delete().eq("id", id)
+      if (error) throw error
+    } catch (error) {
+      console.error("Error deleting category:", error)
+    }
   }
 
-  const moveCategory = (id: string, direction: "up" | "down") => {
+  const moveCategory = async (id: string, direction: "up" | "down") => {
     const index = categories.findIndex((c) => c.id === id)
     if ((direction === "up" && index === 0) || (direction === "down" && index === categories.length - 1)) {
       return
@@ -322,14 +473,19 @@ export default function AdminPanel() {
     const swapIndex = direction === "up" ? index - 1 : index + 1
     ;[newCategories[index], newCategories[swapIndex]] = [newCategories[swapIndex], newCategories[index]]
 
-    newCategories.forEach((cat, i) => {
+    newCategories.forEach(async (cat, i) => {
       cat.display_order = i
+      try {
+        await supabase.from("categories").update({ display_order: i }).eq("id", cat.id)
+      } catch (error) {
+        console.error("Error updating category order:", error)
+      }
     })
 
     setCategories(newCategories)
   }
 
-  const moveProduct = (id: string, direction: "up" | "down") => {
+  const moveProduct = async (id: string, direction: "up" | "down") => {
     const index = products.findIndex((p) => p.id === id)
     if ((direction === "up" && index === 0) || (direction === "down" && index === products.length - 1)) {
       return
@@ -339,8 +495,13 @@ export default function AdminPanel() {
     const swapIndex = direction === "up" ? index - 1 : index + 1
     ;[newProducts[index], newProducts[swapIndex]] = [newProducts[swapIndex], newProducts[index]]
 
-    newProducts.forEach((prod, i) => {
+    newProducts.forEach(async (prod, i) => {
       prod.display_order = i
+      try {
+        await supabase.from("products").update({ display_order: i }).eq("id", prod.id)
+      } catch (error) {
+        console.error("Error updating product order:", error)
+      }
     })
 
     setProducts(newProducts)
@@ -887,15 +1048,30 @@ export default function AdminPanel() {
         <CardContent className="space-y-6">
           <div>
             <label className="text-sm font-medium mb-2 block">Header Başlık</label>
-            <Input placeholder="Menümüz" className="mb-2" />
+            <Input
+              value={headerSettings.title}
+              onChange={(e) => setHeaderSettings({ ...headerSettings, title: e.target.value })}
+              placeholder="Menümüz"
+              className="mb-2"
+            />
           </div>
           <div>
             <label className="text-sm font-medium mb-2 block">Header Alt Başlık</label>
-            <Input placeholder="Lezzetli yemeklerimizi keşfedin!" className="mb-2" />
+            <Input
+              value={headerSettings.subtitle}
+              onChange={(e) => setHeaderSettings({ ...headerSettings, subtitle: e.target.value })}
+              placeholder="Lezzetli yemeklerimizi keşfedin!"
+              className="mb-2"
+            />
           </div>
           <div>
             <label className="text-sm font-medium mb-2 block">Header Logo</label>
-            <Input placeholder="Logo URL (opsiyonel)" className="mb-2" />
+            <Input
+              value={headerSettings.logo}
+              onChange={(e) => setHeaderSettings({ ...headerSettings, logo: e.target.value })}
+              placeholder="Logo URL (opsiyonel)"
+              className="mb-2"
+            />
           </div>
         </CardContent>
       </Card>

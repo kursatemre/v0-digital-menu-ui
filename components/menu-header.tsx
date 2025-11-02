@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { createClient } from "@/lib/supabase/client"
 
 export function MenuHeader() {
   const [headerConfig, setHeaderConfig] = useState({
@@ -10,14 +11,34 @@ export function MenuHeader() {
   })
 
   useEffect(() => {
-    const saved = localStorage.getItem("restaurant_header_config")
-    if (saved) {
+    const loadSettings = async () => {
+      const supabase = createClient()
       try {
-        setHeaderConfig(JSON.parse(saved))
-      } catch (e) {
-        console.error("Failed to load header config:", e)
+        const { data: headerData, error } = await supabase.from("settings").select("*").eq("key", "header").single()
+
+        if (headerData?.value) {
+          setHeaderConfig(headerData.value)
+        } else {
+          // Fallback to localStorage
+          const saved = localStorage.getItem("restaurant_header")
+          if (saved) {
+            setHeaderConfig(JSON.parse(saved))
+          }
+        }
+      } catch (err) {
+        console.error("Error loading header settings:", err)
+        const saved = localStorage.getItem("restaurant_header")
+        if (saved) {
+          try {
+            setHeaderConfig(JSON.parse(saved))
+          } catch (e) {
+            console.error("Failed to load header config:", e)
+          }
+        }
       }
     }
+
+    loadSettings()
   }, [])
 
   return (
