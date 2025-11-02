@@ -5,7 +5,7 @@ import { MenuHeader } from "@/components/menu-header"
 import { CartButton } from "@/components/cart-button"
 import { CartDetailView } from "@/components/cart-detail-view"
 import { OrderForm } from "@/components/order-form"
-import { Heart, ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
 type CartItem = {
@@ -22,6 +22,7 @@ type Product = {
   price: number
   categoryId: string
   image: string
+  badge?: string | null
 }
 
 type Category = {
@@ -37,7 +38,6 @@ export default function MenuPage() {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
-  const [favorites, setFavorites] = useState<Set<string>>(new Set())
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
   const [isLoading, setIsLoading] = useState(true)
@@ -104,6 +104,7 @@ export default function MenuPage() {
             price: prod.price,
             categoryId: prod.category_id,
             image: prod.image || "",
+            badge: prod.badge || null,
           }))
           setProducts(formattedProducts)
         }
@@ -137,15 +138,6 @@ export default function MenuPage() {
     }
 
     loadData()
-
-    const storedFavorites = localStorage.getItem("restaurant_favorites")
-    if (storedFavorites) {
-      try {
-        setFavorites(new Set(JSON.parse(storedFavorites)))
-      } catch (e) {
-        console.error("Failed to load favorites:", e)
-      }
-    }
   }, [supabase])
 
   const addToCart = (product: { id: string; name: string; price: number }, quantity: number) => {
@@ -173,19 +165,6 @@ export default function MenuPage() {
     } else {
       setCart((prevCart) => prevCart.map((item) => (item.id === productId ? { ...item, quantity } : item)))
     }
-  }
-
-  const toggleFavorite = (productId: string) => {
-    setFavorites((prev) => {
-      const newFavorites = new Set(prev)
-      if (newFavorites.has(productId)) {
-        newFavorites.delete(productId)
-      } else {
-        newFavorites.add(productId)
-      }
-      localStorage.setItem("restaurant_favorites", JSON.stringify(Array.from(newFavorites)))
-      return newFavorites
-    })
   }
 
   const toggleCategory = (categoryId: string) => {
@@ -262,68 +241,91 @@ export default function MenuPage() {
                   {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category.id)}
-                    className="w-full px-6 py-4 flex items-center justify-between hover:bg-primary/5 transition-colors accent-left-border"
+                    className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-primary/5 transition-colors accent-left-border"
                   >
-                    <div className="flex items-center gap-3">
-                      <h2 className="text-xl font-bold text-foreground">{category.name}</h2>
-                      <span className="text-sm text-muted-foreground bg-primary/10 px-3 py-1 rounded-full font-medium">
-                        {categoryProducts.length} ürün
-                      </span>
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      {/* Category Image */}
+                      {category.image ? (
+                        <img
+                          src={category.image}
+                          alt={category.name}
+                          className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg flex-shrink-0"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                          📋
+                        </div>
+                      )}
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <h2 className="text-lg sm:text-xl font-bold text-foreground">{category.name}</h2>
+                        <span className="text-xs sm:text-sm text-muted-foreground bg-primary/10 px-2 sm:px-3 py-1 rounded-full font-medium">
+                          {categoryProducts.length}
+                        </span>
+                      </div>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="w-6 h-6 text-primary" />
+                      <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="w-6 h-6 text-primary" />
+                      <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
                     )}
                   </button>
 
                   {/* Category Products */}
                   {isExpanded && (
-                    <div className="border-t border-primary/10 divide-y divide-primary/10">
+                    <div className="border-t border-primary/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 p-4 sm:p-6">
                       {categoryProducts.length > 0 ? (
                         categoryProducts.map((product) => (
                           <div
                             key={product.id}
-                            className="px-6 py-4 hover:bg-primary/3 transition-colors flex gap-4 sm:gap-6 items-start"
+                            className="bg-white border border-primary/10 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row"
                           >
                             {/* Product Image */}
-                            <div className="flex-shrink-0">
+                            <div className="relative flex-shrink-0 sm:w-44">
                               {product.image ? (
                                 <img
                                   src={product.image || "/placeholder.svg"}
                                   alt={product.name}
-                                  className="w-24 h-24 sm:w-32 sm:h-32 object-cover rounded-lg"
+                                  className="w-full h-40 sm:h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-24 h-24 sm:w-32 sm:h-32 bg-primary/10 rounded-lg flex items-center justify-center text-3xl">
+                                <div className="w-full h-40 sm:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-4xl">
                                   🍽️
+                                </div>
+                              )}
+                              {/* Product Badge */}
+                              {product.badge && (
+                                <div className="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-semibold shadow-md">
+                                  {product.badge === "gunun_urunu" && "Günün Ürünü"}
+                                  {product.badge === "sefin_onerisi" && "Şefin Önerisi"}
+                                  {product.badge === "yeni" && "Yeni"}
+                                  {product.badge === "populer" && "Popüler"}
                                 </div>
                               )}
                             </div>
 
                             {/* Product Info */}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-start justify-between gap-4 mb-2">
-                                <h3 className="text-lg font-bold text-foreground break-words">{product.name}</h3>
-                                <button
-                                  onClick={() => toggleFavorite(product.id)}
-                                  className="flex-shrink-0 text-primary hover:text-primary/80 transition-colors"
-                                >
-                                  <Heart
-                                    className={`w-5 h-5 transition-all ${
-                                      favorites.has(product.id) ? "fill-current" : ""
-                                    }`}
-                                  />
-                                </button>
-                              </div>
-                              <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{product.description}</p>
+                            <div className="flex-1 p-3 sm:p-4 flex flex-col">
+                              {/* Product Name */}
+                              <h3 className="text-base sm:text-lg font-bold text-foreground mb-1.5 line-clamp-2">
+                                {product.name}
+                              </h3>
 
-                              {/* Price and button */}
-                              <div className="flex items-center justify-between">
-                                <p className="text-2xl font-bold text-primary">₺{product.price.toFixed(2)}</p>
+                              {/* Product Description */}
+                              <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2 flex-1">
+                                {product.description}
+                              </p>
+
+                              {/* Price and Add to Cart Button */}
+                              <div className="flex items-center gap-2 sm:gap-3 mt-auto">
+                                <div className="flex-1">
+                                  <p className="text-xs text-muted-foreground mb-0.5">Fiyat</p>
+                                  <p className="text-xl sm:text-2xl font-bold text-primary">
+                                    ₺{product.price.toFixed(2)}
+                                  </p>
+                                </div>
                                 <button
                                   onClick={() => addToCart(product, 1)}
-                                  className="bg-primary text-primary-foreground px-4 sm:px-6 py-2 rounded-lg hover:opacity-90 transition-all text-sm sm:text-base font-semibold"
+                                  className="bg-primary text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg hover:bg-primary/90 active:scale-95 transition-all text-sm font-semibold shadow-md hover:shadow-lg whitespace-nowrap"
                                 >
                                   Sepete Ekle
                                 </button>
@@ -332,7 +334,7 @@ export default function MenuPage() {
                           </div>
                         ))
                       ) : (
-                        <div className="px-6 py-8 text-center text-muted-foreground">
+                        <div className="col-span-full px-6 py-8 text-center text-muted-foreground">
                           Bu kategoride ürün bulunmamaktadır.
                         </div>
                       )}
