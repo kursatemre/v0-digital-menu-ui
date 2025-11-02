@@ -157,6 +157,67 @@ export default function AdminPanel() {
 
   const supabase = createClient()
 
+  const [isSaving, setIsSaving] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
+
+  // Upload image to Supabase Storage
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true)
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
+      const filePath = `${fileName}`
+
+      const { error: uploadError } = await supabase.storage.from("menu-images").upload(filePath, file)
+
+      if (uploadError) {
+        console.error("Upload error:", uploadError)
+        alert("Dosya yüklenirken hata oluştu: " + uploadError.message)
+        return null
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("menu-images").getPublicUrl(filePath)
+
+      return publicUrl
+    } catch (error) {
+      console.error("Error uploading image:", error)
+      alert("Dosya yüklenirken hata oluştu")
+      return null
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  // Manual save appearance settings
+  const saveAppearanceSettings = async () => {
+    try {
+      setIsSaving(true)
+
+      // Save theme
+      await supabase.from("settings").upsert({ key: "theme", value: theme }, { onConflict: "key" })
+
+      // Save header settings
+      await supabase.from("settings").upsert({ key: "header", value: headerSettings }, { onConflict: "key" })
+
+      // Update localStorage
+      localStorage.setItem("restaurant_theme", JSON.stringify(theme))
+      localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
+
+      // Apply theme to CSS variables
+      document.documentElement.style.setProperty("--primary", theme.primaryColor)
+      document.documentElement.style.setProperty("--secondary", theme.secondaryColor)
+
+      alert("Ayarlar başarıyla kaydedildi!")
+    } catch (error) {
+      console.error("Error saving settings:", error)
+      alert("Ayarlar kaydedilirken hata oluştu")
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   useEffect(() => {
     loadOrders()
 
@@ -286,35 +347,7 @@ export default function AdminPanel() {
     loadSettings()
   }, [supabase])
 
-  useEffect(() => {
-    const saveSettings = async () => {
-      try {
-        await supabase.from("settings").upsert({ key: "theme", value: theme }, { onConflict: "key" })
-
-        localStorage.setItem("restaurant_theme", JSON.stringify(theme))
-        document.documentElement.style.setProperty("--primary", theme.primaryColor)
-        document.documentElement.style.setProperty("--secondary", theme.secondaryColor)
-      } catch (error) {
-        console.error("Error saving theme:", error)
-      }
-    }
-
-    saveSettings()
-  }, [theme, supabase])
-
-  useEffect(() => {
-    const saveHeaderSettings = async () => {
-      try {
-        await supabase.from("settings").upsert({ key: "header", value: headerSettings }, { onConflict: "key" })
-
-        localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
-      } catch (error) {
-        console.error("Error saving header:", error)
-      }
-    }
-
-    saveHeaderSettings()
-  }, [headerSettings, supabase])
+  // Removed auto-save useEffects - now using manual save button
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("restaurant_theme")
@@ -800,12 +833,36 @@ export default function AdminPanel() {
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium">Resim URL</label>
-              <Input
-                value={productForm.image}
-                onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
-                placeholder="https://..."
-              />
+              <label className="text-sm font-medium">Resim</label>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Dosya Yükle</label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const url = await uploadImage(file)
+                        if (url) {
+                          setProductForm({ ...productForm, image: url })
+                        }
+                      }
+                    }}
+                    disabled={uploadingImage}
+                    className="cursor-pointer"
+                  />
+                  {uploadingImage && <p className="text-xs text-muted-foreground mt-1">Yükleniyor...</p>}
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">veya URL Gir</label>
+                  <Input
+                    value={productForm.image}
+                    onChange={(e) => setProductForm({ ...productForm, image: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
               {productForm.image && (
                 <img
                   src={productForm.image || "/placeholder.svg"}
@@ -930,12 +987,36 @@ export default function AdminPanel() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Resim URL</label>
-              <Input
-                value={categoryForm.image}
-                onChange={(e) => setCategoryForm({ ...categoryForm, image: e.target.value })}
-                placeholder="https://..."
-              />
+              <label className="text-sm font-medium">Resim</label>
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs text-muted-foreground">Dosya Yükle</label>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (file) {
+                        const url = await uploadImage(file)
+                        if (url) {
+                          setCategoryForm({ ...categoryForm, image: url })
+                        }
+                      }
+                    }}
+                    disabled={uploadingImage}
+                    className="cursor-pointer"
+                  />
+                  {uploadingImage && <p className="text-xs text-muted-foreground mt-1">Yükleniyor...</p>}
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground">veya URL Gir</label>
+                  <Input
+                    value={categoryForm.image}
+                    onChange={(e) => setCategoryForm({ ...categoryForm, image: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
               {categoryForm.image && (
                 <img
                   src={categoryForm.image || "/placeholder.svg"}
@@ -1066,12 +1147,43 @@ export default function AdminPanel() {
           </div>
           <div>
             <label className="text-sm font-medium mb-2 block">Header Logo</label>
-            <Input
-              value={headerSettings.logo}
-              onChange={(e) => setHeaderSettings({ ...headerSettings, logo: e.target.value })}
-              placeholder="Logo URL (opsiyonel)"
-              className="mb-2"
-            />
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Dosya Yükle</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadImage(file)
+                      if (url) {
+                        setHeaderSettings({ ...headerSettings, logo: url })
+                      }
+                    }
+                  }}
+                  disabled={uploadingImage}
+                  className="cursor-pointer mb-2"
+                />
+                {uploadingImage && <p className="text-xs text-muted-foreground mt-1">Yükleniyor...</p>}
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">veya URL Gir</label>
+                <Input
+                  value={headerSettings.logo}
+                  onChange={(e) => setHeaderSettings({ ...headerSettings, logo: e.target.value })}
+                  placeholder="Logo URL (opsiyonel)"
+                  className="mb-2"
+                />
+              </div>
+            </div>
+            {headerSettings.logo && (
+              <img
+                src={headerSettings.logo}
+                alt="logo preview"
+                className="mt-2 h-16 object-contain rounded"
+              />
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1169,6 +1281,22 @@ export default function AdminPanel() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="mt-6 flex justify-end">
+        <Button onClick={saveAppearanceSettings} disabled={isSaving} size="lg" className="gap-2">
+          {isSaving ? (
+            <>
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              Kaydediliyor...
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="w-5 h-5" />
+              Ayarları Kaydet
+            </>
+          )}
+        </Button>
+      </div>
     </div>
   )
 
