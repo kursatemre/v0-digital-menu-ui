@@ -287,25 +287,25 @@ export default function MenuPage() {
                             className="bg-white border border-primary/10 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row"
                           >
                             {/* Product Image */}
-                            <div className="relative flex-shrink-0 sm:w-48">
+                            <div className="relative flex-shrink-0 sm:w-44">
                               {product.image ? (
                                 <img
                                   src={product.image || "/placeholder.svg"}
                                   alt={product.name}
-                                  className="w-full h-48 sm:h-full object-cover"
+                                  className="w-full h-40 sm:h-full object-cover"
                                 />
                               ) : (
-                                <div className="w-full h-48 sm:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-5xl">
+                                <div className="w-full h-40 sm:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-4xl">
                                   🍽️
                                 </div>
                               )}
                               {/* Favorite button - positioned on image */}
                               <button
                                 onClick={() => toggleFavorite(product.id)}
-                                className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full text-primary hover:bg-white transition-all shadow-md"
+                                className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm p-1.5 rounded-full text-primary hover:bg-white transition-all shadow-md"
                               >
                                 <Heart
-                                  className={`w-5 h-5 transition-all ${
+                                  className={`w-4 h-4 transition-all ${
                                     favorites.has(product.id) ? "fill-current" : ""
                                   }`}
                                 />
@@ -313,28 +313,28 @@ export default function MenuPage() {
                             </div>
 
                             {/* Product Info */}
-                            <div className="flex-1 p-4 sm:p-5 flex flex-col">
+                            <div className="flex-1 p-3 sm:p-4 flex flex-col">
                               {/* Product Name */}
-                              <h3 className="text-lg sm:text-xl font-bold text-foreground mb-2 line-clamp-2">
+                              <h3 className="text-base sm:text-lg font-bold text-foreground mb-1.5 line-clamp-2">
                                 {product.name}
                               </h3>
 
                               {/* Product Description */}
-                              <p className="text-sm sm:text-base text-muted-foreground mb-4 line-clamp-2 flex-1">
+                              <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2 flex-1">
                                 {product.description}
                               </p>
 
                               {/* Price and Add to Cart Button */}
-                              <div className="flex items-center gap-3 mt-auto">
+                              <div className="flex items-center gap-2 sm:gap-3 mt-auto">
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-1">Fiyat</p>
-                                  <p className="text-2xl sm:text-3xl font-bold text-primary">
+                                  <p className="text-xs text-muted-foreground mb-0.5">Fiyat</p>
+                                  <p className="text-xl sm:text-2xl font-bold text-primary">
                                     ₺{product.price.toFixed(2)}
                                   </p>
                                 </div>
                                 <button
                                   onClick={() => addToCart(product, 1)}
-                                  className="bg-primary text-white px-6 py-3 rounded-lg hover:bg-primary/90 active:scale-95 transition-all text-sm sm:text-base font-semibold shadow-md hover:shadow-lg whitespace-nowrap"
+                                  className="bg-primary text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg hover:bg-primary/90 active:scale-95 transition-all text-sm font-semibold shadow-md hover:shadow-lg whitespace-nowrap"
                                 >
                                   Sepete Ekle
                                 </button>
