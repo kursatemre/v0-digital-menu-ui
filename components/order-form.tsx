@@ -47,12 +47,15 @@ export function OrderForm({ onClose, total, items }: OrderFormProps) {
 
     setIsLoading(true)
     try {
+      const orderItems = items && items.length > 0 ? items : []
+      console.log("[v0] Submitting order with items:", orderItems)
+
       const { error } = await supabase.from("orders").insert({
         table_number: isDelivery ? null : tableNumber,
         customer_name: name,
         phone_number: isDelivery ? phoneNumber : null,
         is_delivery: isDelivery,
-        items: items,
+        items: orderItems, // Ensure items is always an array
         notes: notes || null,
         total: total,
         status: "pending",
@@ -60,13 +63,14 @@ export function OrderForm({ onClose, total, items }: OrderFormProps) {
       })
 
       if (error) {
-        console.error("Error saving order:", error)
+        console.error("[v0] Error saving order:", error)
         setErrors({ submit: "Sipariş kaydedilemedi. Lütfen tekrar deneyin." })
       } else {
+        console.log("[v0] Order saved successfully!")
         onClose()
       }
     } catch (err) {
-      console.error("Unexpected error:", err)
+      console.error("[v0] Unexpected error:", err)
       setErrors({ submit: "Bir hata oluştu. Lütfen tekrar deneyin." })
     } finally {
       setIsLoading(false)
