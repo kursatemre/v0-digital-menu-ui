@@ -7,26 +7,24 @@ import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { createClient } from "@/lib/supabase/client"
 
 interface OrderFormProps {
   onClose: () => void
-  onSubmit: (data: {
-    tableNumber: string
-    name: string
-    notes: string
-    phoneNumber: string
-    isDelivery: boolean
-  }) => void
+  onSubmit?: (data: any) => void
   total: number
+  items: Array<{ id: string; name: string; price: number; quantity: number }>
 }
 
-export function OrderForm({ onClose, onSubmit, total }: OrderFormProps) {
+export function OrderForm({ onClose, total, items }: OrderFormProps) {
   const [tableNumber, setTableNumber] = useState("")
   const [name, setName] = useState("")
   const [notes, setNotes] = useState("")
   const [isDelivery, setIsDelivery] = useState(false)
   const [phoneNumber, setPhoneNumber] = useState("")
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isLoading, setIsLoading] = useState(false)
+  const supabase = createClient()
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -39,14 +37,40 @@ export function OrderForm({ onClose, onSubmit, total }: OrderFormProps) {
     return newErrors
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors = validate()
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
-    onSubmit({ tableNumber, name, notes, phoneNumber, isDelivery })
+
+    setIsLoading(true)
+    try {
+      const { error } = await supabase.from("orders").insert({
+        table_number: isDelivery ? null : tableNumber,
+        customer_name: name,
+        phone_number: isDelivery ? phoneNumber : null,
+        is_delivery: isDelivery,
+        items: items,
+        notes: notes || null,
+        total: total,
+        status: "pending",
+        created_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        console.error("Error saving order:", error)
+        setErrors({ submit: "Sipariş kaydedilemedi. Lütfen tekrar deneyin." })
+      } else {
+        onClose()
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err)
+      setErrors({ submit: "Bir hata oluştu. Lütfen tekrar deneyin." })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -112,7 +136,6 @@ export function OrderForm({ onClose, onSubmit, total }: OrderFormProps) {
               </div>
             )}
 
-            {/* Name */}
             <div>
               <label className="block text-sm font-bold text-foreground mb-2">İsim Soyisim *</label>
               <Input
@@ -128,7 +151,6 @@ export function OrderForm({ onClose, onSubmit, total }: OrderFormProps) {
               {errors.name && <p className="text-destructive text-sm mt-1">{errors.name}</p>}
             </div>
 
-            {/* Notes */}
             <div>
               <label className="block text-sm font-bold text-foreground mb-2">Özel Not (İsteğe bağlı)</label>
               <Textarea
@@ -139,7 +161,6 @@ export function OrderForm({ onClose, onSubmit, total }: OrderFormProps) {
               />
             </div>
 
-            {/* Total Display */}
             <div className="bg-muted rounded-lg p-4 border border-border">
               <div className="flex justify-between items-center">
                 <span className="text-foreground font-bold">Toplam Tutar:</span>
@@ -147,12 +168,14 @@ export function OrderForm({ onClose, onSubmit, total }: OrderFormProps) {
               </div>
             </div>
 
-            {/* Submit Button */}
+            {errors.submit && <p className="text-destructive text-sm">{errors.submit}</p>}
+
             <Button
               type="submit"
+              disabled={isLoading}
               className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 text-base font-bold"
             >
-              Siparişi Onayla ve Gönder
+              {isLoading ? "Gönderiliyor..." : "Siparişi Onayla ve Gönder"}
             </Button>
           </form>
         </div>

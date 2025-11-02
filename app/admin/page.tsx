@@ -30,16 +30,19 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { QRCodeSVG } from "qrcode.react"
+import { createClient } from "@/lib/supabase/client"
 
 type Order = {
   id: string
-  tableNumber: string
-  customerName: string
+  table_number: string | null
+  customer_name: string
+  phone_number: string | null
+  is_delivery: boolean
   items: { id: string; name: string; price: number; quantity: number }[]
-  notes: string
+  notes: string | null
   total: number
   status: "pending" | "preparing" | "ready" | "completed"
-  timestamp: string
+  created_at: string
 }
 
 type Product = {
@@ -49,12 +52,14 @@ type Product = {
   price: number
   categoryId: string
   image: string
+  display_order?: number
 }
 
 type Category = {
   id: string
   name: string
   image: string
+  display_order?: number
 }
 
 type Theme = {
@@ -115,6 +120,7 @@ export default function AdminPanel() {
     backgroundColor: "#FFFFFF",
     textColor: "#1A1A1A",
   })
+  const [isLoading, setIsLoading] = useState(true)
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "pending" | "preparing" | "ready" | "completed">("all")
@@ -130,7 +136,6 @@ export default function AdminPanel() {
     phoneNumber: "",
   })
 
-  // Form states
   const [productForm, setProductForm] = useState<Omit<Product, "id">>({
     name: "",
     description: "",
@@ -144,17 +149,52 @@ export default function AdminPanel() {
     image: "",
   })
 
-  // Load data from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("restaurant_orders")
-    if (stored) {
-      try {
-        setOrders(JSON.parse(stored))
-      } catch (e) {
-        console.error("Failed to load orders:", e)
-      }
-    }
+  const supabase = createClient()
 
+  useEffect(() => {
+    loadOrders()
+
+    const channel = supabase
+      .channel("orders_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+        },
+        (payload) => {
+          loadOrders()
+        },
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [])
+
+  const loadOrders = async () => {
+    try {
+      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Error loading orders:", error)
+        const stored = localStorage.getItem("restaurant_orders")
+        if (stored) {
+          setOrders(JSON.parse(stored))
+        }
+      } else {
+        setOrders(data || [])
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
     const storedProducts = localStorage.getItem("restaurant_products")
     if (storedProducts) {
       try {
@@ -183,11 +223,6 @@ export default function AdminPanel() {
     }
   }, [])
 
-  // Save data to localStorage
-  useEffect(() => {
-    localStorage.setItem("restaurant_orders", JSON.stringify(orders))
-  }, [orders])
-
   useEffect(() => {
     localStorage.setItem("restaurant_products", JSON.stringify(products))
   }, [products])
@@ -202,19 +237,38 @@ export default function AdminPanel() {
     document.documentElement.style.setProperty("--secondary", theme.secondaryColor)
   }, [theme])
 
-  // Order management
-  const updateOrderStatus = (orderId: string, newStatus: Order["status"]) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) => (order.id === orderId ? { ...order, status: newStatus } : order)),
-    )
+  const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
+    try {
+      const { error } = await supabase
+        .from("orders")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", orderId)
+
+      if (error) {
+        console.error("Error updating order:", error)
+      } else {
+        loadOrders()
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
   }
 
-  const deleteOrder = (orderId: string) => {
-    setOrders((prevOrders) => prevOrders.filter((order) => order.id !== orderId))
-    setDeleteId(null)
+  const deleteOrder = async (orderId: string) => {
+    try {
+      const { error } = await supabase.from("orders").delete().eq("id", orderId)
+
+      if (error) {
+        console.error("Error deleting order:", error)
+      } else {
+        loadOrders()
+        setDeleteId(null)
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
   }
 
-  // Product management
   const handleAddProduct = () => {
     if (editingProduct) {
       setProducts((prev) => prev.map((p) => (p.id === editingProduct.id ? { ...editingProduct, ...productForm } : p)))
@@ -223,6 +277,7 @@ export default function AdminPanel() {
       const newProduct: Product = {
         id: Date.now().toString(),
         ...productForm,
+        display_order: products.length,
       }
       setProducts((prev) => [...prev, newProduct])
     }
@@ -234,7 +289,6 @@ export default function AdminPanel() {
     setProducts((prev) => prev.filter((p) => p.id !== id))
   }
 
-  // Category management
   const handleAddCategory = () => {
     if (editingCategory) {
       setCategories((prev) =>
@@ -245,6 +299,7 @@ export default function AdminPanel() {
       const newCategory: Category = {
         id: Date.now().toString(),
         ...categoryForm,
+        display_order: categories.length,
       }
       setCategories((prev) => [...prev, newCategory])
     }
@@ -257,7 +312,40 @@ export default function AdminPanel() {
     setProducts((prev) => prev.filter((p) => p.categoryId !== id))
   }
 
-  // Render content based on active tab
+  const moveCategory = (id: string, direction: "up" | "down") => {
+    const index = categories.findIndex((c) => c.id === id)
+    if ((direction === "up" && index === 0) || (direction === "down" && index === categories.length - 1)) {
+      return
+    }
+
+    const newCategories = [...categories]
+    const swapIndex = direction === "up" ? index - 1 : index + 1
+    ;[newCategories[index], newCategories[swapIndex]] = [newCategories[swapIndex], newCategories[index]]
+
+    newCategories.forEach((cat, i) => {
+      cat.display_order = i
+    })
+
+    setCategories(newCategories)
+  }
+
+  const moveProduct = (id: string, direction: "up" | "down") => {
+    const index = products.findIndex((p) => p.id === id)
+    if ((direction === "up" && index === 0) || (direction === "down" && index === products.length - 1)) {
+      return
+    }
+
+    const newProducts = [...products]
+    const swapIndex = direction === "up" ? index - 1 : index + 1
+    ;[newProducts[index], newProducts[swapIndex]] = [newProducts[swapIndex], newProducts[index]]
+
+    newProducts.forEach((prod, i) => {
+      prod.display_order = i
+    })
+
+    setProducts(newProducts)
+  }
+
   const renderContent = () => {
     switch (activeTab) {
       case "orders":
@@ -276,7 +364,6 @@ export default function AdminPanel() {
   }
 
   const filteredOrders = filter === "all" ? orders : orders.filter((order) => order.status === filter)
-  const statuses = ["pending", "preparing", "ready", "completed"] as const
 
   const renderOrdersTab = () => (
     <div>
@@ -399,7 +486,13 @@ export default function AdminPanel() {
         </Button>
       </div>
 
-      {filter === "all" && orders.length === 0 ? (
+      {isLoading ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <p className="text-lg font-semibold text-muted-foreground">Yükleniyor...</p>
+          </CardContent>
+        </Card>
+      ) : filter === "all" && orders.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <ShoppingCart className="w-12 h-12 text-muted-foreground mb-2" />
@@ -409,14 +502,16 @@ export default function AdminPanel() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {(filter === "all" ? orders : orders.filter((o) => o.status === filter)).map((order) => (
+          {filteredOrders.map((order) => (
             <Card key={order.id} className="hover:shadow-lg transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <CardTitle className="text-lg">Masa {order.tableNumber}</CardTitle>
+                    <CardTitle className="text-lg">
+                      {order.is_delivery ? `Ön Sipariş - ${order.phone_number}` : `Masa ${order.table_number}`}
+                    </CardTitle>
                     <CardDescription className="text-sm font-medium text-foreground/70">
-                      {order.customerName}
+                      {order.customer_name}
                     </CardDescription>
                   </div>
                   <Badge className={`${getStatusColor(order.status)} flex items-center gap-1`}>
@@ -425,7 +520,7 @@ export default function AdminPanel() {
                   </Badge>
                 </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {new Date(order.timestamp).toLocaleTimeString("tr-TR")}
+                  {new Date(order.created_at).toLocaleTimeString("tr-TR")}
                 </p>
               </CardHeader>
 
@@ -584,7 +679,7 @@ export default function AdminPanel() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {products.map((product) => (
+          {products.map((product, index) => (
             <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               {product.image && (
                 <img
@@ -599,6 +694,24 @@ export default function AdminPanel() {
               </CardHeader>
               <CardContent>
                 <p className="text-lg font-bold text-primary mb-4">₺{product.price.toFixed(2)}</p>
+                <div className="flex gap-2 flex-wrap mb-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => moveProduct(product.id, "up")}
+                    disabled={index === 0}
+                  >
+                    ↑
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => moveProduct(product.id, "down")}
+                    disabled={index === products.length - 1}
+                  >
+                    ↓
+                  </Button>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -696,7 +809,7 @@ export default function AdminPanel() {
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {categories.map((category) => (
+          {categories.map((category, index) => (
             <Card key={category.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               {category.image && (
                 <img
@@ -712,6 +825,24 @@ export default function AdminPanel() {
                 <p className="text-sm text-muted-foreground mb-4">
                   {products.filter((p) => p.categoryId === category.id).length} ürün
                 </p>
+                <div className="flex gap-2 flex-wrap mb-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => moveCategory(category.id, "up")}
+                    disabled={index === 0}
+                  >
+                    ↑
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => moveCategory(category.id, "down")}
+                    disabled={index === categories.length - 1}
+                  >
+                    ↓
+                  </Button>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     size="sm"
@@ -914,7 +1045,6 @@ export default function AdminPanel() {
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Sidebar navigation with menu items and icons */}
       <aside className="w-20 md:w-64 bg-white border-r border-border p-4 flex flex-col">
         <div className="mb-8">
           <div className="flex items-center justify-center md:justify-start gap-2 mb-8">
@@ -969,17 +1099,12 @@ export default function AdminPanel() {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="flex-1 overflow-y-auto">
         <div className="p-4 md:p-8">
-          <div className="max-w-6xl">
-            {/* Tab header with icon and title */}
-            {renderContent()}
-          </div>
+          <div className="max-w-6xl">{renderContent()}</div>
         </div>
       </main>
 
-      {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -994,7 +1119,6 @@ export default function AdminPanel() {
   )
 }
 
-// NavItem component for sidebar navigation
 function NavItem({
   icon,
   label,
