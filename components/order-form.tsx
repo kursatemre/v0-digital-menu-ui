@@ -16,9 +16,10 @@ interface OrderFormProps {
   items: Array<{ id: string; name: string; price: number; quantity: number }>
   onSuccess?: (message: string) => void
   onClearCart?: () => void
+  tenantId?: string
 }
 
-export function OrderForm({ onClose, total, items, onSuccess, onClearCart }: OrderFormProps) {
+export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenantId }: OrderFormProps) {
   const [tableNumber, setTableNumber] = useState("")
   const [name, setName] = useState("")
   const [notes, setNotes] = useState("")
@@ -70,6 +71,7 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart }: Ord
         notes: notes || null,
         total: total,
         status: "pending",
+        tenant_id: tenantId,
         created_at: new Date().toISOString(),
       })
 
