@@ -33,7 +33,7 @@ export function CartDetailView({ items, onClose, onRemoveItem, onUpdateQuantity,
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 flex items-end md:items-center md:justify-center">
-      <div className="bg-gradient-to-br from-white to-primary/5 w-full md:w-full md:max-w-lg rounded-t-2xl md:rounded-2xl shadow-2xl max-h-[85vh] flex flex-col border border-primary/20">
+      <div className="bg-white w-full md:w-full md:max-w-lg rounded-t-2xl md:rounded-2xl shadow-2xl max-h-[85vh] flex flex-col border border-primary/20">
         {/* Header */}
         <div className="border-b border-primary/20 bg-gradient-to-r from-primary/10 to-secondary/10 p-4 sm:p-5 flex items-center justify-between rounded-t-2xl">
           <div>

@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,7 @@ import {
   QrCode,
   Users,
   Key,
+  Bell,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -45,6 +46,15 @@ type Order = {
   total: number
   status: "pending" | "preparing" | "ready" | "completed"
   created_at: string
+}
+
+type WaiterCall = {
+  id: string
+  table_number: string
+  customer_name: string | null
+  status: "pending" | "responded" | "completed"
+  created_at: string
+  updated_at: string
 }
 
 type Product = {
@@ -120,6 +130,30 @@ const getStatusLabel = (status: string) => {
   return labels[status] || status
 }
 
+// Play notification sound (coin sound effect)
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    // Create a coin-like sound with two quick tones
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.05)
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+
+    oscillator.start(audioContext.currentTime)
+    oscillator.stop(audioContext.currentTime + 0.2)
+  } catch (error) {
+    console.error("Error playing notification sound:", error)
+  }
+}
+
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null)
@@ -128,9 +162,10 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
-    "orders" | "products" | "categories" | "appearance" | "qr" | "users" | "settings"
+    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "settings"
   >("orders")
   const [orders, setOrders] = useState<Order[]>([])
+  const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [theme, setTheme] = useState<Theme>({
@@ -193,6 +228,8 @@ export default function AdminPanel() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const previousOrderCountRef = useRef<number>(0)
+  const previousWaiterCallCountRef = useRef<number>(0)
 
   // Check if user is already logged in
   useEffect(() => {
@@ -422,8 +459,9 @@ export default function AdminPanel() {
 
   useEffect(() => {
     loadOrders()
+    loadWaiterCalls()
 
-    const channel = supabase
+    const ordersChannel = supabase
       .channel("orders_changes")
       .on(
         "postgres_changes",
@@ -438,8 +476,24 @@ export default function AdminPanel() {
       )
       .subscribe()
 
+    const waiterCallsChannel = supabase
+      .channel("waiter_calls_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "waiter_calls",
+        },
+        (payload) => {
+          loadWaiterCalls()
+        },
+      )
+      .subscribe()
+
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(ordersChannel)
+      supabase.removeChannel(waiterCallsChannel)
     }
   }, [])
 
@@ -454,12 +508,47 @@ export default function AdminPanel() {
           setOrders(JSON.parse(stored))
         }
       } else {
-        setOrders(data || [])
+        const newOrders = data || []
+        const pendingCount = newOrders.filter((o) => o.status === "pending").length
+
+        // Play sound if new orders arrived
+        if (previousOrderCountRef.current > 0 && pendingCount > previousOrderCountRef.current) {
+          playNotificationSound()
+        }
+
+        previousOrderCountRef.current = pendingCount
+        setOrders(newOrders)
       }
     } catch (err) {
       console.error("Supabase error:", err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadWaiterCalls = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("waiter_calls")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Error loading waiter calls:", error)
+      } else {
+        const newCalls = data || []
+        const pendingCount = newCalls.filter((c) => c.status === "pending").length
+
+        // Play sound if new waiter calls arrived
+        if (previousWaiterCallCountRef.current > 0 && pendingCount > previousWaiterCallCountRef.current) {
+          playNotificationSound()
+        }
+
+        previousWaiterCallCountRef.current = pendingCount
+        setWaiterCalls(newCalls)
+      }
+    } catch (err) {
+      console.error("Error loading waiter calls:", err)
     }
   }
 
@@ -596,6 +685,38 @@ export default function AdminPanel() {
         console.error("Error deleting order:", error)
       } else {
         loadOrders()
+        setDeleteId(null)
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
+  }
+
+  const updateWaiterCallStatus = async (callId: string, newStatus: WaiterCall["status"]) => {
+    try {
+      const { error } = await supabase
+        .from("waiter_calls")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", callId)
+
+      if (error) {
+        console.error("Error updating waiter call:", error)
+      } else {
+        loadWaiterCalls()
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
+  }
+
+  const deleteWaiterCall = async (callId: string) => {
+    try {
+      const { error } = await supabase.from("waiter_calls").delete().eq("id", callId)
+
+      if (error) {
+        console.error("Error deleting waiter call:", error)
+      } else {
+        loadWaiterCalls()
         setDeleteId(null)
       }
     } catch (err) {
@@ -749,6 +870,8 @@ export default function AdminPanel() {
     switch (activeTab) {
       case "orders":
         return renderOrdersTab()
+      case "waiter-calls":
+        return renderWaiterCallsTab()
       case "products":
         return renderProductsTab()
       case "categories":
@@ -972,6 +1095,123 @@ export default function AdminPanel() {
           ))}
         </div>
       )}
+    </div>
+  )
+
+  const renderWaiterCallsTab = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Bell className="w-6 h-6 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">Garson Çağrıları</h2>
+            <p className="text-sm text-muted-foreground">Müşteri garson çağrılarını görüntüleyin ve yönetin</p>
+          </div>
+        </div>
+      </div>
+
+      {waiterCalls.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Bell className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-center">Henüz garson çağrısı bulunmamaktadır.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {waiterCalls.map((call) => (
+            <Card key={call.id} className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        className={
+                          call.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : call.status === "responded"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                        }
+                      >
+                        {call.status === "pending"
+                          ? "Beklemede"
+                          : call.status === "responded"
+                            ? "Yanıtlandı"
+                            : "Tamamlandı"}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(call.created_at).toLocaleString("tr-TR")}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">Masa:</span>
+                        <span className="text-lg font-bold text-primary">{call.table_number}</span>
+                      </div>
+                      {call.customer_name && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Müşteri:</span>
+                          <span>{call.customer_name}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 flex-wrap">
+                      {call.status === "pending" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateWaiterCallStatus(call.id, "responded")}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Yanıtla
+                        </Button>
+                      )}
+                      {call.status === "responded" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateWaiterCallStatus(call.id, "completed")}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Tamamla
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeleteId(call.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Sil
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Garson Çağrısını Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu garson çağrısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteId && deleteWaiterCall(deleteId)} className="bg-red-600">
+              Sil
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 
@@ -1820,6 +2060,12 @@ export default function AdminPanel() {
             label="Siparişler"
             active={activeTab === "orders"}
             onClick={() => setActiveTab("orders")}
+          />
+          <NavItem
+            icon={<Bell className="w-5 h-5" />}
+            label="Garson Çağrıları"
+            active={activeTab === "waiter-calls"}
+            onClick={() => setActiveTab("waiter-calls")}
           />
           <NavItem
             icon={<Layers className="w-5 h-5" />}

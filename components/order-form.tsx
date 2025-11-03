@@ -101,7 +101,7 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart }: Ord
   if (successMessage) {
     return (
       <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div className="bg-gradient-to-br from-green-50 to-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center space-y-4 border-2 border-green-200 animate-in zoom-in duration-300">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center space-y-4 border-2 border-green-200 animate-in zoom-in duration-300">
           <div className="flex justify-center mb-4">
             <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
               <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -126,7 +126,7 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart }: Ord
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-gradient-to-br from-white to-primary/5 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-primary/20">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-primary/20">
         {/* Header */}
         <div className="border-b border-primary/20 bg-gradient-to-r from-primary/10 to-secondary/10 p-4 sm:p-5 flex items-center justify-between sticky top-0 rounded-t-2xl z-10">
           <div>
