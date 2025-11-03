@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,9 +15,10 @@ interface OrderFormProps {
   total: number
   items: Array<{ id: string; name: string; price: number; quantity: number }>
   onSuccess?: (message: string) => void
+  onClearCart?: () => void
 }
 
-export function OrderForm({ onClose, total, items, onSuccess }: OrderFormProps) {
+export function OrderForm({ onClose, total, items, onSuccess, onClearCart }: OrderFormProps) {
   const [tableNumber, setTableNumber] = useState("")
   const [name, setName] = useState("")
   const [notes, setNotes] = useState("")
@@ -27,6 +28,14 @@ export function OrderForm({ onClose, total, items, onSuccess }: OrderFormProps) 
   const [isLoading, setIsLoading] = useState(false)
   const [successMessage, setSuccessMessage] = useState("")
   const supabase = createClient()
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [])
 
   const validate = () => {
     const newErrors: Record<string, string> = {}
@@ -74,11 +83,12 @@ export function OrderForm({ onClose, total, items, onSuccess }: OrderFormProps) 
           : `Siparişiniz başarıyla gönderildi! Masa: ${tableNumber}`
         setSuccessMessage(successMsg)
         if (onSuccess) onSuccess(successMsg)
+        if (onClearCart) onClearCart()
 
         setTimeout(() => {
           setSuccessMessage("")
           onClose()
-        }, 2000)
+        }, 2500)
       }
     } catch (err) {
       console.error("[v0] Unexpected error:", err)
@@ -90,90 +100,122 @@ export function OrderForm({ onClose, total, items, onSuccess }: OrderFormProps) 
 
   if (successMessage) {
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-8 text-center space-y-4">
+      <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 text-center space-y-4 border-2 border-green-200 animate-in zoom-in duration-300">
           <div className="flex justify-center mb-4">
-            <svg className="w-16 h-16 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
-              />
-            </svg>
+            <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+              <svg className="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
           </div>
-          <h2 className="text-2xl font-bold text-green-600">Sipariş Başarılı!</h2>
-          <p className="text-foreground text-lg">{successMessage}</p>
-          <p className="text-sm text-muted-foreground">Form kapatılıyor...</p>
+          <h2 className="text-3xl font-bold text-green-700">Başarılı! 🎉</h2>
+          <p className="text-foreground text-lg leading-relaxed">{successMessage}</p>
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <p>Sipariş mutfağa iletildi</p>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border border-primary/20">
         {/* Header */}
-        <div className="border-b border-border p-4 flex items-center justify-between sticky top-0 bg-white">
-          <h2 className="text-2xl font-bold text-primary">Sipariş Formu</h2>
-          <button onClick={onClose} className="p-2 hover:bg-muted rounded-lg transition-colors">
+        <div className="border-b border-primary/20 bg-gradient-to-r from-primary/10 to-secondary/10 p-4 sm:p-5 flex items-center justify-between sticky top-0 rounded-t-2xl z-10">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-primary">Sipariş Bilgileri</h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Formu doldurun</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/50 rounded-full transition-all active:scale-95"
+            aria-label="Kapat"
+          >
             <X size={24} className="text-foreground" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6 space-y-6">
+        <div className="p-5 sm:p-6 space-y-5">
           {/* Delivery/Dine-in toggle */}
-          <div className="bg-secondary/20 border border-secondary/30 rounded-lg p-4">
-            <div className="flex gap-4 mb-3">
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30 rounded-xl p-4">
+            <div className="flex gap-3 mb-3">
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" checked={!isDelivery} onChange={() => setIsDelivery(false)} />
-                <span className="text-sm font-medium">Restoran İçinde</span>
+                <input
+                  type="radio"
+                  checked={!isDelivery}
+                  onChange={() => setIsDelivery(false)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium">🏠 Restoran İçinde</span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
-                <input type="radio" checked={isDelivery} onChange={() => setIsDelivery(true)} />
-                <span className="text-sm font-medium">Dışarıdan Ön Sipariş</span>
+                <input
+                  type="radio"
+                  checked={isDelivery}
+                  onChange={() => setIsDelivery(true)}
+                  className="w-4 h-4"
+                />
+                <span className="text-sm font-medium">📞 Ön Sipariş</span>
               </label>
             </div>
-            <p className="text-sm text-foreground">
-              <strong>Not:</strong> Ödeme adımı atlanmıştır. Siparişiniz doğrudan mutfağa iletilecek ve sunulacaktır.
+            <p className="text-xs text-foreground/80">
+              💡 Ödeme adımı atlanmıştır. Siparişiniz doğrudan mutfağa iletilecektir.
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isDelivery ? (
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Telefon Numarası *</label>
+                <label className="block text-sm font-bold text-foreground mb-2">
+                  📱 Telefon Numarası <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="tel"
-                  placeholder="Örn: 5551234567"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="5551234567"
                   value={phoneNumber}
                   onChange={(e) => {
                     setPhoneNumber(e.target.value)
                     if (errors.phoneNumber) setErrors({ ...errors, phoneNumber: "" })
                   }}
-                  className="w-full"
+                  className="w-full text-lg"
                 />
-                {errors.phoneNumber && <p className="text-destructive text-sm mt-1">{errors.phoneNumber}</p>}
+                {errors.phoneNumber && <p className="text-red-600 text-sm mt-1">⚠️ {errors.phoneNumber}</p>}
               </div>
             ) : (
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Masa Numarası *</label>
+                <label className="block text-sm font-bold text-foreground mb-2">
+                  🪑 Masa Numarası <span className="text-red-500">*</span>
+                </label>
                 <Input
                   type="number"
-                  placeholder="Örn: 5"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="5"
                   value={tableNumber}
                   onChange={(e) => {
                     setTableNumber(e.target.value)
                     if (errors.tableNumber) setErrors({ ...errors, tableNumber: "" })
                   }}
-                  className="w-full"
+                  className="w-full text-lg"
                 />
-                {errors.tableNumber && <p className="text-destructive text-sm mt-1">{errors.tableNumber}</p>}
+                {errors.tableNumber && <p className="text-red-600 text-sm mt-1">⚠️ {errors.tableNumber}</p>}
               </div>
             )}
 
             <div>
-              <label className="block text-sm font-bold text-foreground mb-2">İsim Soyisim *</label>
+              <label className="block text-sm font-bold text-foreground mb-2">
+                👤 İsim Soyisim <span className="text-red-500">*</span>
+              </label>
               <Input
                 type="text"
                 placeholder="Adınız ve soyadınız"
@@ -184,11 +226,11 @@ export function OrderForm({ onClose, total, items, onSuccess }: OrderFormProps) 
                 }}
                 className="w-full"
               />
-              {errors.name && <p className="text-destructive text-sm mt-1">{errors.name}</p>}
+              {errors.name && <p className="text-red-600 text-sm mt-1">⚠️ {errors.name}</p>}
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-foreground mb-2">Özel Not (İsteğe bağlı)</label>
+              <label className="block text-sm font-bold text-foreground mb-2">📝 Özel Not (İsteğe bağlı)</label>
               <Textarea
                 placeholder="Örn: Acısız hazırla, az tuz vb..."
                 value={notes}
@@ -197,21 +239,32 @@ export function OrderForm({ onClose, total, items, onSuccess }: OrderFormProps) 
               />
             </div>
 
-            <div className="bg-muted rounded-lg p-4 border border-border">
+            <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30 rounded-xl p-4">
               <div className="flex justify-between items-center">
-                <span className="text-foreground font-bold">Toplam Tutar:</span>
-                <span className="text-2xl font-bold text-primary">₺{total.toFixed(2)}</span>
+                <span className="text-foreground font-bold">💰 Toplam Tutar:</span>
+                <span className="text-2xl sm:text-3xl font-bold text-primary">₺{total.toFixed(2)}</span>
               </div>
             </div>
 
-            {errors.submit && <p className="text-destructive text-sm">{errors.submit}</p>}
+            {errors.submit && (
+              <div className="bg-red-50 border border-red-200 text-red-700 p-3 rounded-lg text-sm">
+                ⚠️ {errors.submit}
+              </div>
+            )}
 
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-primary text-primary-foreground hover:bg-primary/90 py-3 text-base font-bold"
+              className="w-full bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-98 rounded-xl"
             >
-              {isLoading ? "Gönderiliyor..." : "Siparişi Onayla ve Gönder"}
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  Gönderiliyor...
+                </>
+              ) : (
+                <>✅ Siparişi Onayla ve Gönder</>
+              )}
             </Button>
           </form>
         </div>

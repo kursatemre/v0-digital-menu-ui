@@ -5,8 +5,10 @@ import { MenuHeader } from "@/components/menu-header"
 import { CartButton } from "@/components/cart-button"
 import { CartDetailView } from "@/components/cart-detail-view"
 import { OrderForm } from "@/components/order-form"
-import { ChevronDown, ChevronUp } from "lucide-react"
+import { ChevronDown, ChevronUp, Bell, X } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 
 type CartItem = {
   id: string
@@ -35,6 +37,10 @@ export default function MenuPage() {
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
   const [orderFormOpen, setOrderFormOpen] = useState(false)
+  const [waiterCallOpen, setWaiterCallOpen] = useState(false)
+  const [waiterTableNumber, setWaiterTableNumber] = useState("")
+  const [waiterName, setWaiterName] = useState("")
+  const [waiterCallLoading, setWaiterCallLoading] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
@@ -49,6 +55,24 @@ export default function MenuPage() {
   })
 
   const supabase = createClient()
+
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem("restaurant_cart")
+    if (savedCart) {
+      try {
+        const parsedCart = JSON.parse(savedCart)
+        setCart(parsedCart)
+      } catch (e) {
+        console.error("Failed to load cart from localStorage:", e)
+      }
+    }
+  }, [])
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("restaurant_cart", JSON.stringify(cart))
+  }, [cart])
 
   useEffect(() => {
     const loadData = async () => {
@@ -167,6 +191,56 @@ export default function MenuPage() {
     }
   }
 
+  const clearCart = () => {
+    setCart([])
+  }
+
+  const handleOrderSuccess = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
+  }
+
+  const handleWaiterCall = async () => {
+    if (!waiterTableNumber.trim()) {
+      setToastMessage("Lütfen masa numaranızı girin")
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 2000)
+      return
+    }
+
+    setWaiterCallLoading(true)
+    try {
+      const { error } = await supabase.from("waiter_calls").insert({
+        table_number: waiterTableNumber,
+        customer_name: waiterName || null,
+        status: "pending",
+        created_at: new Date().toISOString(),
+      })
+
+      if (error) {
+        console.error("Error calling waiter:", error)
+        setToastMessage("Garson çağırma başarısız oldu. Lütfen tekrar deneyin.")
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
+      } else {
+        setToastMessage(`Garson çağrıldı! Masa: ${waiterTableNumber}`)
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
+        setWaiterCallOpen(false)
+        setWaiterTableNumber("")
+        setWaiterName("")
+      }
+    } catch (err) {
+      console.error("Error calling waiter:", err)
+      setToastMessage("Bir hata oluştu. Lütfen tekrar deneyin.")
+      setShowToast(true)
+      setTimeout(() => setShowToast(false), 3000)
+    } finally {
+      setWaiterCallLoading(false)
+    }
+  }
+
   const toggleCategory = (categoryId: string) => {
     setExpandedCategories((prev) => {
       const newSet = new Set(prev)
@@ -211,6 +285,19 @@ export default function MenuPage() {
   return (
     <div className="min-h-screen bg-background">
       <MenuHeader />
+
+      {/* Waiter Call Button */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+          <button
+            onClick={() => setWaiterCallOpen(true)}
+            className="w-full bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
+          >
+            <Bell className="w-5 h-5" />
+            <span>Garson Çağır</span>
+          </button>
+        </div>
+      </div>
 
       {showToast && (
         <div className="fixed top-4 right-4 z-40 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -368,7 +455,84 @@ export default function MenuPage() {
       )}
 
       {orderFormOpen && (
-        <OrderForm onClose={() => setOrderFormOpen(false)} onSubmit={handlePlaceOrder} total={totalPrice} />
+        <OrderForm
+          onClose={() => setOrderFormOpen(false)}
+          total={totalPrice}
+          items={cart}
+          onSuccess={handleOrderSuccess}
+          onClearCart={clearCart}
+        />
+      )}
+
+      {/* Waiter Call Modal */}
+      {waiterCallOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-primary/20">
+            {/* Header */}
+            <div className="border-b border-primary/20 bg-gradient-to-r from-secondary/10 to-primary/10 p-4 sm:p-5 flex items-center justify-between rounded-t-2xl">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-bold text-primary">Garson Çağır</h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Masa numaranızı girin</p>
+              </div>
+              <button
+                onClick={() => setWaiterCallOpen(false)}
+                className="p-2 hover:bg-white/50 rounded-full transition-all active:scale-95"
+                aria-label="Kapat"
+              >
+                <X size={24} className="text-foreground" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-5 sm:p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-2">
+                  🪑 Masa Numarası <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  placeholder="5"
+                  value={waiterTableNumber}
+                  onChange={(e) => setWaiterTableNumber(e.target.value)}
+                  className="w-full text-lg"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-bold text-foreground mb-2">
+                  👤 İsim (İsteğe bağlı)
+                </label>
+                <Input
+                  type="text"
+                  placeholder="Adınız"
+                  value={waiterName}
+                  onChange={(e) => setWaiterName(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <Button
+                onClick={handleWaiterCall}
+                disabled={waiterCallLoading}
+                className="w-full bg-gradient-to-r from-secondary to-secondary/90 text-white hover:from-secondary/90 hover:to-secondary/80 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-98 rounded-xl"
+              >
+                {waiterCallLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    Gönderiliyor...
+                  </>
+                ) : (
+                  <>
+                    <Bell className="w-5 h-5 mr-2" />
+                    Garson Çağır
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

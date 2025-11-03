@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -28,6 +28,7 @@ import {
   QrCode,
   Users,
   Key,
+  Bell,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -45,6 +46,15 @@ type Order = {
   total: number
   status: "pending" | "preparing" | "ready" | "completed"
   created_at: string
+}
+
+type WaiterCall = {
+  id: string
+  table_number: string
+  customer_name: string | null
+  status: "pending" | "responded" | "completed"
+  created_at: string
+  updated_at: string
 }
 
 type Product = {
@@ -120,6 +130,30 @@ const getStatusLabel = (status: string) => {
   return labels[status] || status
 }
 
+// Play notification sound (coin sound effect)
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    // Create a coin-like sound with two quick tones
+    oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
+    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.05)
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+
+    oscillator.start(audioContext.currentTime)
+    oscillator.stop(audioContext.currentTime + 0.2)
+  } catch (error) {
+    console.error("Error playing notification sound:", error)
+  }
+}
+
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null)
@@ -128,9 +162,10 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
-    "orders" | "products" | "categories" | "appearance" | "qr" | "users" | "settings"
+    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "settings"
   >("orders")
   const [orders, setOrders] = useState<Order[]>([])
+  const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [theme, setTheme] = useState<Theme>({
@@ -175,6 +210,15 @@ export default function AdminPanel() {
     logo: "",
   })
 
+  const [qrSettings, setQrSettings] = useState({
+    url: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
+    size: 300,
+    bgColor: "#FFFFFF",
+    fgColor: "#000000",
+    logoUrl: "",
+    logoSize: 60,
+  })
+
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
   const [showUserForm, setShowUserForm] = useState(false)
   const [userForm, setUserForm] = useState({
@@ -193,6 +237,8 @@ export default function AdminPanel() {
 
   const [isSaving, setIsSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
+  const previousOrderCountRef = useRef<number>(0)
+  const previousWaiterCallCountRef = useRef<number>(0)
 
   // Check if user is already logged in
   useEffect(() => {
@@ -403,9 +449,13 @@ export default function AdminPanel() {
       // Save header settings
       await supabase.from("settings").upsert({ key: "header", value: headerSettings }, { onConflict: "key" })
 
+      // Save QR settings
+      await supabase.from("settings").upsert({ key: "qr", value: qrSettings }, { onConflict: "key" })
+
       // Update localStorage
       localStorage.setItem("restaurant_theme", JSON.stringify(theme))
       localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
+      localStorage.setItem("restaurant_qr", JSON.stringify(qrSettings))
 
       // Apply theme to CSS variables
       document.documentElement.style.setProperty("--primary", theme.primaryColor)
@@ -422,8 +472,9 @@ export default function AdminPanel() {
 
   useEffect(() => {
     loadOrders()
+    loadWaiterCalls()
 
-    const channel = supabase
+    const ordersChannel = supabase
       .channel("orders_changes")
       .on(
         "postgres_changes",
@@ -438,8 +489,24 @@ export default function AdminPanel() {
       )
       .subscribe()
 
+    const waiterCallsChannel = supabase
+      .channel("waiter_calls_changes")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "waiter_calls",
+        },
+        (payload) => {
+          loadWaiterCalls()
+        },
+      )
+      .subscribe()
+
     return () => {
-      supabase.removeChannel(channel)
+      supabase.removeChannel(ordersChannel)
+      supabase.removeChannel(waiterCallsChannel)
     }
   }, [])
 
@@ -454,12 +521,47 @@ export default function AdminPanel() {
           setOrders(JSON.parse(stored))
         }
       } else {
-        setOrders(data || [])
+        const newOrders = data || []
+        const pendingCount = newOrders.filter((o) => o.status === "pending").length
+
+        // Play sound if new orders arrived
+        if (previousOrderCountRef.current > 0 && pendingCount > previousOrderCountRef.current) {
+          playNotificationSound()
+        }
+
+        previousOrderCountRef.current = pendingCount
+        setOrders(newOrders)
       }
     } catch (err) {
       console.error("Supabase error:", err)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadWaiterCalls = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("waiter_calls")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Error loading waiter calls:", error)
+      } else {
+        const newCalls = data || []
+        const pendingCount = newCalls.filter((c) => c.status === "pending").length
+
+        // Play sound if new waiter calls arrived
+        if (previousWaiterCallCountRef.current > 0 && pendingCount > previousWaiterCallCountRef.current) {
+          playNotificationSound()
+        }
+
+        previousWaiterCallCountRef.current = pendingCount
+        setWaiterCalls(newCalls)
+      }
+    } catch (err) {
+      console.error("Error loading waiter calls:", err)
     }
   }
 
@@ -538,12 +640,24 @@ export default function AdminPanel() {
         if (headerData?.value) {
           setHeaderSettings(headerData.value)
         }
+
+        const { data: qrData, error: qrError } = await supabase
+          .from("settings")
+          .select("*")
+          .eq("key", "qr")
+          .single()
+
+        if (qrData?.value) {
+          setQrSettings(qrData.value)
+        }
       } catch (error) {
         console.error("Error loading settings:", error)
         const storedTheme = localStorage.getItem("restaurant_theme")
         const storedHeader = localStorage.getItem("restaurant_header")
+        const storedQr = localStorage.getItem("restaurant_qr")
         if (storedTheme) setTheme(JSON.parse(storedTheme))
         if (storedHeader) setHeaderSettings(JSON.parse(storedHeader))
+        if (storedQr) setQrSettings(JSON.parse(storedQr))
       }
     }
 
@@ -596,6 +710,38 @@ export default function AdminPanel() {
         console.error("Error deleting order:", error)
       } else {
         loadOrders()
+        setDeleteId(null)
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
+  }
+
+  const updateWaiterCallStatus = async (callId: string, newStatus: WaiterCall["status"]) => {
+    try {
+      const { error } = await supabase
+        .from("waiter_calls")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", callId)
+
+      if (error) {
+        console.error("Error updating waiter call:", error)
+      } else {
+        loadWaiterCalls()
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
+  }
+
+  const deleteWaiterCall = async (callId: string) => {
+    try {
+      const { error } = await supabase.from("waiter_calls").delete().eq("id", callId)
+
+      if (error) {
+        console.error("Error deleting waiter call:", error)
+      } else {
+        loadWaiterCalls()
         setDeleteId(null)
       }
     } catch (err) {
@@ -749,6 +895,8 @@ export default function AdminPanel() {
     switch (activeTab) {
       case "orders":
         return renderOrdersTab()
+      case "waiter-calls":
+        return renderWaiterCallsTab()
       case "products":
         return renderProductsTab()
       case "categories":
@@ -972,6 +1120,123 @@ export default function AdminPanel() {
           ))}
         </div>
       )}
+    </div>
+  )
+
+  const renderWaiterCallsTab = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Bell className="w-6 h-6 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">Garson Çağrıları</h2>
+            <p className="text-sm text-muted-foreground">Müşteri garson çağrılarını görüntüleyin ve yönetin</p>
+          </div>
+        </div>
+      </div>
+
+      {waiterCalls.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Bell className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-center">Henüz garson çağrısı bulunmamaktadır.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {waiterCalls.map((call) => (
+            <Card key={call.id} className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Badge
+                        className={
+                          call.status === "pending"
+                            ? "bg-yellow-100 text-yellow-800"
+                            : call.status === "responded"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-gray-100 text-gray-800"
+                        }
+                      >
+                        {call.status === "pending"
+                          ? "Beklemede"
+                          : call.status === "responded"
+                            ? "Yanıtlandı"
+                            : "Tamamlandı"}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(call.created_at).toLocaleString("tr-TR")}
+                      </span>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">Masa:</span>
+                        <span className="text-lg font-bold text-primary">{call.table_number}</span>
+                      </div>
+                      {call.customer_name && (
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold">Müşteri:</span>
+                          <span>{call.customer_name}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex gap-2 flex-wrap">
+                      {call.status === "pending" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateWaiterCallStatus(call.id, "responded")}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Yanıtla
+                        </Button>
+                      )}
+                      {call.status === "responded" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateWaiterCallStatus(call.id, "completed")}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Tamamla
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => setDeleteId(call.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Sil
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Garson Çağrısını Sil</AlertDialogTitle>
+            <AlertDialogDescription>
+              Bu garson çağrısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex gap-2 justify-end">
+            <AlertDialogCancel>İptal</AlertDialogCancel>
+            <AlertDialogAction onClick={() => deleteId && deleteWaiterCall(deleteId)} className="bg-red-600">
+              Sil
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 
@@ -1523,52 +1788,219 @@ export default function AdminPanel() {
     </div>
   )
 
-  const renderQRTab = () => (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
-        <QrCode className="w-6 h-6 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold">QR Kod</h2>
-          <p className="text-sm text-muted-foreground">Müşteriler bu QR kodu tarayarak menüye erişebilir</p>
+  const renderQRTab = () => {
+    const downloadQRCode = () => {
+      const svg = document.getElementById("qr-code-svg")
+      if (!svg) return
+
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+
+      const svgData = new XMLSerializer().serializeToString(svg)
+      const img = new Image()
+      img.onload = () => {
+        canvas.width = qrSettings.size
+        canvas.height = qrSettings.size
+        ctx.drawImage(img, 0, 0)
+        const link = document.createElement("a")
+        link.download = "menu-qr-code.png"
+        link.href = canvas.toDataURL("image/png")
+        link.click()
+      }
+      img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+    }
+
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <QrCode className="w-6 h-6 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">QR Kod Ayarları</h2>
+            <p className="text-sm text-muted-foreground">QR kodunuzu özelleştirin ve indirin</p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* QR Code Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Özelleştirme</CardTitle>
+              <CardDescription>QR kod görünümünü ayarlayın</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">QR Kod URL</label>
+                <Input
+                  value={qrSettings.url}
+                  onChange={(e) => setQrSettings({ ...qrSettings, url: e.target.value })}
+                  placeholder="https://example.com"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Müşterilerin yönlendirileceği adres</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Boyut: {qrSettings.size}px</label>
+                <input
+                  type="range"
+                  min="200"
+                  max="500"
+                  step="10"
+                  value={qrSettings.size}
+                  onChange={(e) => setQrSettings({ ...qrSettings, size: Number(e.target.value) })}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Ön Plan Rengi</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={qrSettings.fgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, fgColor: e.target.value })}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={qrSettings.fgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, fgColor: e.target.value })}
+                      placeholder="#000000"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Arka Plan Rengi</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={qrSettings.bgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, bgColor: e.target.value })}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={qrSettings.bgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, bgColor: e.target.value })}
+                      placeholder="#FFFFFF"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Logo (Opsiyonel)</label>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Logo Yükle</label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const url = await uploadImage(file)
+                          if (url) {
+                            setQrSettings({ ...qrSettings, logoUrl: url })
+                          }
+                        }
+                      }}
+                      disabled={uploadingImage}
+                      className="cursor-pointer"
+                    />
+                    {uploadingImage && <p className="text-xs text-muted-foreground mt-1">Yükleniyor...</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">veya URL Gir</label>
+                    <Input
+                      value={qrSettings.logoUrl}
+                      onChange={(e) => setQrSettings({ ...qrSettings, logoUrl: e.target.value })}
+                      placeholder="Logo URL"
+                    />
+                  </div>
+                </div>
+                {qrSettings.logoUrl && (
+                  <>
+                    <img src={qrSettings.logoUrl} alt="logo" className="mt-2 h-16 object-contain rounded" />
+                    <div className="mt-2">
+                      <label className="text-sm font-medium mb-2 block">Logo Boyutu: {qrSettings.logoSize}px</label>
+                      <input
+                        type="range"
+                        min="40"
+                        max="100"
+                        step="5"
+                        value={qrSettings.logoSize}
+                        onChange={(e) => setQrSettings({ ...qrSettings, logoSize: Number(e.target.value) })}
+                        className="w-full"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <Button onClick={saveAppearanceSettings} disabled={isSaving} className="w-full gap-2">
+                {isSaving ? "Kaydediliyor..." : "Ayarları Kaydet"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* QR Code Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Önizleme</CardTitle>
+              <CardDescription>QR kodunuzun görünümü</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className="p-6 rounded-lg border-2 border-primary"
+                  style={{ backgroundColor: qrSettings.bgColor }}
+                >
+                  <QRCodeSVG
+                    id="qr-code-svg"
+                    value={qrSettings.url}
+                    size={qrSettings.size}
+                    level="H"
+                    bgColor={qrSettings.bgColor}
+                    fgColor={qrSettings.fgColor}
+                    includeMargin={true}
+                    imageSettings={
+                      qrSettings.logoUrl
+                        ? {
+                            src: qrSettings.logoUrl,
+                            height: qrSettings.logoSize,
+                            width: qrSettings.logoSize,
+                            excavate: true,
+                          }
+                        : undefined
+                    }
+                  />
+                </div>
+
+                <div className="text-center space-y-4 w-full">
+                  <div className="bg-muted p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Hedef URL:</p>
+                    <p className="text-sm font-mono break-all">{qrSettings.url}</p>
+                  </div>
+
+                  <Button onClick={downloadQRCode} className="w-full gap-2">
+                    <QrCode className="w-4 h-4" />
+                    QR Kodu İndir (PNG)
+                  </Button>
+
+                  <div className="text-xs text-muted-foreground">
+                    <p>💡 İpucu: QR kodu A4 kağıda bastırabilir veya dijital ekranlarda gösterebilirsiniz.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center gap-6">
-            <div className="bg-white p-6 rounded-lg border-2 border-primary">
-              <QRCodeSVG
-                value={typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}
-                size={300}
-                level="H"
-                includeMargin={true}
-              />
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                URL: {typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}
-              </p>
-              <Button
-                onClick={() => {
-                  const canvas = document.querySelector("canvas")
-                  if (canvas) {
-                    const link = document.createElement("a")
-                    link.download = "menu-qr-code.png"
-                    link.href = canvas.toDataURL()
-                    link.click()
-                  }
-                }}
-                className="gap-2"
-              >
-                <QrCode className="w-4 h-4" />
-                QR Kodu İndir
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    )
+  }
 
   const renderUsersTab = () => (
     <div>
@@ -1820,6 +2252,12 @@ export default function AdminPanel() {
             label="Siparişler"
             active={activeTab === "orders"}
             onClick={() => setActiveTab("orders")}
+          />
+          <NavItem
+            icon={<Bell className="w-5 h-5" />}
+            label="Garson Çağrıları"
+            active={activeTab === "waiter-calls"}
+            onClick={() => setActiveTab("waiter-calls")}
           />
           <NavItem
             icon={<Layers className="w-5 h-5" />}
