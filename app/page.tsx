@@ -50,6 +50,24 @@ export default function MenuPage() {
 
   const supabase = createClient()
 
+  // Load cart from localStorage on mount
+  useEffect(() => {
+    const savedCart = localStorage.getItem("restaurant_cart")
+    if (savedCart) {
+      try {
+        const parsedCart = JSON.parse(savedCart)
+        setCart(parsedCart)
+      } catch (e) {
+        console.error("Failed to load cart from localStorage:", e)
+      }
+    }
+  }, [])
+
+  // Save cart to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem("restaurant_cart", JSON.stringify(cart))
+  }, [cart])
+
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -165,6 +183,16 @@ export default function MenuPage() {
     } else {
       setCart((prevCart) => prevCart.map((item) => (item.id === productId ? { ...item, quantity } : item)))
     }
+  }
+
+  const clearCart = () => {
+    setCart([])
+  }
+
+  const handleOrderSuccess = (message: string) => {
+    setToastMessage(message)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 3000)
   }
 
   const toggleCategory = (categoryId: string) => {
@@ -368,7 +396,13 @@ export default function MenuPage() {
       )}
 
       {orderFormOpen && (
-        <OrderForm onClose={() => setOrderFormOpen(false)} onSubmit={handlePlaceOrder} total={totalPrice} />
+        <OrderForm
+          onClose={() => setOrderFormOpen(false)}
+          total={totalPrice}
+          items={cart}
+          onSuccess={handleOrderSuccess}
+          onClearCart={clearCart}
+        />
       )}
     </div>
   )
