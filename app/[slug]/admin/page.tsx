@@ -532,39 +532,14 @@ export default function AdminPanel() {
     loadOrders()
     loadWaiterCalls()
 
-    const ordersChannel = supabase
-      .channel("orders_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-        },
-        (payload) => {
-          loadOrders()
-        },
-      )
-      .subscribe()
-
-    const waiterCallsChannel = supabase
-      .channel("waiter_calls_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "waiter_calls",
-        },
-        (payload) => {
-          loadWaiterCalls()
-        },
-      )
-      .subscribe()
+    // Polling: Her 5 saniyede bir kontrol et (Realtime yok)
+    const pollingInterval = setInterval(() => {
+      loadOrders()
+      loadWaiterCalls()
+    }, 5000) // 5 saniye
 
     return () => {
-      supabase.removeChannel(ordersChannel)
-      supabase.removeChannel(waiterCallsChannel)
+      clearInterval(pollingInterval)
     }
   }, [tenantId])
 
@@ -2460,7 +2435,7 @@ export default function AdminPanel() {
 
         <div className="pt-4 border-t space-y-2">
           <a
-            href="/"
+            href={`/${slug}`}
             className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <span className="hidden md:block">← Menüye Dön</span>
