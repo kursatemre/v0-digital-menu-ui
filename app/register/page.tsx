@@ -84,6 +84,161 @@ export default function RegisterPage() {
     return newErrors
   }
 
+  const createDemoData = async (tenantId: string) => {
+    try {
+      // Create demo categories
+      const { data: categories, error: categoriesError } = await supabase
+        .from("categories")
+        .insert([
+          {
+            name: "Başlangıçlar",
+            image: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?w=400",
+            display_order: 0,
+            tenant_id: tenantId,
+          },
+          {
+            name: "Ana Yemekler",
+            image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400",
+            display_order: 1,
+            tenant_id: tenantId,
+          },
+          {
+            name: "İçecekler",
+            image: "https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400",
+            display_order: 2,
+            tenant_id: tenantId,
+          },
+          {
+            name: "Tatlılar",
+            image: "https://images.unsplash.com/photo-1551024506-0bccd828d307?w=400",
+            display_order: 3,
+            tenant_id: tenantId,
+          },
+        ])
+        .select()
+
+      if (categoriesError) {
+        console.error("Categories creation error:", categoriesError)
+        return
+      }
+
+      // Create demo products
+      if (categories && categories.length === 4) {
+        await supabase.from("products").insert([
+          // Başlangıçlar
+          {
+            name: "Mercimek Çorbası",
+            description: "Geleneksel Türk usulü mercimek çorbası",
+            price: 45,
+            category_id: categories[0].id,
+            image: "https://images.unsplash.com/photo-1547592166-23ac45744acd?w=400",
+            display_order: 0,
+            tenant_id: tenantId,
+            badge: "populer",
+          },
+          {
+            name: "Humus",
+            description: "Taze nohuttan hazırlanan ev yapımı humus",
+            price: 65,
+            category_id: categories[0].id,
+            image: "https://images.unsplash.com/photo-1603588558857-b9c3c5ce8778?w=400",
+            display_order: 1,
+            tenant_id: tenantId,
+          },
+          // Ana Yemekler
+          {
+            name: "Kuzu Şiş",
+            description: "Mangalda közlenmiş kuzu eti, yanında pilav ve salata",
+            price: 220,
+            category_id: categories[1].id,
+            image: "https://images.unsplash.com/photo-1529692236671-f1f6cf9683ba?w=400",
+            display_order: 0,
+            tenant_id: tenantId,
+            badge: "sefin_onerisi",
+          },
+          {
+            name: "Izgara Tavuk",
+            description: "Marine edilmiş tavuk göğsü, sebzeli pilav ile",
+            price: 180,
+            category_id: categories[1].id,
+            image: "https://images.unsplash.com/photo-1598103442097-8b74394b95c6?w=400",
+            display_order: 1,
+            tenant_id: tenantId,
+          },
+          {
+            name: "Mantı",
+            description: "El açması mantı, yoğurt ve tereyağlı sos ile",
+            price: 150,
+            category_id: categories[1].id,
+            image: "https://images.unsplash.com/photo-1626074353765-517a681e40be?w=400",
+            display_order: 2,
+            tenant_id: tenantId,
+          },
+          // İçecekler
+          {
+            name: "Taze Sıkılmış Portakal Suyu",
+            description: "Günlük taze portakallardan",
+            price: 55,
+            category_id: categories[2].id,
+            image: "https://images.unsplash.com/photo-1600271886742-f049cd451bba?w=400",
+            display_order: 0,
+            tenant_id: tenantId,
+          },
+          {
+            name: "Türk Kahvesi",
+            description: "Geleneksel Türk kahvesi",
+            price: 40,
+            category_id: categories[2].id,
+            image: "https://images.unsplash.com/photo-1610632380989-680fe40816a6?w=400",
+            display_order: 1,
+            tenant_id: tenantId,
+          },
+          {
+            name: "Ayran",
+            description: "Ev yapımı yoğurttan taze ayran",
+            price: 25,
+            category_id: categories[2].id,
+            image: "https://images.unsplash.com/photo-1623065422902-30a2d299bbe4?w=400",
+            display_order: 2,
+            tenant_id: tenantId,
+          },
+          // Tatlılar
+          {
+            name: "Künefe",
+            description: "Tel kadayıftan özel künefe, bol antep fıstıklı",
+            price: 120,
+            category_id: categories[3].id,
+            image: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?w=400",
+            display_order: 0,
+            tenant_id: tenantId,
+            badge: "gunun_urunu",
+          },
+          {
+            name: "Sütlaç",
+            description: "Fırında pişmiş karamelize sütlaç",
+            price: 75,
+            category_id: categories[3].id,
+            image: "https://images.unsplash.com/photo-1488477181946-6428a0291777?w=400",
+            display_order: 1,
+            tenant_id: tenantId,
+          },
+        ])
+      }
+
+      // Create default admin user
+      await supabase.from("admin_users").insert({
+        username: "admin",
+        password_hash: "admin123",
+        display_name: formData.ownerName,
+        tenant_id: tenantId,
+      })
+
+      console.log("Demo data created successfully!")
+    } catch (error) {
+      console.error("Error creating demo data:", error)
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const newErrors = validate()
@@ -115,6 +270,9 @@ export default function RegisterPage() {
         setIsLoading(false)
         return
       }
+
+      // Create demo data for new tenant
+      await createDemoData(tenant.id)
 
       // Redirect to admin panel
       router.push(`/${formData.slug}/admin?welcome=true`)

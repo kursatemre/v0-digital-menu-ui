@@ -245,13 +245,15 @@ export default function AdminPanel() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const previousOrderCountRef = useRef<number>(0)
   const previousWaiterCallCountRef = useRef<number>(0)
+  const [trialExpired, setTrialExpired] = useState(false)
+  const [tenantData, setTenantData] = useState<any>(null)
 
   // Load tenant on mount
   useEffect(() => {
     const loadTenant = async () => {
       const { data, error } = await supabase
         .from("tenants")
-        .select("id, slug, business_name, subscription_status, trial_end_date")
+        .select("id, slug, business_name, subscription_status, trial_end_date, is_active")
         .eq("slug", slug)
         .single()
 
@@ -262,6 +264,16 @@ export default function AdminPanel() {
       }
 
       setTenantId(data.id)
+      setTenantData(data)
+
+      // Check trial status
+      const isTrialActive =
+        (data.subscription_status === "trial" && new Date(data.trial_end_date) > new Date()) ||
+        data.subscription_status === "active"
+
+      if (!isTrialActive || !data.is_active) {
+        setTrialExpired(true)
+      }
     }
 
     loadTenant()
@@ -280,13 +292,19 @@ export default function AdminPanel() {
     e.preventDefault()
     setLoginError("")
 
+    if (!tenantId) {
+      setLoginError("Tenant bilgisi yükleniyor, lütfen bekleyin...")
+      return
+    }
+
     try {
-      // Check Supabase for user
+      // Check Supabase for user with tenant_id filter
       const { data, error } = await supabase
         .from("admin_users")
         .select("*")
         .eq("username", username)
         .eq("password_hash", password)
+        .eq("tenant_id", tenantId)
         .single()
 
       if (error || !data) {
@@ -317,14 +335,20 @@ export default function AdminPanel() {
 
   // Load admin users
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && tenantId) {
       loadAdminUsers()
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, tenantId])
 
   const loadAdminUsers = async () => {
+    if (!tenantId) return
+
     try {
-      const { data, error } = await supabase.from("admin_users").select("*").order("created_at", { ascending: true })
+      const { data, error } = await supabase
+        .from("admin_users")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: true })
 
       if (error) throw error
       if (data) {
@@ -342,12 +366,15 @@ export default function AdminPanel() {
       return
     }
 
+    if (!tenantId) return
+
     try {
       const { error } = await supabase.from("admin_users").insert([
         {
           username: userForm.username,
           password_hash: userForm.password,
           display_name: userForm.display_name || userForm.username,
+          tenant_id: tenantId,
         },
       ])
 
@@ -2238,6 +2265,80 @@ export default function AdminPanel() {
       )}
     </div>
   )
+
+  // Show trial expired screen if trial is over
+  if (trialExpired && tenantData) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-red-50 to-orange-50 flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl border-red-200">
+          <CardHeader className="text-center space-y-4">
+            <div className="flex justify-center">
+              <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertCircle className="w-12 h-12 text-red-600" />
+              </div>
+            </div>
+            <CardTitle className="text-3xl text-red-800">Deneme Süresi Sona Erdi</CardTitle>
+            <CardDescription className="text-lg">
+              <span className="font-semibold">{tenantData.business_name}</span> restoranının deneme süresi{" "}
+              {new Date(tenantData.trial_end_date).toLocaleDateString("tr-TR")} tarihinde sona ermiştir.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30 rounded-xl p-6">
+              <h3 className="font-bold text-xl mb-4 text-center">Premium Özelliklere Devam Edin</h3>
+              <ul className="space-y-3 mb-6">
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Sınırsız ürün ve kategori</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>QR kod menü sistemi</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Sipariş ve garson çağrı yönetimi</span>
+                </li>
+                <li className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  <span>Özelleştirilebilir tema ve görünüm</span>
+                </li>
+              </ul>
+              <div className="text-center">
+                <p className="text-3xl font-bold text-primary mb-2">₺299/ay</p>
+                <p className="text-sm text-muted-foreground">İlk ay %50 indirimli - Sadece ₺149</p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                size="lg"
+                className="w-full text-lg"
+                onClick={() => router.push(`/${slug}/payment`)}
+              >
+                Ödeme Yap ve Devam Et
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full"
+                onClick={() => router.push("/")}
+              >
+                Ana Sayfaya Dön
+              </Button>
+            </div>
+
+            <p className="text-center text-sm text-muted-foreground">
+              Sorularınız için:{" "}
+              <a href="mailto:destek@dijitalmenü.com" className="text-primary hover:underline">
+                destek@dijitalmenü.com
+              </a>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   // Show login screen if not authenticated
   if (!isAuthenticated) {

@@ -53,6 +53,7 @@ ALTER TABLE products ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
 ALTER TABLE waiter_calls ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
 ALTER TABLE settings ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
 
 -- 6. Create indexes on tenant_id for performance
 CREATE INDEX IF NOT EXISTS idx_categories_tenant ON categories(tenant_id);
@@ -60,6 +61,7 @@ CREATE INDEX IF NOT EXISTS idx_products_tenant ON products(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_orders_tenant ON orders(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_waiter_calls_tenant ON waiter_calls(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_settings_tenant ON settings(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_admin_users_tenant ON admin_users(tenant_id);
 
 -- 7. Update RLS policies to be tenant-aware
 -- Drop old policies
