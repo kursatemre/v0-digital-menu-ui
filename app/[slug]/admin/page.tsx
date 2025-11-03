@@ -245,6 +245,8 @@ export default function AdminPanel() {
   const [uploadingImage, setUploadingImage] = useState(false)
   const previousOrderCountRef = useRef<number>(0)
   const previousWaiterCallCountRef = useRef<number>(0)
+  const ordersInitializedRef = useRef(false)
+  const waiterCallsInitializedRef = useRef(false)
   const [trialExpired, setTrialExpired] = useState(false)
   const [tenantData, setTenantData] = useState<any>(null)
 
@@ -563,11 +565,12 @@ export default function AdminPanel() {
         const newOrders = data || []
         const pendingCount = newOrders.filter((o) => o.status === "pending").length
 
-        // Play sound if new orders arrived
-        if (previousOrderCountRef.current > 0 && pendingCount > previousOrderCountRef.current) {
+        // Play sound if new orders arrived (after initial load)
+        if (ordersInitializedRef.current && pendingCount > previousOrderCountRef.current) {
           playNotificationSound()
         }
 
+        ordersInitializedRef.current = true
         previousOrderCountRef.current = pendingCount
         setOrders(newOrders)
       }
@@ -594,11 +597,12 @@ export default function AdminPanel() {
         const newCalls = data || []
         const pendingCount = newCalls.filter((c) => c.status === "pending").length
 
-        // Play sound if new waiter calls arrived
-        if (previousWaiterCallCountRef.current > 0 && pendingCount > previousWaiterCallCountRef.current) {
+        // Play sound if new waiter calls arrived (after initial load)
+        if (waiterCallsInitializedRef.current && pendingCount > previousWaiterCallCountRef.current) {
           playNotificationSound()
         }
 
+        waiterCallsInitializedRef.current = true
         previousWaiterCallCountRef.current = pendingCount
         setWaiterCalls(newCalls)
       }
@@ -2388,12 +2392,14 @@ export default function AdminPanel() {
             label="Siparişler"
             active={activeTab === "orders"}
             onClick={() => setActiveTab("orders")}
+            badge={orders.filter((o) => o.status === "pending").length}
           />
           <NavItem
             icon={<Bell className="w-5 h-5" />}
             label="Garson Çağrıları"
             active={activeTab === "waiter-calls"}
             onClick={() => setActiveTab("waiter-calls")}
+            badge={waiterCalls.filter((c) => c.status === "pending").length}
           />
           <NavItem
             icon={<Layers className="w-5 h-5" />}
@@ -2483,21 +2489,30 @@ function NavItem({
   label,
   active,
   onClick,
+  badge,
 }: {
   icon: React.ReactNode
   label: string
   active: boolean
   onClick: () => void
+  badge?: number
 }) {
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-center md:justify-start gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+      className={`w-full flex items-center justify-center md:justify-start gap-3 px-3 py-2.5 rounded-lg transition-colors relative ${
         active ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
       {icon}
       <span className="hidden md:inline text-sm font-medium">{label}</span>
+      {badge !== undefined && badge > 0 && (
+        <span className={`absolute top-1 left-1 md:static md:ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${
+          active ? "bg-white text-primary" : "bg-red-500 text-white"
+        }`}>
+          {badge}
+        </span>
+      )}
     </button>
   )
 }
