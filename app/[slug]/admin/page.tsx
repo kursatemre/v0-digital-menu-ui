@@ -532,39 +532,14 @@ export default function AdminPanel() {
     loadOrders()
     loadWaiterCalls()
 
-    const ordersChannel = supabase
-      .channel("orders_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "orders",
-        },
-        (payload) => {
-          loadOrders()
-        },
-      )
-      .subscribe()
-
-    const waiterCallsChannel = supabase
-      .channel("waiter_calls_changes")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "waiter_calls",
-        },
-        (payload) => {
-          loadWaiterCalls()
-        },
-      )
-      .subscribe()
+    // Polling: Her 5 saniyede bir kontrol et (Realtime yok)
+    const pollingInterval = setInterval(() => {
+      loadOrders()
+      loadWaiterCalls()
+    }, 5000) // 5 saniye
 
     return () => {
-      supabase.removeChannel(ordersChannel)
-      supabase.removeChannel(waiterCallsChannel)
+      clearInterval(pollingInterval)
     }
   }, [tenantId])
 
