@@ -217,7 +217,7 @@ export default function AdminPanel() {
   })
 
   const [qrSettings, setQrSettings] = useState({
-    url: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
+    url: typeof window !== "undefined" ? `${window.location.origin}/${slug}` : "http://localhost:3000",
     size: 300,
     bgColor: "#FFFFFF",
     fgColor: "#000000",
@@ -246,13 +246,34 @@ export default function AdminPanel() {
   const previousOrderCountRef = useRef<number>(0)
   const previousWaiterCallCountRef = useRef<number>(0)
 
+  // Load tenant on mount
+  useEffect(() => {
+    const loadTenant = async () => {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("id, slug, business_name, subscription_status, trial_end_date")
+        .eq("slug", slug)
+        .single()
+
+      if (error || !data) {
+        console.error("Tenant not found:", slug)
+        router.push("/")
+        return
+      }
+
+      setTenantId(data.id)
+    }
+
+    loadTenant()
+  }, [slug, router, supabase])
+
   // Check if user is already logged in
   useEffect(() => {
-    const loggedIn = localStorage.getItem("admin_logged_in")
+    const loggedIn = localStorage.getItem(`admin_logged_in_${slug}`)
     if (loggedIn === "true") {
       setIsAuthenticated(true)
     }
-  }, [])
+  }, [slug])
 
   // Login handler
   const handleLogin = async (e: React.FormEvent) => {
@@ -275,8 +296,8 @@ export default function AdminPanel() {
 
       setIsAuthenticated(true)
       setCurrentUser(data)
-      localStorage.setItem("admin_logged_in", "true")
-      localStorage.setItem("admin_user_id", data.id)
+      localStorage.setItem(`admin_logged_in_${slug}`, "true")
+      localStorage.setItem(`admin_user_id_${slug}`, data.id)
       setLoginError("")
     } catch (err) {
       console.error("Login error:", err)
@@ -288,8 +309,8 @@ export default function AdminPanel() {
   const handleLogout = () => {
     setIsAuthenticated(false)
     setCurrentUser(null)
-    localStorage.removeItem("admin_logged_in")
-    localStorage.removeItem("admin_user_id")
+    localStorage.removeItem(`admin_logged_in_${slug}`)
+    localStorage.removeItem(`admin_user_id_${slug}`)
     setUsername("")
     setPassword("")
   }
@@ -446,17 +467,19 @@ export default function AdminPanel() {
 
   // Manual save appearance settings
   const saveAppearanceSettings = async () => {
+    if (!tenantId) return
+
     try {
       setIsSaving(true)
 
       // Save theme
-      await supabase.from("settings").upsert({ key: "theme", value: theme }, { onConflict: "key" })
+      await supabase.from("settings").upsert({ key: "theme", value: theme, tenant_id: tenantId }, { onConflict: "key" })
 
       // Save header settings
-      await supabase.from("settings").upsert({ key: "header", value: headerSettings }, { onConflict: "key" })
+      await supabase.from("settings").upsert({ key: "header", value: headerSettings, tenant_id: tenantId }, { onConflict: "key" })
 
       // Save QR settings
-      await supabase.from("settings").upsert({ key: "qr", value: qrSettings }, { onConflict: "key" })
+      await supabase.from("settings").upsert({ key: "qr", value: qrSettings, tenant_id: tenantId }, { onConflict: "key" })
 
       // Update localStorage
       localStorage.setItem("restaurant_theme", JSON.stringify(theme))
@@ -477,6 +500,8 @@ export default function AdminPanel() {
   }
 
   useEffect(() => {
+    if (!tenantId) return
+
     loadOrders()
     loadWaiterCalls()
 
@@ -514,11 +539,17 @@ export default function AdminPanel() {
       supabase.removeChannel(ordersChannel)
       supabase.removeChannel(waiterCallsChannel)
     }
-  }, [])
+  }, [tenantId])
 
   const loadOrders = async () => {
+    if (!tenantId) return
+
     try {
-      const { data, error } = await supabase.from("orders").select("*").order("created_at", { ascending: false })
+      const { data, error } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false })
 
       if (error) {
         console.error("Error loading orders:", error)
@@ -546,10 +577,13 @@ export default function AdminPanel() {
   }
 
   const loadWaiterCalls = async () => {
+    if (!tenantId) return
+
     try {
       const { data, error } = await supabase
         .from("waiter_calls")
         .select("*")
+        .eq("tenant_id", tenantId)
         .order("created_at", { ascending: false })
 
       if (error) {
@@ -573,8 +607,14 @@ export default function AdminPanel() {
 
   useEffect(() => {
     const loadProducts = async () => {
+      if (!tenantId) return
+
       try {
-        const { data, error } = await supabase.from("products").select("*").order("display_order", { ascending: true })
+        const { data, error } = await supabase
+          .from("products")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .order("display_order", { ascending: true })
 
         if (error) throw error
         if (data) {
@@ -596,14 +636,17 @@ export default function AdminPanel() {
     }
 
     loadProducts()
-  }, [supabase])
+  }, [tenantId, supabase])
 
   useEffect(() => {
     const loadCategories = async () => {
+      if (!tenantId) return
+
       try {
         const { data, error } = await supabase
           .from("categories")
           .select("*")
+          .eq("tenant_id", tenantId)
           .order("display_order", { ascending: true })
 
         if (error) throw error
@@ -622,15 +665,18 @@ export default function AdminPanel() {
     }
 
     loadCategories()
-  }, [supabase])
+  }, [tenantId, supabase])
 
   useEffect(() => {
     const loadSettings = async () => {
+      if (!tenantId) return
+
       try {
         const { data: themeData, error: themeError } = await supabase
           .from("settings")
           .select("*")
           .eq("key", "theme")
+          .eq("tenant_id", tenantId)
           .single()
 
         if (themeData?.value) {
@@ -641,6 +687,7 @@ export default function AdminPanel() {
           .from("settings")
           .select("*")
           .eq("key", "header")
+          .eq("tenant_id", tenantId)
           .single()
 
         if (headerData?.value) {
@@ -651,6 +698,7 @@ export default function AdminPanel() {
           .from("settings")
           .select("*")
           .eq("key", "qr")
+          .eq("tenant_id", tenantId)
           .single()
 
         if (qrData?.value) {
@@ -668,7 +716,7 @@ export default function AdminPanel() {
     }
 
     loadSettings()
-  }, [supabase])
+  }, [tenantId, supabase])
 
   // Removed auto-save useEffects - now using manual save button
 
@@ -777,6 +825,8 @@ export default function AdminPanel() {
         console.error("Error updating product:", error)
       }
     } else {
+      if (!tenantId) return
+
       try {
         const { error } = await supabase.from("products").insert([
           {
@@ -787,6 +837,7 @@ export default function AdminPanel() {
             image: productForm.image,
             badge: productForm.badge || null,
             display_order: products.length,
+            tenant_id: tenantId,
           },
         ])
 
@@ -826,12 +877,15 @@ export default function AdminPanel() {
         console.error("Error updating category:", error)
       }
     } else {
+      if (!tenantId) return
+
       try {
         const { error } = await supabase.from("categories").insert([
           {
             name: categoryForm.name,
             image: categoryForm.image,
             display_order: categories.length,
+            tenant_id: tenantId,
           },
         ])
 

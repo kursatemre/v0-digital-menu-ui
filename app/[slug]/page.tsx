@@ -532,6 +532,7 @@ export default function MenuPage() {
           items={cart}
           onSuccess={handleOrderSuccess}
           onClearCart={clearCart}
+          tenantId={tenant?.id}
         />
       )}
 
