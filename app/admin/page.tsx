@@ -210,6 +210,15 @@ export default function AdminPanel() {
     logo: "",
   })
 
+  const [qrSettings, setQrSettings] = useState({
+    url: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
+    size: 300,
+    bgColor: "#FFFFFF",
+    fgColor: "#000000",
+    logoUrl: "",
+    logoSize: 60,
+  })
+
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([])
   const [showUserForm, setShowUserForm] = useState(false)
   const [userForm, setUserForm] = useState({
@@ -440,9 +449,13 @@ export default function AdminPanel() {
       // Save header settings
       await supabase.from("settings").upsert({ key: "header", value: headerSettings }, { onConflict: "key" })
 
+      // Save QR settings
+      await supabase.from("settings").upsert({ key: "qr", value: qrSettings }, { onConflict: "key" })
+
       // Update localStorage
       localStorage.setItem("restaurant_theme", JSON.stringify(theme))
       localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
+      localStorage.setItem("restaurant_qr", JSON.stringify(qrSettings))
 
       // Apply theme to CSS variables
       document.documentElement.style.setProperty("--primary", theme.primaryColor)
@@ -627,12 +640,24 @@ export default function AdminPanel() {
         if (headerData?.value) {
           setHeaderSettings(headerData.value)
         }
+
+        const { data: qrData, error: qrError } = await supabase
+          .from("settings")
+          .select("*")
+          .eq("key", "qr")
+          .single()
+
+        if (qrData?.value) {
+          setQrSettings(qrData.value)
+        }
       } catch (error) {
         console.error("Error loading settings:", error)
         const storedTheme = localStorage.getItem("restaurant_theme")
         const storedHeader = localStorage.getItem("restaurant_header")
+        const storedQr = localStorage.getItem("restaurant_qr")
         if (storedTheme) setTheme(JSON.parse(storedTheme))
         if (storedHeader) setHeaderSettings(JSON.parse(storedHeader))
+        if (storedQr) setQrSettings(JSON.parse(storedQr))
       }
     }
 
@@ -1763,52 +1788,219 @@ export default function AdminPanel() {
     </div>
   )
 
-  const renderQRTab = () => (
-    <div>
-      <div className="flex items-center gap-3 mb-6">
-        <QrCode className="w-6 h-6 text-primary" />
-        <div>
-          <h2 className="text-2xl font-bold">QR Kod</h2>
-          <p className="text-sm text-muted-foreground">Müşteriler bu QR kodu tarayarak menüye erişebilir</p>
+  const renderQRTab = () => {
+    const downloadQRCode = () => {
+      const svg = document.getElementById("qr-code-svg")
+      if (!svg) return
+
+      const canvas = document.createElement("canvas")
+      const ctx = canvas.getContext("2d")
+      if (!ctx) return
+
+      const svgData = new XMLSerializer().serializeToString(svg)
+      const img = new Image()
+      img.onload = () => {
+        canvas.width = qrSettings.size
+        canvas.height = qrSettings.size
+        ctx.drawImage(img, 0, 0)
+        const link = document.createElement("a")
+        link.download = "menu-qr-code.png"
+        link.href = canvas.toDataURL("image/png")
+        link.click()
+      }
+      img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+    }
+
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <QrCode className="w-6 h-6 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">QR Kod Ayarları</h2>
+            <p className="text-sm text-muted-foreground">QR kodunuzu özelleştirin ve indirin</p>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* QR Code Settings */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Özelleştirme</CardTitle>
+              <CardDescription>QR kod görünümünü ayarlayın</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">QR Kod URL</label>
+                <Input
+                  value={qrSettings.url}
+                  onChange={(e) => setQrSettings({ ...qrSettings, url: e.target.value })}
+                  placeholder="https://example.com"
+                />
+                <p className="text-xs text-muted-foreground mt-1">Müşterilerin yönlendirileceği adres</p>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Boyut: {qrSettings.size}px</label>
+                <input
+                  type="range"
+                  min="200"
+                  max="500"
+                  step="10"
+                  value={qrSettings.size}
+                  onChange={(e) => setQrSettings({ ...qrSettings, size: Number(e.target.value) })}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Ön Plan Rengi</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={qrSettings.fgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, fgColor: e.target.value })}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={qrSettings.fgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, fgColor: e.target.value })}
+                      placeholder="#000000"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Arka Plan Rengi</label>
+                  <div className="flex gap-2">
+                    <Input
+                      type="color"
+                      value={qrSettings.bgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, bgColor: e.target.value })}
+                      className="w-16 h-10 p-1 cursor-pointer"
+                    />
+                    <Input
+                      value={qrSettings.bgColor}
+                      onChange={(e) => setQrSettings({ ...qrSettings, bgColor: e.target.value })}
+                      placeholder="#FFFFFF"
+                      className="flex-1"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium mb-2 block">Logo (Opsiyonel)</label>
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-muted-foreground">Logo Yükle</label>
+                    <Input
+                      type="file"
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          const url = await uploadImage(file)
+                          if (url) {
+                            setQrSettings({ ...qrSettings, logoUrl: url })
+                          }
+                        }
+                      }}
+                      disabled={uploadingImage}
+                      className="cursor-pointer"
+                    />
+                    {uploadingImage && <p className="text-xs text-muted-foreground mt-1">Yükleniyor...</p>}
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">veya URL Gir</label>
+                    <Input
+                      value={qrSettings.logoUrl}
+                      onChange={(e) => setQrSettings({ ...qrSettings, logoUrl: e.target.value })}
+                      placeholder="Logo URL"
+                    />
+                  </div>
+                </div>
+                {qrSettings.logoUrl && (
+                  <>
+                    <img src={qrSettings.logoUrl} alt="logo" className="mt-2 h-16 object-contain rounded" />
+                    <div className="mt-2">
+                      <label className="text-sm font-medium mb-2 block">Logo Boyutu: {qrSettings.logoSize}px</label>
+                      <input
+                        type="range"
+                        min="40"
+                        max="100"
+                        step="5"
+                        value={qrSettings.logoSize}
+                        onChange={(e) => setQrSettings({ ...qrSettings, logoSize: Number(e.target.value) })}
+                        className="w-full"
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <Button onClick={saveAppearanceSettings} disabled={isSaving} className="w-full gap-2">
+                {isSaving ? "Kaydediliyor..." : "Ayarları Kaydet"}
+              </Button>
+            </CardContent>
+          </Card>
+
+          {/* QR Code Preview */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Önizleme</CardTitle>
+              <CardDescription>QR kodunuzun görünümü</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-col items-center gap-4">
+                <div
+                  className="p-6 rounded-lg border-2 border-primary"
+                  style={{ backgroundColor: qrSettings.bgColor }}
+                >
+                  <QRCodeSVG
+                    id="qr-code-svg"
+                    value={qrSettings.url}
+                    size={qrSettings.size}
+                    level="H"
+                    bgColor={qrSettings.bgColor}
+                    fgColor={qrSettings.fgColor}
+                    includeMargin={true}
+                    imageSettings={
+                      qrSettings.logoUrl
+                        ? {
+                            src: qrSettings.logoUrl,
+                            height: qrSettings.logoSize,
+                            width: qrSettings.logoSize,
+                            excavate: true,
+                          }
+                        : undefined
+                    }
+                  />
+                </div>
+
+                <div className="text-center space-y-4 w-full">
+                  <div className="bg-muted p-3 rounded-lg">
+                    <p className="text-xs text-muted-foreground mb-1">Hedef URL:</p>
+                    <p className="text-sm font-mono break-all">{qrSettings.url}</p>
+                  </div>
+
+                  <Button onClick={downloadQRCode} className="w-full gap-2">
+                    <QrCode className="w-4 h-4" />
+                    QR Kodu İndir (PNG)
+                  </Button>
+
+                  <div className="text-xs text-muted-foreground">
+                    <p>💡 İpucu: QR kodu A4 kağıda bastırabilir veya dijital ekranlarda gösterebilirsiniz.</p>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col items-center gap-6">
-            <div className="bg-white p-6 rounded-lg border-2 border-primary">
-              <QRCodeSVG
-                value={typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}
-                size={300}
-                level="H"
-                includeMargin={true}
-              />
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-4">
-                URL: {typeof window !== "undefined" ? window.location.origin : "http://localhost:3000"}
-              </p>
-              <Button
-                onClick={() => {
-                  const canvas = document.querySelector("canvas")
-                  if (canvas) {
-                    const link = document.createElement("a")
-                    link.download = "menu-qr-code.png"
-                    link.href = canvas.toDataURL()
-                    link.click()
-                  }
-                }}
-                className="gap-2"
-              >
-                <QrCode className="w-4 h-4" />
-                QR Kodu İndir
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  )
+    )
+  }
 
   const renderUsersTab = () => (
     <div>
