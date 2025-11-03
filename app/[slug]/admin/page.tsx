@@ -2460,7 +2460,7 @@ export default function AdminPanel() {
 
         <div className="pt-4 border-t space-y-2">
           <a
-            href="/"
+            href={`/${slug}`}
             className="flex items-center justify-center md:justify-start gap-2 px-3 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
             <span className="hidden md:block">← Menüye Dön</span>
