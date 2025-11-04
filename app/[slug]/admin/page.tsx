@@ -294,11 +294,32 @@ export default function AdminPanel() {
 
   // Check if user is already logged in
   useEffect(() => {
-    const loggedIn = localStorage.getItem(`admin_logged_in_${slug}`)
-    if (loggedIn === "true") {
-      setIsAuthenticated(true)
+    const loadCurrentUser = async () => {
+      const loggedIn = localStorage.getItem(`admin_logged_in_${slug}`)
+      const userId = localStorage.getItem(`admin_user_id_${slug}`)
+
+      if (loggedIn === "true" && userId) {
+        setIsAuthenticated(true)
+
+        // Load current user data
+        try {
+          const { data, error } = await supabase
+            .from("admin_users")
+            .select("*")
+            .eq("id", userId)
+            .single()
+
+          if (!error && data) {
+            setCurrentUser(data)
+          }
+        } catch (error) {
+          console.error("Error loading current user:", error)
+        }
+      }
     }
-  }, [slug])
+
+    loadCurrentUser()
+  }, [slug, supabase])
 
   // Login handler
   const handleLogin = async (e: React.FormEvent) => {
