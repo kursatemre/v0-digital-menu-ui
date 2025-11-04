@@ -209,7 +209,11 @@ export default function AdminPanel() {
     customerName: "",
     isDelivery: false,
     phoneNumber: "",
+    items: [] as { id: string; name: string; price: number; quantity: number }[],
+    notes: "",
   })
+  const [selectedProduct, setSelectedProduct] = useState<string>("")
+  const [selectedQuantity, setSelectedQuantity] = useState<number>(1)
 
   const [productForm, setProductForm] = useState<Omit<Product, "id">>({
     name: "",
@@ -919,6 +923,102 @@ export default function AdminPanel() {
     }
   }
 
+  const handleAddProductToOrder = () => {
+    if (!selectedProduct) return
+
+    const product = products.find((p) => p.id === selectedProduct)
+    if (!product) return
+
+    // Check if product already in items
+    const existingItemIndex = newOrderForm.items.findIndex((item) => item.id === product.id)
+
+    if (existingItemIndex >= 0) {
+      // Update quantity
+      const updatedItems = [...newOrderForm.items]
+      updatedItems[existingItemIndex].quantity += selectedQuantity
+      setNewOrderForm({ ...newOrderForm, items: updatedItems })
+    } else {
+      // Add new item
+      setNewOrderForm({
+        ...newOrderForm,
+        items: [
+          ...newOrderForm.items,
+          {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            quantity: selectedQuantity,
+          },
+        ],
+      })
+    }
+
+    setSelectedProduct("")
+    setSelectedQuantity(1)
+  }
+
+  const handleRemoveProductFromOrder = (productId: string) => {
+    setNewOrderForm({
+      ...newOrderForm,
+      items: newOrderForm.items.filter((item) => item.id !== productId),
+    })
+  }
+
+  const handleCreateManualOrder = async () => {
+    if (!tenantId) return
+    if (newOrderForm.items.length === 0) {
+      alert("Lütfen en az bir ürün ekleyin")
+      return
+    }
+    if (!newOrderForm.customerName.trim()) {
+      alert("Lütfen müşteri adı girin")
+      return
+    }
+    if (!newOrderForm.isDelivery && !newOrderForm.tableNumber.trim()) {
+      alert("Lütfen masa numarası girin")
+      return
+    }
+    if (newOrderForm.isDelivery && !newOrderForm.phoneNumber.trim()) {
+      alert("Lütfen telefon numarası girin")
+      return
+    }
+
+    const total = newOrderForm.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+    try {
+      const { error } = await supabase.from("orders").insert([
+        {
+          tenant_id: tenantId,
+          table_number: newOrderForm.isDelivery ? null : newOrderForm.tableNumber,
+          customer_name: newOrderForm.customerName,
+          phone_number: newOrderForm.isDelivery ? newOrderForm.phoneNumber : null,
+          is_delivery: newOrderForm.isDelivery,
+          items: newOrderForm.items,
+          notes: newOrderForm.notes,
+          total: total,
+          status: "pending",
+        },
+      ])
+
+      if (error) throw error
+
+      // Reset form
+      setNewOrderForm({
+        tableNumber: "",
+        customerName: "",
+        isDelivery: false,
+        phoneNumber: "",
+        items: [],
+        notes: "",
+      })
+      setShowOrderForm(false)
+      loadOrders()
+    } catch (error) {
+      console.error("Error creating manual order:", error)
+      alert("Sipariş oluşturulurken bir hata oluştu")
+    }
+  }
+
   const handleAddCategory = async () => {
     if (editingCategory) {
       try {
@@ -1084,8 +1184,8 @@ export default function AdminPanel() {
                 <div>
                   <label className="text-sm font-medium">Masa Numarası</label>
                   <Input
-                    type="number"
-                    placeholder="Örn: 5"
+                    type="text"
+                    placeholder="Örn: 5, A12, Bahçe-3"
                     value={newOrderForm.tableNumber}
                     onChange={(e) => setNewOrderForm({ ...newOrderForm, tableNumber: e.target.value })}
                   />
@@ -1112,8 +1212,102 @@ export default function AdminPanel() {
               </div>
             </div>
 
+            <div className="border-t pt-4">
+              <h3 className="text-sm font-semibold mb-3">Ürün Seçimi</h3>
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <label className="text-sm font-medium">Ürün</label>
+                  <select
+                    className="w-full border rounded-md px-3 py-2 text-sm"
+                    value={selectedProduct}
+                    onChange={(e) => setSelectedProduct(e.target.value)}
+                  >
+                    <option value="">Ürün seçin...</option>
+                    {products
+                      .filter((p) => p.is_available !== false)
+                      .map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.name} - ₺{product.price}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="w-24">
+                  <label className="text-sm font-medium">Adet</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={selectedQuantity}
+                    onChange={(e) => setSelectedQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                  />
+                </div>
+                <Button onClick={handleAddProductToOrder} disabled={!selectedProduct} className="gap-2">
+                  <Plus className="w-4 h-4" />
+                  Ekle
+                </Button>
+              </div>
+            </div>
+
+            {newOrderForm.items.length > 0 && (
+              <div className="border-t pt-4">
+                <h3 className="text-sm font-semibold mb-3">Seçilen Ürünler</h3>
+                <div className="space-y-2">
+                  {newOrderForm.items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between bg-muted/50 p-3 rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium text-sm">{item.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.quantity} x ₺{item.price} = ₺{item.quantity * item.price}
+                        </p>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleRemoveProductFromOrder(item.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ))}
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <span className="font-bold">Toplam:</span>
+                    <span className="text-xl font-bold text-primary">
+                      ₺{newOrderForm.items.reduce((sum, item) => sum + item.price * item.quantity, 0)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label className="text-sm font-medium">Not (Opsiyonel)</label>
+              <Textarea
+                placeholder="Sipariş hakkında not ekleyin..."
+                value={newOrderForm.notes}
+                onChange={(e) => setNewOrderForm({ ...newOrderForm, notes: e.target.value })}
+                rows={2}
+              />
+            </div>
+
             <div className="flex gap-2">
-              <Button onClick={() => setShowOrderForm(false)} variant="outline">
+              <Button onClick={handleCreateManualOrder} className="flex-1 gap-2" disabled={newOrderForm.items.length === 0}>
+                <CheckCircle2 className="w-4 h-4" />
+                Sipariş Oluştur
+              </Button>
+              <Button onClick={() => {
+                setShowOrderForm(false)
+                setNewOrderForm({
+                  tableNumber: "",
+                  customerName: "",
+                  isDelivery: false,
+                  phoneNumber: "",
+                  items: [],
+                  notes: "",
+                })
+                setSelectedProduct("")
+                setSelectedQuantity(1)
+              }} variant="outline">
                 İptal
               </Button>
             </div>
