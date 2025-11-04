@@ -34,6 +34,9 @@ import {
   Zap,
   CreditCard,
   Shield,
+  BarChart3,
+  TrendingUp,
+  Calendar,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -183,7 +186,7 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
-    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "settings"
+    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings"
   >("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
@@ -214,6 +217,7 @@ export default function AdminPanel() {
   })
   const [selectedProduct, setSelectedProduct] = useState<string>("")
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1)
+  const [reportPeriod, setReportPeriod] = useState<"today" | "week" | "month">("today")
 
   const [productForm, setProductForm] = useState<Omit<Product, "id">>({
     name: "",
@@ -1129,6 +1133,8 @@ export default function AdminPanel() {
         return renderUsersTab()
       case "license":
         return renderLicenseTab()
+      case "reports":
+        return renderReportsTab()
       case "settings":
         return renderSettingsTab()
       default:
@@ -2420,6 +2426,222 @@ export default function AdminPanel() {
     </div>
   )
 
+  const renderReportsTab = () => {
+    const now = new Date()
+    let startDate = new Date()
+
+    // Calculate start date based on selected period
+    if (reportPeriod === "today") {
+      startDate.setHours(0, 0, 0, 0)
+    } else if (reportPeriod === "week") {
+      startDate.setDate(now.getDate() - 7)
+      startDate.setHours(0, 0, 0, 0)
+    } else if (reportPeriod === "month") {
+      startDate.setDate(now.getDate() - 30)
+      startDate.setHours(0, 0, 0, 0)
+    }
+
+    // Filter completed orders in the selected period
+    const filteredOrders = orders.filter((order) => {
+      const orderDate = new Date(order.created_at)
+      return order.status === "completed" && orderDate >= startDate
+    })
+
+    // Calculate statistics
+    const totalSales = filteredOrders.reduce((sum, order) => sum + order.total, 0)
+    const orderCount = filteredOrders.length
+    const averageOrderValue = orderCount > 0 ? totalSales / orderCount : 0
+
+    // Calculate top products
+    const productSales: Record<string, { name: string; quantity: number; revenue: number }> = {}
+    filteredOrders.forEach((order) => {
+      order.items.forEach((item) => {
+        if (!productSales[item.id]) {
+          productSales[item.id] = { name: item.name, quantity: 0, revenue: 0 }
+        }
+        productSales[item.id].quantity += item.quantity
+        productSales[item.id].revenue += item.price * item.quantity
+      })
+    })
+
+    const topProducts = Object.entries(productSales)
+      .map(([id, data]) => ({ id, ...data }))
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10)
+
+    // Calculate top customers
+    const customerOrders: Record<string, { name: string; orderCount: number; totalSpent: number }> = {}
+    filteredOrders.forEach((order) => {
+      const key = order.customer_name || "Misafir"
+      if (!customerOrders[key]) {
+        customerOrders[key] = { name: key, orderCount: 0, totalSpent: 0 }
+      }
+      customerOrders[key].orderCount += 1
+      customerOrders[key].totalSpent += order.total
+    })
+
+    const topCustomers = Object.values(customerOrders)
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 10)
+
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="w-6 h-6 text-primary" />
+            <div>
+              <h2 className="text-2xl font-bold">Satış Raporları</h2>
+              <p className="text-sm text-muted-foreground">Satış performansınızı analiz edin</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant={reportPeriod === "today" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setReportPeriod("today")}
+            >
+              Bugün
+            </Button>
+            <Button
+              variant={reportPeriod === "week" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setReportPeriod("week")}
+            >
+              Son 7 Gün
+            </Button>
+            <Button
+              variant={reportPeriod === "month" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setReportPeriod("month")}
+            >
+              Son 30 Gün
+            </Button>
+          </div>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Toplam Satış</CardDescription>
+              <CardTitle className="text-3xl text-green-600">₺{totalSales.toFixed(2)}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <TrendingUp className="w-4 h-4 text-green-600" />
+                <span>{orderCount} sipariş tamamlandı</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Sipariş Sayısı</CardDescription>
+              <CardTitle className="text-3xl text-blue-600">{orderCount}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ShoppingCart className="w-4 h-4 text-blue-600" />
+                <span>Tamamlanan siparişler</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardDescription>Ortalama Sipariş</CardDescription>
+              <CardTitle className="text-3xl text-orange-600">₺{averageOrderValue.toFixed(2)}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="w-4 h-4 text-orange-600" />
+                <span>Sipariş başına</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {orderCount === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <BarChart3 className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-semibold mb-2">Henüz Veri Yok</h3>
+              <p className="text-sm text-muted-foreground">
+                Seçilen dönemde tamamlanmış sipariş bulunmuyor.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Top Products */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-primary" />
+                  En Çok Satan Ürünler
+                </CardTitle>
+                <CardDescription>Gelire göre sıralı</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {topProducts.map((product, index) => (
+                    <div key={product.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">#{index + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{product.name}</p>
+                          <p className="text-xs text-muted-foreground">{product.quantity} adet satıldı</p>
+                        </div>
+                      </div>
+                      <span className="font-bold text-green-600">₺{product.revenue.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {topProducts.length === 0 && (
+                    <p className="text-center text-sm text-muted-foreground py-4">Henüz ürün satışı yok</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Top Customers */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-primary" />
+                  En Çok Sipariş Veren Müşteriler
+                </CardTitle>
+                <CardDescription>Toplam harcamaya göre sıralı</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {topCustomers.map((customer, index) => (
+                    <div key={customer.name} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="text-sm font-bold text-primary">#{index + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{customer.name}</p>
+                          <p className="text-xs text-muted-foreground">{customer.orderCount} sipariş</p>
+                        </div>
+                      </div>
+                      <span className="font-bold text-green-600">₺{customer.totalSpent.toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {topCustomers.length === 0 && (
+                    <p className="text-center text-sm text-muted-foreground py-4">Henüz müşteri verisi yok</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const renderLicenseTab = () => {
     if (!tenantData) return null
 
@@ -2900,6 +3122,12 @@ export default function AdminPanel() {
             label="Kullanıcılar"
             active={activeTab === "users"}
             onClick={() => setActiveTab("users")}
+          />
+          <NavItem
+            icon={<BarChart3 className="w-5 h-5" />}
+            label="Raporlar"
+            active={activeTab === "reports"}
+            onClick={() => setActiveTab("reports")}
           />
           <NavItem
             icon={<Award className="w-5 h-5" />}
