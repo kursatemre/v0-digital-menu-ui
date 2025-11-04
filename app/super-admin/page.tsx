@@ -57,6 +57,12 @@ export default function SuperAdminPanel() {
     trialTenants: 0
   })
 
+  const [landingContent, setLandingContent] = useState({
+    hero: { title: "", subtitle: "" },
+    pricing: { plans: [] as any[] }
+  })
+  const [loadingLanding, setLoadingLanding] = useState(false)
+
   useEffect(() => {
     checkAuth()
   }, [])
@@ -65,8 +71,11 @@ export default function SuperAdminPanel() {
     if (isAuthenticated) {
       loadTenants()
       loadStats()
+      if (activeTab === "landing") {
+        loadLandingContent()
+      }
     }
-  }, [isAuthenticated])
+  }, [isAuthenticated, activeTab])
 
   const checkAuth = () => {
     const loggedIn = localStorage.getItem("super_admin_logged_in")
@@ -181,6 +190,49 @@ export default function SuperAdminPanel() {
       await loadStats()
     } catch (error) {
       console.error("Error toggling tenant status:", error)
+    }
+  }
+
+  const loadLandingContent = async () => {
+    setLoadingLanding(true)
+    try {
+      const { data, error } = await supabase
+        .from("landing_page_content")
+        .select("*")
+
+      if (error) throw error
+      if (data) {
+        const heroData = data.find(d => d.section_key === "hero")
+        const pricingData = data.find(d => d.section_key === "pricing")
+
+        setLandingContent({
+          hero: heroData?.content || { title: "", subtitle: "" },
+          pricing: pricingData?.content || { plans: [] }
+        })
+      }
+    } catch (error) {
+      console.error("Error loading landing content:", error)
+    } finally {
+      setLoadingLanding(false)
+    }
+  }
+
+  const saveLandingContent = async (sectionKey: string, content: any) => {
+    try {
+      const { error } = await supabase
+        .from("landing_page_content")
+        .update({
+          content,
+          updated_at: new Date().toISOString()
+        })
+        .eq("section_key", sectionKey)
+
+      if (error) throw error
+      alert("İçerik kaydedildi!")
+      await loadLandingContent()
+    } catch (error) {
+      console.error("Error saving landing content:", error)
+      alert("Hata oluştu!")
     }
   }
 
@@ -458,13 +510,41 @@ export default function SuperAdminPanel() {
                           </Button>
                         )}
                         {tenant.subscription_plan === "premium" && tenant.subscription_status === "active" && (
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => updateTenantSubscription(tenant.id, "premium", "cancelled")}
-                          >
-                            Aboneliği İptal Et
-                          </Button>
+                          <>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                const months = prompt("Kaç ay uzatmak istiyorsunuz?", "1")
+                                if (months) {
+                                  const currentEnd = tenant.subscription_end_date
+                                    ? new Date(tenant.subscription_end_date)
+                                    : new Date()
+                                  currentEnd.setMonth(currentEnd.getMonth() + parseInt(months))
+                                  updateTenantSubscription(
+                                    tenant.id,
+                                    "premium",
+                                    "active",
+                                    currentEnd.toISOString()
+                                  )
+                                }
+                              }}
+                            >
+                              <Calendar className="w-4 h-4 mr-1" />
+                              Süre Uzat
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => {
+                                if (confirm("Bu aboneliği iptal etmek istediğinizden emin misiniz?")) {
+                                  updateTenantSubscription(tenant.id, "premium", "cancelled")
+                                }
+                              }}
+                            >
+                              Aboneliği İptal Et
+                            </Button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -477,19 +557,99 @@ export default function SuperAdminPanel() {
 
         {/* Landing Page Tab */}
         {activeTab === "landing" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Landing Page Editör</CardTitle>
-              <CardDescription>
-                Ana sayfanın içeriğini buradan düzenleyebilirsiniz
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600">
-                Landing page editör yakında eklenecek...
-              </p>
-            </CardContent>
-          </Card>
+          <div className="space-y-6">
+            {/* Hero Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Hero Bölümü</CardTitle>
+                <CardDescription>
+                  Ana sayfanın üst kısmındaki hero bölümünü düzenleyin
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {loadingLanding ? (
+                  <p>Yükleniyor...</p>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium">Başlık</label>
+                      <Input
+                        value={landingContent.hero.title || ""}
+                        onChange={(e) => setLandingContent({
+                          ...landingContent,
+                          hero: { ...landingContent.hero, title: e.target.value }
+                        })}
+                        placeholder="Dijital Menü Sisteminiz..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Alt Başlık</label>
+                      <Input
+                        value={landingContent.hero.subtitle || ""}
+                        onChange={(e) => setLandingContent({
+                          ...landingContent,
+                          hero: { ...landingContent.hero, subtitle: e.target.value }
+                        })}
+                        placeholder="QR kod ile müşterilerinize..."
+                      />
+                    </div>
+                    <Button onClick={() => saveLandingContent("hero", landingContent.hero)}>
+                      Hero Bölümünü Kaydet
+                    </Button>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Pricing Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Fiyatlandırma</CardTitle>
+                <CardDescription>
+                  Paket bilgileri ve fiyatlandırma (şu an database'de kayıtlı)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    Trial Plan: 7 gün ücretsiz
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Premium Plan: 499₺/ay
+                  </p>
+                  <p className="text-xs text-gray-500 mt-4">
+                    Not: Detaylı düzenleme için database'deki landing_page_content tablosunu güncelleyin.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Hızlı İşlemler</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => window.open("/", "_blank")}
+                  >
+                    <FileEdit className="w-4 h-4 mr-2" />
+                    Landing Page'i Görüntüle
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start"
+                    onClick={() => loadLandingContent()}
+                  >
+                    Yenile
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         )}
       </div>
     </div>
