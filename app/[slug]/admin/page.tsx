@@ -662,65 +662,66 @@ export default function AdminPanel() {
     }
   }
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      if (!tenantId) return
+  const loadProducts = async () => {
+    if (!tenantId) return
 
-      try {
-        const { data, error } = await supabase
-          .from("products")
-          .select("*")
-          .eq("tenant_id", tenantId)
-          .order("display_order", { ascending: true })
+    try {
+      const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("display_order", { ascending: true })
 
-        if (error) throw error
-        if (data) {
-          const formattedProducts = data.map((prod: any) => ({
-            id: prod.id,
-            name: prod.name,
-            description: prod.description || "",
-            price: prod.price,
-            categoryId: prod.category_id,
-            image: prod.image || "",
-            display_order: prod.display_order,
-            badge: prod.badge || null,
-          }))
-          setProducts(formattedProducts)
-        }
-      } catch (error) {
-        console.error("Error loading products:", error)
+      if (error) throw error
+      if (data) {
+        const formattedProducts = data.map((prod: any) => ({
+          id: prod.id,
+          name: prod.name,
+          description: prod.description || "",
+          price: prod.price,
+          categoryId: prod.category_id,
+          image: prod.image || "",
+          display_order: prod.display_order,
+          badge: prod.badge || null,
+          is_available: prod.is_available,
+        }))
+        setProducts(formattedProducts)
       }
+    } catch (error) {
+      console.error("Error loading products:", error)
     }
+  }
 
+  const loadCategories = async () => {
+    if (!tenantId) return
+
+    try {
+      const { data, error } = await supabase
+        .from("categories")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("display_order", { ascending: true })
+
+      if (error) throw error
+      if (data) {
+        const formattedCategories = data.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          image: cat.image || "",
+          display_order: cat.display_order,
+        }))
+        setCategories(formattedCategories)
+      }
+    } catch (error) {
+      console.error("Error loading categories:", error)
+    }
+  }
+
+  useEffect(() => {
     loadProducts()
   }, [tenantId, supabase])
 
   useEffect(() => {
-    const loadCategories = async () => {
-      if (!tenantId) return
-
-      try {
-        const { data, error } = await supabase
-          .from("categories")
-          .select("*")
-          .eq("tenant_id", tenantId)
-          .order("display_order", { ascending: true })
-
-        if (error) throw error
-        if (data) {
-          const formattedCategories = data.map((cat: any) => ({
-            id: cat.id,
-            name: cat.name,
-            image: cat.image || "",
-            display_order: cat.display_order,
-          }))
-          setCategories(formattedCategories)
-        }
-      } catch (error) {
-        console.error("Error loading categories:", error)
-      }
-    }
-
     loadCategories()
   }, [tenantId, supabase])
 
@@ -879,6 +880,7 @@ export default function AdminPanel() {
 
         if (error) throw error
         setEditingProduct(null)
+        await loadProducts()
       } catch (error) {
         console.error("Error updating product:", error)
       }
@@ -901,6 +903,7 @@ export default function AdminPanel() {
         ])
 
         if (error) throw error
+        await loadProducts()
       } catch (error) {
         console.error("Error adding product:", error)
       }
@@ -913,6 +916,7 @@ export default function AdminPanel() {
     try {
       const { error } = await supabase.from("products").delete().eq("id", id)
       if (error) throw error
+      await loadProducts()
     } catch (error) {
       console.error("Error deleting product:", error)
     }
@@ -1046,6 +1050,7 @@ export default function AdminPanel() {
 
         if (error) throw error
         setEditingCategory(null)
+        await loadCategories()
       } catch (error) {
         console.error("Error updating category:", error)
       }
@@ -1063,6 +1068,7 @@ export default function AdminPanel() {
         ])
 
         if (error) throw error
+        await loadCategories()
       } catch (error) {
         console.error("Error adding category:", error)
       }
@@ -1075,6 +1081,7 @@ export default function AdminPanel() {
     try {
       const { error } = await supabase.from("categories").delete().eq("id", id)
       if (error) throw error
+      await loadCategories()
     } catch (error) {
       console.error("Error deleting category:", error)
     }
