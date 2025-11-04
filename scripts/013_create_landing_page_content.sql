@@ -93,7 +93,7 @@ INSERT INTO landing_page_content (section_key, content) VALUES
         "Öncelikli destek",
         "Detaylı raporlama"
       ],
-      "buttonText": "Premium\'a Geç",
+      "buttonText": "Premium''a Geç",
       "highlighted": true
     }
   ]
