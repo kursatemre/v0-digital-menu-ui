@@ -40,6 +40,8 @@ import {
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import { QRCodeSVG } from "qrcode.react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -74,6 +76,7 @@ type Product = {
   image: string
   display_order?: number
   badge?: string | null
+  is_available?: boolean
 }
 
 type AdminUser = {
@@ -227,6 +230,7 @@ export default function AdminPanel() {
     categoryId: "",
     image: "",
     badge: null,
+    is_available: true,
   })
 
   const [categoryForm, setCategoryForm] = useState<Omit<Category, "id">>({
@@ -868,6 +872,7 @@ export default function AdminPanel() {
             category_id: productForm.categoryId,
             image: productForm.image,
             badge: productForm.badge || null,
+            is_available: productForm.is_available !== false,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingProduct.id)
@@ -889,6 +894,7 @@ export default function AdminPanel() {
             category_id: productForm.categoryId,
             image: productForm.image,
             badge: productForm.badge || null,
+            is_available: productForm.is_available !== false,
             display_order: products.length,
             tenant_id: tenantId,
           },
@@ -899,7 +905,7 @@ export default function AdminPanel() {
         console.error("Error adding product:", error)
       }
     }
-    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null })
+    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true })
     setShowProductForm(false)
   }
 
@@ -1645,6 +1651,21 @@ export default function AdminPanel() {
                 </select>
               </div>
             </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+              <div className="space-y-0.5">
+                <Label htmlFor="is-available" className="text-sm font-medium">
+                  Ürün Durumu
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  {productForm.is_available !== false ? "Ürün satışta" : "Ürün tükendi"}
+                </p>
+              </div>
+              <Switch
+                id="is-available"
+                checked={productForm.is_available !== false}
+                onCheckedChange={(checked) => setProductForm({ ...productForm, is_available: checked })}
+              />
+            </div>
             <div>
               <label className="text-sm font-medium">Resim</label>
               <div className="space-y-2">
@@ -1691,7 +1712,7 @@ export default function AdminPanel() {
                 onClick={() => {
                   setShowProductForm(false)
                   setEditingProduct(null)
-                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null })
+                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true })
                 }}
               >
                 İptal
@@ -1724,17 +1745,12 @@ export default function AdminPanel() {
                 <CardDescription>{product.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-lg font-bold text-primary mb-2">₺{product.price.toFixed(2)}</p>
-
-                {/* Availability Toggle */}
-                <Button
-                  size="sm"
-                  variant={product.is_available !== false ? "default" : "secondary"}
-                  className="w-full mb-3"
-                  onClick={() => handleToggleProductAvailability(product.id, product.is_available !== false)}
-                >
-                  {product.is_available !== false ? "✅ Satışta" : "🚫 Tükendi"}
-                </Button>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-lg font-bold text-primary">₺{product.price.toFixed(2)}</p>
+                  <Badge variant={product.is_available !== false ? "default" : "secondary"}>
+                    {product.is_available !== false ? "✅ Satışta" : "🚫 Tükendi"}
+                  </Badge>
+                </div>
 
                 <div className="flex gap-2 flex-wrap mb-2">
                   <Button
