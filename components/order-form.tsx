@@ -199,10 +199,8 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
                   🪑 Masa Numarası <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="5"
+                  type="text"
+                  placeholder="A5, 12, Bahçe-3..."
                   value={tableNumber}
                   onChange={(e) => {
                     setTableNumber(e.target.value)
@@ -257,7 +255,7 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-98 rounded-xl"
+              className="w-full bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 py-5 sm:py-7 text-lg sm:text-xl font-bold shadow-2xl hover:shadow-xl transition-all active:scale-98 rounded-xl min-h-[60px] sm:min-h-[70px]"
             >
               {isLoading ? (
                 <>

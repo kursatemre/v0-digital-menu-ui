@@ -131,25 +131,36 @@ const getStatusLabel = (status: string) => {
   return labels[status] || status
 }
 
-// Play notification sound (coin sound effect)
+// Play notification sound (pleasant notification chime)
 const playNotificationSound = () => {
   try {
     const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
-    const oscillator = audioContext.createOscillator()
-    const gainNode = audioContext.createGain()
 
-    oscillator.connect(gainNode)
-    gainNode.connect(audioContext.destination)
+    // Create three oscillators for a pleasant chord
+    const createTone = (frequency: number, startTime: number, duration: number) => {
+      const oscillator = audioContext.createOscillator()
+      const gainNode = audioContext.createGain()
 
-    // Create a coin-like sound with two quick tones
-    oscillator.frequency.setValueAtTime(800, audioContext.currentTime)
-    oscillator.frequency.setValueAtTime(1000, audioContext.currentTime + 0.05)
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
 
-    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
-    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2)
+      oscillator.frequency.setValueAtTime(frequency, startTime)
+      oscillator.type = 'sine' // Smooth sine wave
 
-    oscillator.start(audioContext.currentTime)
-    oscillator.stop(audioContext.currentTime + 0.2)
+      gainNode.gain.setValueAtTime(0, startTime)
+      gainNode.gain.linearRampToValueAtTime(0.15, startTime + 0.01)
+      gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration)
+
+      oscillator.start(startTime)
+      oscillator.stop(startTime + duration)
+    }
+
+    // Pleasant notification chord: C-E-G (major chord)
+    const now = audioContext.currentTime
+    createTone(523.25, now, 0.4)        // C5
+    createTone(659.25, now + 0.05, 0.4) // E5
+    createTone(783.99, now + 0.1, 0.5)  // G5
+
   } catch (error) {
     console.error("Error playing notification sound:", error)
   }

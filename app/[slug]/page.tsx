@@ -562,10 +562,8 @@ export default function MenuPage() {
                   🪑 Masa Numarası <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="5"
+                  type="text"
+                  placeholder="A5, 12, Bahçe-3..."
                   value={waiterTableNumber}
                   onChange={(e) => setWaiterTableNumber(e.target.value)}
                   className="w-full text-lg"

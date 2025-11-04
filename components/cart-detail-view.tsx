@@ -109,7 +109,7 @@ export function CartDetailView({ items, onClose, onRemoveItem, onUpdateQuantity,
 
         {/* Summary */}
         {items.length > 0 && (
-          <div className="border-t border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5 p-4 sm:p-5 space-y-3 rounded-b-2xl">
+          <div className="sticky bottom-0 border-t border-primary/20 bg-white shadow-xl p-4 sm:p-5 space-y-3 rounded-b-2xl">
             <div className="flex justify-between text-muted-foreground text-sm sm:text-base">
               <span>Ara Toplam:</span>
               <span className="font-semibold">₺{subtotal.toFixed(2)}</span>
@@ -120,7 +120,7 @@ export function CartDetailView({ items, onClose, onRemoveItem, onUpdateQuantity,
             </div>
             <Button
               onClick={onPlaceOrder}
-              className="w-full bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-98 rounded-xl"
+              className="w-full bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 py-5 sm:py-7 text-lg sm:text-xl font-bold shadow-2xl hover:shadow-xl transition-all active:scale-98 rounded-xl min-h-[60px] sm:min-h-[70px]"
             >
               Sipariş Ver 🎉
             </Button>
