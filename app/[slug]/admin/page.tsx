@@ -735,9 +735,9 @@ export default function AdminPanel() {
           .select("*")
           .eq("key", "theme")
           .eq("tenant_id", tenantId)
-          .single()
+          .maybeSingle()
 
-        if (themeData?.value) {
+        if (themeData?.value && !themeError) {
           setTheme(themeData.value)
         }
 
@@ -746,9 +746,9 @@ export default function AdminPanel() {
           .select("*")
           .eq("key", "header")
           .eq("tenant_id", tenantId)
-          .single()
+          .maybeSingle()
 
-        if (headerData?.value) {
+        if (headerData?.value && !headerError) {
           setHeaderSettings(headerData.value)
         }
 
@@ -757,9 +757,9 @@ export default function AdminPanel() {
           .select("*")
           .eq("key", "qr")
           .eq("tenant_id", tenantId)
-          .single()
+          .maybeSingle()
 
-        if (qrData?.value) {
+        if (qrData?.value && !qrError) {
           setQrSettings(qrData.value)
         }
       } catch (error) {

@@ -122,14 +122,14 @@ export default function MenuPage() {
         }
 
         // 3. Load settings (with tenant_id filter)
-        const { data: themeData } = await supabase
+        const { data: themeData, error: themeError } = await supabase
           .from("settings")
           .select("*")
           .eq("key", "theme")
           .eq("tenant_id", tenantData.id)
-          .single()
+          .maybeSingle()
 
-        if (themeData?.value) {
+        if (themeData?.value && !themeError) {
           setTheme(themeData.value)
           document.documentElement.style.setProperty("--primary", themeData.value.primaryColor)
           document.documentElement.style.setProperty("--secondary", themeData.value.secondaryColor)
