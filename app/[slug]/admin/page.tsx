@@ -30,6 +30,10 @@ import {
   Users,
   Key,
   Bell,
+  Award,
+  Zap,
+  CreditCard,
+  Shield,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -179,7 +183,7 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
-    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "settings"
+    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "settings"
   >("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
@@ -266,7 +270,7 @@ export default function AdminPanel() {
     const loadTenant = async () => {
       const { data, error } = await supabase
         .from("tenants")
-        .select("id, slug, business_name, subscription_status, trial_end_date, is_active")
+        .select("id, slug, business_name, subscription_status, trial_end_date, subscription_end_date, subscription_plan, is_active")
         .eq("slug", slug)
         .single()
 
@@ -1023,6 +1027,8 @@ export default function AdminPanel() {
         return renderQRTab()
       case "users":
         return renderUsersTab()
+      case "license":
+        return renderLicenseTab()
       case "settings":
         return renderSettingsTab()
       default:
@@ -2220,6 +2226,214 @@ export default function AdminPanel() {
     </div>
   )
 
+  const renderLicenseTab = () => {
+    if (!tenantData) return null
+
+    const now = new Date()
+    const isTrial = tenantData.subscription_status === "trial"
+    const isPremium = tenantData.subscription_status === "active"
+
+    // Calculate remaining days
+    let daysRemaining = 0
+    let endDate = null
+
+    if (isTrial && tenantData.trial_end_date) {
+      endDate = new Date(tenantData.trial_end_date)
+      daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    } else if (isPremium && tenantData.subscription_end_date) {
+      endDate = new Date(tenantData.subscription_end_date)
+      daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    }
+
+    return (
+      <div>
+        <div className="flex items-center gap-3 mb-6">
+          <Award className="w-6 h-6 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">Lisans Bilgileri</h2>
+            <p className="text-sm text-muted-foreground">Abonelik durumunuzu görüntüleyin</p>
+          </div>
+        </div>
+
+        {isTrial && (
+          <div className="space-y-6">
+            <Card className="border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">Deneme Sürümü</CardTitle>
+                  <div className="px-3 py-1 bg-yellow-500 text-white text-xs font-bold rounded-full">
+                    DENEMe
+                  </div>
+                </div>
+                <CardDescription>Şu anda deneme sürümünü kullanıyorsunuz</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/70 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Kalan Süre</p>
+                    <p className="text-3xl font-bold text-primary">{daysRemaining} Gün</p>
+                  </div>
+                  <Clock className="w-12 h-12 text-yellow-600 opacity-50" />
+                </div>
+                <div className="p-4 bg-white/70 rounded-lg">
+                  <p className="text-sm text-muted-foreground">Bitiş Tarihi</p>
+                  <p className="text-lg font-semibold">
+                    {endDate?.toLocaleDateString("tr-TR", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-2 border-primary/30 bg-gradient-to-br from-primary/5 to-secondary/5">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-primary" />
+                  Premium'a Geçin
+                </CardTitle>
+                <CardDescription>Deneme süreniz dolmadan önce premium özelliklerin keyfini çıkarın</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm">Sınırsız ürün ve kategori</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm">QR kod menü sistemi</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm">Sipariş ve garson çağrı yönetimi</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    <span className="text-sm">7/24 öncelikli destek</span>
+                  </div>
+                </div>
+                <div className="pt-4 border-t space-y-2">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-primary">₺149</span>
+                    <span className="text-lg text-muted-foreground line-through">₺299</span>
+                    <span className="text-sm text-green-600 font-semibold">İlk ay %50 İndirim</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">Sonraki aylar ₺299/ay</p>
+                </div>
+                <Button
+                  size="lg"
+                  className="w-full text-lg gap-2"
+                  onClick={() => router.push(`/${slug}/payment`)}
+                >
+                  <CreditCard className="w-5 h-5" />
+                  Premium'a Yükselt
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {isPremium && (
+          <div className="space-y-6">
+            <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">Premium Üyelik</CardTitle>
+                  <div className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full">
+                    AKTİF
+                  </div>
+                </div>
+                <CardDescription>Tüm premium özelliklere erişiminiz var</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/70 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Kalan Süre</p>
+                    <p className="text-3xl font-bold text-green-600">{daysRemaining} Gün</p>
+                  </div>
+                  <CheckCircle2 className="w-12 h-12 text-green-600 opacity-50" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-white/70 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Plan</p>
+                    <p className="text-lg font-semibold capitalize">
+                      {tenantData.subscription_plan === "monthly" ? "Aylık" : "Yıllık"}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-white/70 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Bitiş Tarihi</p>
+                    <p className="text-lg font-semibold">
+                      {endDate?.toLocaleDateString("tr-TR", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-white/70 rounded-lg border-l-4 border-green-500">
+                  <p className="text-sm text-muted-foreground mb-1">Aktif Özellikler</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-green-600" />
+                      <span>Sınırsız ürün</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-green-600" />
+                      <span>QR menü</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-green-600" />
+                      <span>Sipariş sistemi</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-green-600" />
+                      <span>Garson çağrı</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Destek ve Yardım</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Premium üyeliğinizle ilgili herhangi bir sorunuz veya desteğe ihtiyacınız var mı?
+                </p>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Shield className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">7/24 Öncelikli Destek</p>
+                    <a
+                      href="mailto:destek@dijitalmenü.com"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      destek@dijitalmenü.com
+                    </a>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {!isTrial && !isPremium && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Abonelik Durumu</CardTitle>
+              <CardDescription>Abonelik bilgileriniz yükleniyor...</CardDescription>
+            </CardHeader>
+          </Card>
+        )}
+      </div>
+    )
+  }
+
   const renderSettingsTab = () => (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -2492,6 +2706,12 @@ export default function AdminPanel() {
             label="Kullanıcılar"
             active={activeTab === "users"}
             onClick={() => setActiveTab("users")}
+          />
+          <NavItem
+            icon={<Award className="w-5 h-5" />}
+            label="Lisans"
+            active={activeTab === "license"}
+            onClick={() => setActiveTab("license")}
           />
           <NavItem
             icon={<Key className="w-5 h-5" />}
