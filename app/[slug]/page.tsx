@@ -1,5 +1,8 @@
 "use client"
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 import { useState, useEffect } from "react"
 import { MenuHeader } from "@/components/menu-header"
 import { CartButton } from "@/components/cart-button"
@@ -27,6 +30,7 @@ type Product = {
   categoryId: string
   image: string
   badge?: string | null
+  is_available?: boolean
 }
 
 type Category = {
@@ -171,6 +175,7 @@ export default function MenuPage() {
             categoryId: prod.category_id,
             image: prod.image || "",
             badge: prod.badge || null,
+            is_available: prod.is_available,
           }))
           setProducts(formattedProducts)
         }
