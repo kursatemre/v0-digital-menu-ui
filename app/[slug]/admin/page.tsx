@@ -876,6 +876,24 @@ export default function AdminPanel() {
     }
   }
 
+  const handleToggleProductAvailability = async (productId: string, currentStatus: boolean) => {
+    try {
+      const { error } = await supabase
+        .from("products")
+        .update({ is_available: !currentStatus })
+        .eq("id", productId)
+
+      if (error) throw error
+
+      // Update local state
+      setProducts(products.map(p =>
+        p.id === productId ? { ...p, is_available: !currentStatus } : p
+      ))
+    } catch (error) {
+      console.error("Error toggling product availability:", error)
+    }
+  }
+
   const handleAddCategory = async () => {
     if (editingCategory) {
       try {
@@ -1476,7 +1494,18 @@ export default function AdminPanel() {
                 <CardDescription>{product.description}</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-lg font-bold text-primary mb-4">₺{product.price.toFixed(2)}</p>
+                <p className="text-lg font-bold text-primary mb-2">₺{product.price.toFixed(2)}</p>
+
+                {/* Availability Toggle */}
+                <Button
+                  size="sm"
+                  variant={product.is_available !== false ? "default" : "secondary"}
+                  className="w-full mb-3"
+                  onClick={() => handleToggleProductAvailability(product.id, product.is_available !== false)}
+                >
+                  {product.is_available !== false ? "✅ Satışta" : "🚫 Tükendi"}
+                </Button>
+
                 <div className="flex gap-2 flex-wrap mb-2">
                   <Button
                     size="sm"
