@@ -2152,11 +2152,12 @@ export default function AdminPanel() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Kullanıcı Adı</label>
+              <label className="text-sm font-medium">E-posta (Kullanıcı Adı)</label>
               <Input
+                type="email"
                 value={userForm.username}
                 onChange={(e) => setUserForm({ ...userForm, username: e.target.value })}
-                placeholder="kullanici_adi"
+                placeholder="kullanici@email.com"
               />
             </div>
             <div>
@@ -2399,14 +2400,14 @@ export default function AdminPanel() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Kullanıcı Adı</label>
+                <label className="text-sm font-medium mb-2 block">E-posta</label>
                 <Input
-                  type="text"
+                  type="email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Kullanıcı adınızı girin"
+                  placeholder="ornek@email.com"
                   required
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
               <div>
