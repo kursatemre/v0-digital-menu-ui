@@ -81,6 +81,7 @@ type AdminUser = {
   username: string
   password_hash: string
   display_name: string | null
+  role: "admin" | "garson" | "kasa" | "mutfak"
   created_at: string
 }
 
@@ -254,6 +255,7 @@ export default function AdminPanel() {
     username: "",
     password: "",
     display_name: "",
+    role: "garson" as "admin" | "garson" | "kasa" | "mutfak",
   })
   const [showPasswordForm, setShowPasswordForm] = useState(false)
   const [passwordForm, setPasswordForm] = useState({
@@ -420,6 +422,7 @@ export default function AdminPanel() {
           username: userForm.username,
           password_hash: userForm.password,
           display_name: userForm.display_name || userForm.username,
+          role: userForm.role,
           tenant_id: tenantId,
         },
       ])
@@ -427,7 +430,7 @@ export default function AdminPanel() {
       if (error) throw error
 
       alert("Kullanıcı başarıyla eklendi!")
-      setUserForm({ username: "", password: "", display_name: "" })
+      setUserForm({ username: "", password: "", display_name: "", role: "garson" })
       setShowUserForm(false)
       loadAdminUsers()
     } catch (error: any) {
@@ -2383,13 +2386,32 @@ export default function AdminPanel() {
                 placeholder="Ad Soyad"
               />
             </div>
+            <div>
+              <label className="text-sm font-medium">Rol</label>
+              <select
+                className="w-full border rounded-md px-3 py-2 text-sm"
+                value={userForm.role}
+                onChange={(e) => setUserForm({ ...userForm, role: e.target.value as any })}
+              >
+                <option value="admin">Admin - Tüm Yetkiler</option>
+                <option value="garson">Garson - Sipariş ve Çağrılar</option>
+                <option value="kasa">Kasa - Sipariş, Ürün, Raporlar</option>
+                <option value="mutfak">Mutfak - Sadece Siparişler</option>
+              </select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {userForm.role === "admin" && "Tüm sekmelere erişim"}
+                {userForm.role === "garson" && "Siparişler ve Garson Çağrıları sekmelerine erişim"}
+                {userForm.role === "kasa" && "Siparişler, Ürünler, Kategoriler ve Raporlar sekmelerine erişim"}
+                {userForm.role === "mutfak" && "Sadece Siparişler sekmesine erişim"}
+              </p>
+            </div>
             <div className="flex gap-2">
               <Button onClick={handleAddUser}>Ekle</Button>
               <Button
                 variant="outline"
                 onClick={() => {
                   setShowUserForm(false)
-                  setUserForm({ username: "", password: "", display_name: "" })
+                  setUserForm({ username: "", password: "", display_name: "", role: "garson" })
                 }}
               >
                 İptal
@@ -2404,8 +2426,16 @@ export default function AdminPanel() {
           <Card key={user.id}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <div>
-                  <CardTitle className="text-lg">{user.display_name || user.username}</CardTitle>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CardTitle className="text-lg">{user.display_name || user.username}</CardTitle>
+                    <Badge variant={user.role === "admin" ? "default" : "secondary"} className="text-xs">
+                      {user.role === "admin" && "Admin"}
+                      {user.role === "garson" && "Garson"}
+                      {user.role === "kasa" && "Kasa"}
+                      {user.role === "mutfak" && "Mutfak"}
+                    </Badge>
+                  </div>
                   <CardDescription>@{user.username}</CardDescription>
                 </div>
                 {currentUser?.id !== user.id && (
@@ -3066,6 +3096,10 @@ export default function AdminPanel() {
     )
   }
 
+  // Role-based navigation visibility
+  const userRole = currentUser?.role || "admin"
+  const canView = (requiredRoles: string[]) => requiredRoles.includes(userRole)
+
   return (
     <div className="min-h-screen bg-background flex">
       <aside className="w-20 md:w-64 bg-white border-r border-border p-4 flex flex-col">
@@ -3079,6 +3113,7 @@ export default function AdminPanel() {
         </div>
 
         <nav className="flex-1 space-y-2">
+          {/* Orders - All roles can see */}
           <NavItem
             icon={<ShoppingCart className="w-5 h-5" />}
             label="Siparişler"
@@ -3086,55 +3121,80 @@ export default function AdminPanel() {
             onClick={() => setActiveTab("orders")}
             badge={orders.filter((o) => o.status === "pending").length}
           />
-          <NavItem
-            icon={<Bell className="w-5 h-5" />}
-            label="Garson Çağrıları"
-            active={activeTab === "waiter-calls"}
-            onClick={() => setActiveTab("waiter-calls")}
-            badge={waiterCalls.filter((c) => c.status === "pending").length}
-          />
-          <NavItem
-            icon={<Layers className="w-5 h-5" />}
-            label="Ürünler"
-            active={activeTab === "products"}
-            onClick={() => setActiveTab("products")}
-          />
-          <NavItem
-            icon={<Layers className="w-5 h-5" />}
-            label="Kategoriler"
-            active={activeTab === "categories"}
-            onClick={() => setActiveTab("categories")}
-          />
-          <NavItem
-            icon={<Settings className="w-5 h-5" />}
-            label="Görünüm"
-            active={activeTab === "appearance"}
-            onClick={() => setActiveTab("appearance")}
-          />
-          <NavItem
-            icon={<QrCode className="w-5 h-5" />}
-            label="QR Kod"
-            active={activeTab === "qr"}
-            onClick={() => setActiveTab("qr")}
-          />
-          <NavItem
-            icon={<Users className="w-5 h-5" />}
-            label="Kullanıcılar"
-            active={activeTab === "users"}
-            onClick={() => setActiveTab("users")}
-          />
-          <NavItem
-            icon={<BarChart3 className="w-5 h-5" />}
-            label="Raporlar"
-            active={activeTab === "reports"}
-            onClick={() => setActiveTab("reports")}
-          />
-          <NavItem
-            icon={<Award className="w-5 h-5" />}
-            label="Lisans"
-            active={activeTab === "license"}
-            onClick={() => setActiveTab("license")}
-          />
+          {/* Waiter Calls - admin, garson */}
+          {canView(["admin", "garson"]) && (
+            <NavItem
+              icon={<Bell className="w-5 h-5" />}
+              label="Garson Çağrıları"
+              active={activeTab === "waiter-calls"}
+              onClick={() => setActiveTab("waiter-calls")}
+              badge={waiterCalls.filter((c) => c.status === "pending").length}
+            />
+          )}
+          {/* Products - admin, kasa */}
+          {canView(["admin", "kasa"]) && (
+            <NavItem
+              icon={<Layers className="w-5 h-5" />}
+              label="Ürünler"
+              active={activeTab === "products"}
+              onClick={() => setActiveTab("products")}
+            />
+          )}
+          {/* Categories - admin, kasa */}
+          {canView(["admin", "kasa"]) && (
+            <NavItem
+              icon={<Layers className="w-5 h-5" />}
+              label="Kategoriler"
+              active={activeTab === "categories"}
+              onClick={() => setActiveTab("categories")}
+            />
+          )}
+          {/* Appearance - admin only */}
+          {canView(["admin"]) && (
+            <NavItem
+              icon={<Settings className="w-5 h-5" />}
+              label="Görünüm"
+              active={activeTab === "appearance"}
+              onClick={() => setActiveTab("appearance")}
+            />
+          )}
+          {/* QR Code - admin only */}
+          {canView(["admin"]) && (
+            <NavItem
+              icon={<QrCode className="w-5 h-5" />}
+              label="QR Kod"
+              active={activeTab === "qr"}
+              onClick={() => setActiveTab("qr")}
+            />
+          )}
+          {/* Users - admin only */}
+          {canView(["admin"]) && (
+            <NavItem
+              icon={<Users className="w-5 h-5" />}
+              label="Kullanıcılar"
+              active={activeTab === "users"}
+              onClick={() => setActiveTab("users")}
+            />
+          )}
+          {/* Reports - admin, kasa */}
+          {canView(["admin", "kasa"]) && (
+            <NavItem
+              icon={<BarChart3 className="w-5 h-5" />}
+              label="Raporlar"
+              active={activeTab === "reports"}
+              onClick={() => setActiveTab("reports")}
+            />
+          )}
+          {/* License - admin only */}
+          {canView(["admin"]) && (
+            <NavItem
+              icon={<Award className="w-5 h-5" />}
+              label="Lisans"
+              active={activeTab === "license"}
+              onClick={() => setActiveTab("license")}
+            />
+          )}
+          {/* Settings - All roles can change password */}
           <NavItem
             icon={<Key className="w-5 h-5" />}
             label="Ayarlar"
