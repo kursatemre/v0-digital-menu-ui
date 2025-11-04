@@ -225,10 +225,10 @@ export default function RegisterPage() {
         ])
       }
 
-      // Create default admin user
+      // Create default admin user (email as username, password from form)
       await supabase.from("admin_users").insert({
-        username: "admin",
-        password_hash: "admin123",
+        username: formData.ownerEmail,
+        password_hash: formData.password,
         display_name: formData.ownerName,
         tenant_id: tenantId,
       })

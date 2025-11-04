@@ -432,10 +432,12 @@ export default function MenuPage() {
                   {isExpanded && (
                     <div className="border-t border-primary/10 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-4 p-4 sm:p-6">
                       {categoryProducts.length > 0 ? (
-                        categoryProducts.map((product) => (
+                        categoryProducts.map((product) => {
+                          const isAvailable = product.is_available !== false
+                          return (
                           <div
                             key={product.id}
-                            className="bg-white border border-primary/10 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row"
+                            className={`bg-white border border-primary/10 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row ${!isAvailable ? 'opacity-60' : ''}`}
                           >
                             {/* Product Image */}
                             <div className="relative flex-shrink-0 sm:w-44">
@@ -443,15 +445,23 @@ export default function MenuPage() {
                                 <img
                                   src={product.image || "/placeholder.svg"}
                                   alt={product.name}
-                                  className="w-full h-40 sm:h-full object-cover"
+                                  className={`w-full h-40 sm:h-full object-cover ${!isAvailable ? 'grayscale' : ''}`}
                                 />
                               ) : (
-                                <div className="w-full h-40 sm:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-4xl">
+                                <div className={`w-full h-40 sm:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-4xl ${!isAvailable ? 'grayscale' : ''}`}>
                                   🍽️
                                 </div>
                               )}
+
+                              {/* Sold Out Badge */}
+                              {!isAvailable && (
+                                <div className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md">
+                                  TÜKENDİ
+                                </div>
+                              )}
+
                               {/* Product Badge */}
-                              {product.badge && (
+                              {product.badge && isAvailable && (
                                 <div className="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-semibold shadow-md">
                                   {product.badge === "gunun_urunu" && "Günün Ürünü"}
                                   {product.badge === "sefin_onerisi" && "Şefin Önerisi"}
@@ -482,15 +492,20 @@ export default function MenuPage() {
                                   </p>
                                 </div>
                                 <button
-                                  onClick={() => addToCart(product, 1)}
-                                  className="bg-primary text-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg hover:bg-primary/90 active:scale-95 transition-all text-sm font-semibold shadow-md hover:shadow-lg whitespace-nowrap"
+                                  onClick={() => isAvailable && addToCart(product, 1)}
+                                  disabled={!isAvailable}
+                                  className={`px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg transition-all text-sm font-semibold shadow-md whitespace-nowrap ${
+                                    isAvailable
+                                      ? 'bg-primary text-white hover:bg-primary/90 active:scale-95 hover:shadow-lg'
+                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                  }`}
                                 >
-                                  Sepete Ekle
+                                  {isAvailable ? 'Sepete Ekle' : 'Tükendi'}
                                 </button>
                               </div>
                             </div>
                           </div>
-                        ))
+                        )})
                       ) : (
                         <div className="col-span-full px-6 py-8 text-center text-muted-foreground">
                           Bu kategoride ürün bulunmamaktadır.
@@ -562,10 +577,8 @@ export default function MenuPage() {
                   🪑 Masa Numarası <span className="text-red-500">*</span>
                 </label>
                 <Input
-                  type="number"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="5"
+                  type="text"
+                  placeholder="A5, 12, Bahçe-3..."
                   value={waiterTableNumber}
                   onChange={(e) => setWaiterTableNumber(e.target.value)}
                   className="w-full text-lg"
