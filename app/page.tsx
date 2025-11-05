@@ -4,6 +4,15 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
   QrCode,
   Smartphone,
   Zap,
@@ -18,12 +27,16 @@ import {
   HelpCircle,
 } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 
 export default function LandingPage() {
   const supabase = createClient()
+  const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
+  const [restaurantLoginOpen, setRestaurantLoginOpen] = useState(false)
+  const [restaurantSlug, setRestaurantSlug] = useState("")
   const [heroContent, setHeroContent] = useState({
     title: "Kağıt Menü Derdine Son Verin!",
     subtitle: "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
@@ -66,6 +79,36 @@ export default function LandingPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleRestaurantLogin = async () => {
+    if (!restaurantSlug.trim()) {
+      alert("Lütfen restoran adınızı girin")
+      return
+    }
+
+    // Slug'ı küçük harfe çevir ve boşlukları kaldır
+    const cleanSlug = restaurantSlug.trim().toLowerCase().replace(/\s+/g, '-')
+
+    // Restoran var mı kontrol et
+    const { data, error } = await supabase
+      .from("tenants")
+      .select("slug, is_active")
+      .eq("slug", cleanSlug)
+      .single()
+
+    if (error || !data) {
+      alert("Bu isimde bir restoran bulunamadı. Lütfen restoran adınızı kontrol edin.")
+      return
+    }
+
+    if (!data.is_active) {
+      alert("Bu restoran hesabı aktif değil. Lütfen destek ekibi ile iletişime geçin.")
+      return
+    }
+
+    // Restoran admin sayfasına yönlendir
+    router.push(`/${cleanSlug}/admin`)
   }
 
   const features = [
@@ -193,6 +236,13 @@ export default function LandingPage() {
               <a href="#sss" className="text-sm font-medium hover:text-primary transition-colors">
                 SSS
               </a>
+              <Button
+                variant="outline"
+                className="gap-2"
+                onClick={() => setRestaurantLoginOpen(true)}
+              >
+                Restoran Girişi
+              </Button>
               <Link href="/register">
                 <Button className="gap-2 shadow-lg hover:shadow-xl transition-all">
                   Hemen Başla
@@ -234,6 +284,16 @@ export default function LandingPage() {
               >
                 SSS
               </a>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  setRestaurantLoginOpen(true)
+                }}
+              >
+                Restoran Girişi
+              </Button>
               <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full gap-2">
                   Hemen Başla
@@ -516,6 +576,49 @@ export default function LandingPage() {
           </Link>
         </div>
       </section>
+
+      {/* Restaurant Login Dialog */}
+      <Dialog open={restaurantLoginOpen} onOpenChange={setRestaurantLoginOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Restoran Girişi</DialogTitle>
+            <DialogDescription>
+              Restoranınızın adını girerek yönetim panelinize erişin
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="restaurant-slug">Restoran Adı</Label>
+              <Input
+                id="restaurant-slug"
+                placeholder="ornek: lezzet-duragi"
+                value={restaurantSlug}
+                onChange={(e) => setRestaurantSlug(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleRestaurantLogin()
+                  }
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Kayıt olurken belirlediğiniz restoran adınızı girin
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setRestaurantLoginOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              İptal
+            </Button>
+            <Button onClick={handleRestaurantLogin} className="w-full sm:flex-1">
+              Giriş Yap
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer id="iletisim" className="bg-slate-900 text-slate-300 py-8 sm:py-12">
