@@ -8,6 +8,7 @@ export function MenuHeader() {
     title: "Menümüz",
     subtitle: "Lezzetli yemeklerimizi keşfedin!",
     logo: "",
+    backgroundImage: "",
   })
 
   useEffect(() => {
@@ -42,8 +43,25 @@ export function MenuHeader() {
   }, [])
 
   return (
-    <div className="relative overflow-hidden bg-white dotted-bg border-b border-primary/10">
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 lg:py-16">
+    <div className="relative overflow-hidden border-b border-primary/10">
+      {/* Background Image */}
+      {headerConfig.backgroundImage && (
+        <div 
+          className="absolute inset-0 z-0"
+          style={{
+            backgroundImage: `url(${headerConfig.backgroundImage})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            opacity: 0.15
+          }}
+        />
+      )}
+      
+      {/* Default Background Pattern */}
+      <div className="absolute inset-0 z-0 bg-white dotted-bg" />
+
+      {/* Content */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 lg:py-16">
         <div className="flex items-start justify-between gap-3 sm:gap-6">
           {/* Left side: Title and subtitle */}
           <div className="flex-1 min-w-0">

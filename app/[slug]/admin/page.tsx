@@ -1996,6 +1996,46 @@ export default function AdminPanel() {
             />
           </div>
           <div>
+            <label className="text-sm font-medium mb-2 block">Header Arkaplan Görseli</label>
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Dosya Yükle</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadImage(file)
+                      if (url) {
+                        setHeaderSettings({ ...headerSettings, backgroundImage: url })
+                      }
+                    }
+                  }}
+                  disabled={uploadingImage}
+                  className="cursor-pointer"
+                />
+                {uploadingImage && <p className="text-xs text-muted-foreground mt-1">Yükleniyor...</p>}
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">veya URL Gir</label>
+                <Input
+                  value={headerSettings.backgroundImage || ""}
+                  onChange={(e) => setHeaderSettings({ ...headerSettings, backgroundImage: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              {headerSettings.backgroundImage && (
+                <img
+                  src={headerSettings.backgroundImage}
+                  alt="Header arkaplan önizleme"
+                  className="mt-2 h-32 object-cover rounded"
+                />
+              )}
+            </div>
+          </div>
+
+          <div>
             <label className="text-sm font-medium mb-2 block">Header Logo</label>
             <div className="space-y-2">
               <div>

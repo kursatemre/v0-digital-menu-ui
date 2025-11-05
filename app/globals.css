@@ -13,6 +13,7 @@
   --popover-foreground: oklch(0.15 0 0);
   /* Primary: warm orange/red */
   --primary: oklch(0.65 0.2 30);
+  --primary-text-color: var(--primary-foreground);
   --primary-foreground: oklch(0.99 0 0);
   /* Secondary: soft accent */
   --secondary: oklch(0.75 0.1 50);

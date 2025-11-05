@@ -12,7 +12,7 @@ export function CartButton({ itemCount, total, onClick }: CartButtonProps) {
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 bg-primary text-primary-foreground rounded-full shadow-lg hover:bg-primary/90 transition-colors p-0 z-30"
+      className="fixed bottom-6 right-6 bg-primary [color:var(--primary-text-color)] rounded-full shadow-lg hover:bg-primary/90 transition-colors p-0 z-30"
     >
       <div className="relative p-4 flex items-center justify-center">
         <ShoppingBag size={24} />
