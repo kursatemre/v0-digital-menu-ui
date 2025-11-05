@@ -590,11 +590,17 @@ export default function AdminPanel() {
       // Header ayarlarını Supabase'e kaydet
       const { error: headerError } = await supabase
         .from("settings")
-        .upsert([
-          { key: "header", value: headerSettings, tenant_id: tenantId }
-        ], { onConflict: ["key", "tenant_id"] })
+        .upsert({
+          key: "header",
+          value: headerSettings,
+          tenant_id: tenantId,
+          updated_at: new Date().toISOString()
+        })
 
-      if (headerError) throw headerError
+      if (headerError) {
+        console.error("Header ayarları kaydedilirken hata:", headerError)
+        throw headerError
+      }
 
       // LocalStorage'a header ayarlarını yaz
       localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
@@ -602,11 +608,17 @@ export default function AdminPanel() {
       // Tema ayarlarını Supabase'e kaydet
       const { error: themeError } = await supabase
         .from("settings")
-        .upsert([
-          { key: "theme", value: theme, tenant_id: tenantId }
-        ], { onConflict: ["key", "tenant_id"] })
+        .upsert({
+          key: "theme",
+          value: theme,
+          tenant_id: tenantId,
+          updated_at: new Date().toISOString()
+        })
 
-      if (themeError) throw themeError
+      if (themeError) {
+        console.error("Tema ayarları kaydedilirken hata:", themeError)
+        throw themeError
+      }
 
       // Tema ayarlarını localStorage'a kaydet
       localStorage.setItem("restaurant_theme", JSON.stringify(theme))
