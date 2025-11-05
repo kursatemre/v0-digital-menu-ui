@@ -1,7 +1,6 @@
 "use client"
 
-// @ts-ignore
-import { useState, useEffect, useCallback } from "react"
+import React, { useState, useEffect, useCallback, ChangeEvent, KeyboardEvent } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -50,11 +49,21 @@ interface Tenant {
   created_at: string
 }
 
+interface Hero {
+  title: string
+  subtitle: string
+  logoUrl?: string
+  backgroundImage?: string
+  buttonText?: string
+  buttonLink?: string
+  badgeText?: string
+}
+
 interface LandingContent {
   id: string
   section_key: string
   title: string
-  content: Record<string, any>
+  content: Hero | Record<string, any>
   created_at: string
 }
 
@@ -74,12 +83,7 @@ interface Stats {
   trialTenants: number
 }
 
-// @ts-ignore
-declare namespace JSX {
-  interface IntrinsicElements {
-    [elemName: string]: any
-  }
-}
+// React 18 ve sonrası için JSX namespace tanımlaması gerekmez
 
 export default function SuperAdminPanel() {
   const router = useRouter()
@@ -113,9 +117,20 @@ export default function SuperAdminPanel() {
     trialTenants: 0
   })
 
-  const [landingContent, setLandingContent] = useState({
-    hero: { title: "", subtitle: "" },
-    pricing: { plans: [] as any[] }
+  const [landingContent, setLandingContent] = useState<{
+    hero: Hero,
+    pricing: { plans: any[] }
+  }>({
+    hero: { 
+      title: "", 
+      subtitle: "",
+      logoUrl: "",
+      backgroundImage: "",
+      buttonText: "",
+      buttonLink: "",
+      badgeText: ""
+    },
+    pricing: { plans: [] }
   })
   const [loadingLanding, setLoadingLanding] = useState(false)
 
@@ -129,6 +144,22 @@ export default function SuperAdminPanel() {
   })
 
   // Actions
+  const loadPlatformSettings = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("*")
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setPlatformSettings(data)
+      }
+    } catch (error) {
+      console.error("Error loading platform settings:", error)
+    }
+  }, [supabase])
+
   const loadTenants = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -153,11 +184,12 @@ export default function SuperAdminPanel() {
 
       if (error) throw error
       if (data) {
+        const tenants = data as Tenant[]
         setStats({
-          totalTenants: data.length,
-          activeTenants: data.filter((t: Tenant) => t.is_active).length,
-          premiumTenants: data.filter((t: Tenant) => t.subscription_plan === "premium").length,
-          trialTenants: data.filter((t: Tenant) => t.subscription_plan === "trial").length
+          totalTenants: tenants.length,
+          activeTenants: tenants.filter(t => t.is_active).length,
+          premiumTenants: tenants.filter(t => t.subscription_plan === "premium").length,
+          trialTenants: tenants.filter(t => t.subscription_plan === "trial").length
         })
       }
     } catch (error) {
@@ -197,35 +229,54 @@ export default function SuperAdminPanel() {
     }
   }, [supabase])
 
+  // Auth check effect
   useEffect(() => {
+    const checkAuth = () => {
+      const loggedIn = localStorage.getItem("super_admin_logged_in")
+      const username = localStorage.getItem("super_admin_username")
+
+      if (loggedIn === "true" && username) {
+        setIsAuthenticated(true)
+      }
+      setIsLoading(false)
+    }
+
     checkAuth()
   }, [])
 
+  // Data loading effect
   useEffect(() => {
-    if (isAuthenticated) {
-      loadTenants()
-      loadStats()
-      if (activeTab === "landing") {
-        loadLandingContent()
+    if (!isAuthenticated) return
+
+    const loadData = async () => {
+      try {
+        await loadTenants()
+        await loadStats()
+        if (activeTab === "landing") {
+          await loadLandingContent()
+        }
+      } catch (error) {
+        console.error("Error loading data:", error)
       }
     }
+
+    loadData()
   }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent])
 
+  // Platform settings effect
   useEffect(() => {
-    if (isAuthenticated && activeTab === "platform") {
-      loadPlatformSettings()
-    }
-  }, [isAuthenticated, activeTab])
+    if (!isAuthenticated || activeTab !== "platform") return
 
-  const checkAuth = () => {
-    const loggedIn = localStorage.getItem("super_admin_logged_in")
-    const username = localStorage.getItem("super_admin_username")
-
-    if (loggedIn === "true" && username) {
-      setIsAuthenticated(true)
+    const loadSettings = async () => {
+      try {
+        await loadPlatformSettings()
+      } catch (error) {
+        console.error("Error loading platform settings:", error)
+      }
     }
-    setIsLoading(false)
-  }
+
+    loadSettings()
+  }, [isAuthenticated, activeTab, loadPlatformSettings])
 
   const handleLogin = async () => {
     setLoginError("")
@@ -416,22 +467,6 @@ export default function SuperAdminPanel() {
   }
 
   // Platform ayarları için gerekli fonksiyonlar
-  const loadPlatformSettings = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("platform_settings")
-        .select("*")
-        .single()
-
-      if (error) throw error
-      if (data) {
-        setPlatformSettings(data)
-      }
-    } catch (error) {
-      console.error("Error loading platform settings:", error)
-    }
-  }
-
   const uploadPlatformImage = async (file: File, type: "logo" | "favicon") => {
     setUploadingImage(true)
     try {
