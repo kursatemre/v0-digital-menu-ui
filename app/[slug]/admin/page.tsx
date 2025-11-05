@@ -1961,20 +1961,29 @@ export default function AdminPanel() {
     </div>
   )
 
-  // Görünüm ayarlarını Supabase'e ve localStorage'a kaydeden fonksiyon
+  // Görünüm ayarlarını kaydetme fonksiyonunu güncelle
   const saveAppearanceSettings = async () => {
     setIsSaving(true);
     try {
-      // Supabase'e tenant bazlı kaydet
+      // Header ayarlarını Supabase'e kaydet
       await supabase
         .from("settings")
         .upsert([
           { key: "header", value: headerSettings, tenant_id: tenantId }
         ], { onConflict: ["key", "tenant_id"] });
-      // LocalStorage'a da yaz (isteğe bağlı)
+
+      // LocalStorage'a header ayarlarını yaz
       localStorage.setItem("restaurant_header", JSON.stringify(headerSettings));
+
+      // Tema ayarlarını da kaydet
+      await supabase
+        .from("settings")
+        .upsert([
+          { key: "theme", value: theme, tenant_id: tenantId }
+        ], { onConflict: ["key", "tenant_id"] });
+
+      localStorage.setItem("restaurant_theme", JSON.stringify(theme));
     } catch (err) {
-      // Hata yönetimi
       console.error("Görünüm ayarları kaydedilemedi:", err);
     }
     setIsSaving(false);

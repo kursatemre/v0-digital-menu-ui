@@ -15,7 +15,27 @@ export function MenuHeader() {
     const loadSettings = async () => {
       const supabase = createClient()
       try {
-        const { data: headerData, error } = await supabase.from("settings").select("*").eq("key", "header").single()
+        // Önce URL'den slug'ı al
+        const slug = window.location.pathname.split('/')[1]
+        
+        // Slug ile tenant_id'yi bul
+        const { data: tenantData, error: tenantError } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("slug", slug)
+          .single()
+
+        if (tenantError || !tenantData) {
+          throw new Error("Tenant not found")
+        }
+
+        // Tenant'a özgü header ayarlarını çek
+        const { data: headerData, error } = await supabase
+          .from("settings")
+          .select("*")
+          .eq("key", "header")
+          .eq("tenant_id", tenantData.id)
+          .single()
 
         if (headerData?.value) {
           setHeaderConfig(headerData.value)
