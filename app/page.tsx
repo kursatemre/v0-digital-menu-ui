@@ -655,9 +655,9 @@ export default function LandingPage() {
               <h4 className="text-white font-semibold mb-4">Destek</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#iletisim" className="hover:text-white transition-colors">
+                  <Link href="/contact" className="hover:text-white transition-colors">
                     İletişim
-                  </a>
+                  </Link>
                 </li>
                 <li>
                   <Link href="/register" className="hover:text-white transition-colors">
@@ -665,9 +665,9 @@ export default function LandingPage() {
                   </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link href="/documentation" className="hover:text-white transition-colors">
                     Dokümantasyon
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
@@ -675,19 +675,19 @@ export default function LandingPage() {
               <h4 className="text-white font-semibold mb-4">Yasal</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link href="/privacy" className="hover:text-white transition-colors">
                     Gizlilik Politikası
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link href="/terms" className="hover:text-white transition-colors">
                     Kullanım Şartları
-                  </a>
+                  </Link>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-white transition-colors">
+                  <Link href="/kvkk" className="hover:text-white transition-colors">
                     KVKK
-                  </a>
+                  </Link>
                 </li>
               </ul>
             </div>
