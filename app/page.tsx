@@ -14,6 +14,8 @@ import {
   Menu as MenuIcon,
   X,
   Star,
+  ChevronDown,
+  HelpCircle,
 } from "lucide-react"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
@@ -21,6 +23,7 @@ import { createClient } from "@/lib/supabase/client"
 export default function LandingPage() {
   const supabase = createClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
   const [heroContent, setHeroContent] = useState({
     title: "Kağıt Menü Derdine Son Verin!",
     subtitle: "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
@@ -67,46 +70,89 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <Zap className="w-8 h-8" />,
-      title: "Anında Güncelleme",
-      description: "Fiyat ve stok değişikliklerini tek tıkla tüm müşterilerinize anlık yansıtın.",
+      icon: <QrCode className="w-8 h-8" />,
+      title: "QR Menü Oluşturma",
+      description: "Saniyeler içinde dijital menünüzü oluşturun. QR kod ile müşterileriniz temassız sipariş versin. Basılı menü masraflarına son!",
     },
     {
-      icon: <QrCode className="w-8 h-8" />,
-      title: "Otomatik QR Kod",
-      description: "Restoranınıza özel, özelleştirilebilir QR kodunuzu otomatik oluşturun.",
+      icon: <Zap className="w-8 h-8" />,
+      title: "Anında Güncelleme",
+      description: "Fiyat ve stok değişikliklerini gerçek zamanlı güncelleyin. Tüm müşterileriniz en güncel menüyü görsün.",
     },
     {
       icon: <Smartphone className="w-8 h-8" />,
-      title: "Mobil Uyumlu",
-      description: "Tüm telefon ve tabletlerde mükemmel görünüm. Müşterileriniz kolayca sipariş verebilir.",
+      title: "Temassız Sipariş",
+      description: "Müşterileriniz QR kod okutarak doğrudan menüden sipariş versin. Hijyenik ve hızlı!",
     },
     {
       icon: <Globe className="w-8 h-8" />,
-      title: "Kolay Yönetim",
-      description: "Kod bilgisi gerektirmeden menünüzü dilediğiniz gibi düzenleyin.",
+      title: "Çoklu Dil Desteği",
+      description: "Menünüzü istediğiniz dillerde sunun. Yabancı misafirlerinize kendi dillerinde hizmet verin.",
     },
     {
       icon: <TrendingUp className="w-8 h-8" />,
-      title: "Sipariş Takibi",
-      description: "Gelen siparişleri anlık takip edin, garson çağrılarını yönetin.",
+      title: "Sipariş Yönetimi",
+      description: "Gelen siparişleri anlık takip edin. WhatsApp bildirimleri ile hiçbir siparişi kaçırmayın.",
     },
     {
       icon: <Star className="w-8 h-8" />,
-      title: "Profesyonel Görünüm",
-      description: "Markanıza uygun renkler, logonuz ve özelleştirilebilir tasarım.",
+      title: "Özel Tasarım",
+      description: "Markanıza özel renk, logo ve tasarım. Profesyonel görünümle müşterilerinizi etkileyin.",
     },
   ]
 
   const benefits = [
-    "Sınırsız kategori ve ürün",
-    "Gerçek zamanlı sipariş bildirimleri",
+    "Sınırsız kategori ve ürün ekleme",
+    "Çoklu dil desteği (sınırsız dil)",
     "QR kod özelleştirme (logo, renk, boyut)",
-    "Garson çağırma sistemi",
-    "Stok yönetimi",
-    "Detaylı raporlama",
+    "Gerçek zamanlı sipariş bildirimleri",
+    "WhatsApp entegrasyonu",
+    "Garson çağırma butonu",
+    "Detaylı raporlama ve analizler",
+    "Stok takibi ve yönetimi",
+    "Toplu fiyat güncelleme",
+    "Özel domain desteği",
+    "Mobil uyumlu tasarım",
     "7/24 teknik destek",
-    "Ücretsiz güncellemeler",
+  ]
+
+  const faqs = [
+    {
+      question: "QR menü nedir ve nasıl çalışır?",
+      answer: "QR menü, restoranlar ve kafeler için hazırlanan dijital menü sistemidir. Müşterileriniz masadaki QR kodu telefonlarıyla okutarak menünüze anında erişebilir, ürünleri görüntüleyebilir ve sipariş verebilir. Temassız, hijyenik ve modern bir çözümdür."
+    },
+    {
+      question: "QR menü oluşturmak ne kadar sürer?",
+      answer: "Menumgo ile dijital menünüzü 5-10 dakika içinde oluşturabilirsiniz. Kayıt olduktan sonra kategorilerinizi ve ürünlerinizi ekleyin, QR kodunuzu indirin ve kullanmaya başlayın. Teknik bilgi gerektirmez, tamamen kullanıcı dostudur."
+    },
+    {
+      question: "Ücretsiz deneme süresi var mı?",
+      answer: "Evet! Menumgo'yu 3 gün boyunca tamamen ücretsiz deneyebilirsiniz. Tüm premium özelliklere erişim sağlarsınız ve kredi kartı bilgisi gerektirmez. Beğenirseniz aylık 299₺ ile devam edebilirsiniz."
+    },
+    {
+      question: "Menümü kaç dilde sunabilirim?",
+      answer: "Menumgo ile menünüzü sınırsız dilde sunabilirsiniz. Türkçe, İngilizce, Almanca, Rusça, Arapça ve daha fazlası... Yabancı misafirlerinize kendi dillerinde hizmet vererek müşteri memnuniyetini artırın."
+    },
+    {
+      question: "Fiyat ve ürün güncellemeleri nasıl yapılır?",
+      answer: "Yönetim panelinizden istediğiniz zaman kolayca güncelleme yapabilirsiniz. Değişiklikler anında tüm müşterilere yansır. Toplu fiyat güncelleme özelliği ile tüm ürünlerinizi tek seferde güncelleyebilirsiniz."
+    },
+    {
+      question: "Sipariş bildirimleri nasıl alırım?",
+      answer: "Gelen siparişleri yönetim panelinizden, e-posta ile veya WhatsApp üzerinden anında alabilirsiniz. Hiçbir siparişi kaçırmaz, müşterilerinize hızlı hizmet verebilirsiniz."
+    },
+    {
+      question: "QR kodumu özelleştirebilir miyim?",
+      answer: "Evet! QR kodunuza logonuzu ekleyebilir, renk ve boyut ayarlarını yapabilirsiniz. Markanıza özel, profesyonel görünümlü QR kodlar oluşturabilirsiniz."
+    },
+    {
+      question: "Teknik destek sağlanıyor mu?",
+      answer: "Elbette! 7/24 teknik destek ekibimiz her zaman yanınızda. E-posta, WhatsApp veya canlı destek ile sorularınızı sorabilir, sorunlarınıza hızlı çözüm bulabilirsiniz."
+    },
+    {
+      question: "İptal etmek istersem ne olur?",
+      answer: "Aboneliğinizi istediğiniz zaman iptal edebilirsiniz. Herhangi bir sözleşme veya bağlayıcılık yoktur. İptal ettiğinizde mevcut dönem sonuna kadar sistemi kullanmaya devam edebilirsiniz."
+    },
   ]
 
   return (
@@ -130,9 +176,9 @@ export default function LandingPage() {
               )}
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Dijital Menü
+                  Menumgo
                 </h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">SaaS Platform</p>
+                <p className="text-xs text-muted-foreground hidden sm:block">menumgo.digital</p>
               </div>
             </div>
 
@@ -144,12 +190,12 @@ export default function LandingPage() {
               <a href="#fiyatlandirma" className="text-sm font-medium hover:text-primary transition-colors">
                 Fiyatlandırma
               </a>
-              <a href="#iletisim" className="text-sm font-medium hover:text-primary transition-colors">
-                İletişim
+              <a href="#sss" className="text-sm font-medium hover:text-primary transition-colors">
+                SSS
               </a>
               <Link href="/register">
                 <Button className="gap-2 shadow-lg hover:shadow-xl transition-all">
-                  Ücretsiz Başla
+                  Hemen Başla
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -182,15 +228,15 @@ export default function LandingPage() {
                 Fiyatlandırma
               </a>
               <a
-                href="#iletisim"
+                href="#sss"
                 className="block py-2 px-4 hover:bg-slate-100 rounded-lg transition-colors"
                 onClick={() => setMobileMenuOpen(false)}
               >
-                İletişim
+                SSS
               </a>
               <Link href="/register" onClick={() => setMobileMenuOpen(false)}>
                 <Button className="w-full gap-2">
-                  Ücretsiz Başla
+                  Hemen Başla
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
@@ -403,6 +449,52 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="sss" className="py-12 sm:py-20 lg:py-28 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12 sm:mb-16">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full mb-4">
+              <HelpCircle className="w-5 h-5 text-primary" />
+              <span className="text-sm font-semibold text-primary">Sıkça Sorulan Sorular</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+              Aklınıza Takılanlar
+            </h2>
+            <p className="text-base sm:text-lg text-muted-foreground">
+              Menumgo hakkında merak ettikleriniz
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {faqs.map((faq, index) => (
+              <Card
+                key={index}
+                className="border-2 hover:border-primary/50 transition-all cursor-pointer"
+                onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <h3 className="font-semibold text-base sm:text-lg flex-1">
+                      {faq.question}
+                    </h3>
+                    <ChevronDown
+                      className={`w-5 h-5 text-primary flex-shrink-0 transition-transform ${
+                        openFaqIndex === index ? "rotate-180" : ""
+                      }`}
+                    />
+                  </div>
+                  {openFaqIndex === index && (
+                    <p className="mt-4 text-sm sm:text-base text-muted-foreground leading-relaxed animate-in slide-in-from-top-2 duration-200">
+                      {faq.answer}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-12 sm:py-20 lg:py-28 bg-gradient-to-br from-primary to-primary/90 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -430,10 +522,11 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             <div>
-              <h3 className="text-white font-bold mb-4 text-lg">Dijital Menü</h3>
-              <p className="text-sm leading-relaxed">
+              <h3 className="text-white font-bold mb-4 text-lg">Menumgo</h3>
+              <p className="text-sm leading-relaxed mb-4">
                 Restoranlar için modern dijital menü çözümü. Hızlı, kolay ve profesyonel.
               </p>
+              <p className="text-xs text-slate-400">menumgo.digital</p>
             </div>
             <div>
               <h4 className="text-white font-semibold mb-4">Ürün</h4>
@@ -448,6 +541,11 @@ export default function LandingPage() {
                     Fiyatlandırma
                   </a>
                 </li>
+                <li>
+                  <a href="#sss" className="hover:text-white transition-colors">
+                    Sıkça Sorulan Sorular
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
@@ -459,8 +557,13 @@ export default function LandingPage() {
                   </a>
                 </li>
                 <li>
+                  <Link href="/register" className="hover:text-white transition-colors">
+                    Kayıt Ol
+                  </Link>
+                </li>
+                <li>
                   <a href="#" className="hover:text-white transition-colors">
-                    Sıkça Sorulan Sorular
+                    Dokümantasyon
                   </a>
                 </li>
               </ul>
@@ -478,11 +581,16 @@ export default function LandingPage() {
                     Kullanım Şartları
                   </a>
                 </li>
+                <li>
+                  <a href="#" className="hover:text-white transition-colors">
+                    KVKK
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
           <div className="border-t border-slate-800 pt-8 text-center text-sm">
-            <p>&copy; 2025 Dijital Menü SaaS. Tüm hakları saklıdır.</p>
+            <p>&copy; 2025 Menumgo. Tüm hakları saklıdır.</p>
           </div>
         </div>
       </footer>
