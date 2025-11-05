@@ -26,6 +26,12 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [checkingSlug, setCheckingSlug] = useState(false)
+  const [origin, setOrigin] = useState("")
+
+  // Get origin on client side only
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
 
   // Auto-generate slug from business name
   const generateSlug = (name: string) => {
@@ -51,10 +57,20 @@ export default function RegisterPage() {
 
       setCheckingSlug(true)
       try {
-        const { data, error } = await supabase.from("tenants").select("slug").eq("slug", formData.slug).single()
+        // Use count instead of single to avoid 406 error
+        const { count, error } = await supabase
+          .from("tenants")
+          .select("slug", { count: "exact", head: true })
+          .eq("slug", formData.slug)
 
-        setSlugAvailable(!data)
+        if (error) {
+          console.error("Slug check error:", error)
+          setSlugAvailable(true) // If error, assume available
+        } else {
+          setSlugAvailable(count === 0)
+        }
       } catch (error) {
+        console.error("Slug check exception:", error)
         setSlugAvailable(true) // If error, assume available
       } finally {
         setCheckingSlug(false)
@@ -250,7 +266,45 @@ export default function RegisterPage() {
 
     setIsLoading(true)
     try {
-      // Create tenant
+      // Step 1: Create Supabase Auth user with email confirmation required
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.ownerEmail,
+        password: formData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/confirm`,
+          data: {
+            business_name: formData.businessName,
+            owner_name: formData.ownerName,
+            slug: formData.slug,
+          },
+        },
+      })
+
+      if (authError) {
+        console.error("Auth signup error:", authError)
+        if (authError.message.includes("already registered")) {
+          setErrors({ submit: "Bu e-posta adresi zaten kayıtlı." })
+        } else {
+          setErrors({ submit: "Kayıt oluşturulamadı. Lütfen tekrar deneyin." })
+        }
+        setIsLoading(false)
+        return
+      }
+
+      if (!authData.user) {
+        setErrors({ submit: "Kullanıcı oluşturulamadı." })
+        setIsLoading(false)
+        return
+      }
+
+      // Check if email confirmation is required
+      // If user.email_confirmed_at is null, it means email confirmation is enabled
+      const emailConfirmationRequired = !authData.user.email_confirmed_at
+
+      console.log("Email confirmation required:", emailConfirmationRequired)
+      console.log("User email confirmed at:", authData.user.email_confirmed_at)
+
+      // Step 2: Create tenant record (inactive until email confirmed)
       const { data: tenant, error: tenantError } = await supabase
         .from("tenants")
         .insert({
@@ -258,24 +312,60 @@ export default function RegisterPage() {
           business_name: formData.businessName,
           owner_name: formData.ownerName,
           owner_email: formData.ownerEmail,
-          password_hash: formData.password, // TODO: Hash in production
+          auth_user_id: authData.user.id,
           subscription_status: "trial",
+          subscription_plan: "trial",
+          is_active: false, // Will be activated after email confirmation
+          trial_end_date: null, // Will be set after email confirmation
         })
         .select()
         .single()
 
       if (tenantError) {
         console.error("Tenant creation error:", tenantError)
-        setErrors({ submit: "Kayıt oluşturulamadı. Lütfen tekrar deneyin." })
+
+        // Check if it's a unique constraint violation
+        if (tenantError.code === '23505') {
+          if (tenantError.message.includes('unique_auth_user_id')) {
+            setErrors({ submit: "Bu e-posta adresi zaten kayıtlı." })
+          } else if (tenantError.message.includes('slug')) {
+            setErrors({ submit: "Bu restoran adı zaten kullanılıyor." })
+          } else {
+            setErrors({ submit: "Bu kayıt zaten mevcut. Farklı bir e-posta veya restoran adı deneyin." })
+          }
+        } else {
+          setErrors({ submit: `Kayıt oluşturulamadı: ${tenantError.message}` })
+        }
+
         setIsLoading(false)
         return
       }
 
-      // Create demo data for new tenant
+      // Step 3: Create demo data for new tenant
       await createDemoData(tenant.id)
 
-      // Redirect to admin panel
-      router.push(`/${formData.slug}/admin?welcome=true`)
+      // Note: createDemoData already creates admin_users, so we don't need to create it again here
+
+      // If email confirmation is NOT required (already confirmed), show warning
+      if (!emailConfirmationRequired) {
+        console.warn("⚠️ UYARI: E-posta onayı Supabase'de kapalı! Hesap direkt aktif oldu.")
+        console.warn("Üretim ortamında Authentication -> Email Auth -> Enable email confirmations aktif olmalı!")
+
+        // Auto-activate for development (but this should NOT happen in production)
+        const trialEndDate = new Date()
+        trialEndDate.setDate(trialEndDate.getDate() + 3)
+
+        await supabase
+          .from("tenants")
+          .update({
+            is_active: true,
+            trial_end_date: trialEndDate.toISOString(),
+          })
+          .eq("id", tenant.id)
+      }
+
+      // Redirect to email confirmation page (or show warning if already confirmed)
+      router.push(`/auth/confirm-email?email=${encodeURIComponent(formData.ownerEmail)}${!emailConfirmationRequired ? '&auto_confirmed=true' : ''}`)
     } catch (error) {
       console.error("Registration error:", error)
       setErrors({ submit: "Bir hata oluştu. Lütfen tekrar deneyin." })
@@ -334,7 +424,7 @@ export default function RegisterPage() {
                   <div className="flex-1">
                     <div className="flex items-center border rounded-md overflow-hidden">
                       <span className="bg-slate-100 px-3 py-2 text-sm text-muted-foreground border-r">
-                        {typeof window !== "undefined" && window.location.origin}/
+                        {origin || "menumgo.digital"}/
                       </span>
                       <Input
                         value={formData.slug}
