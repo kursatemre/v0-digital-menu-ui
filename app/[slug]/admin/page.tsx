@@ -2148,55 +2148,22 @@ export default function AdminPanel() {
   )
 
   const renderQRTab = () => {
-    const downloadQRCode = async () => {
+    const downloadQRCode = () => {
       const svg = document.getElementById("qr-code-svg")
       if (!svg) return
 
-      const canvas = document.createElement("canvas")
-      const ctx = canvas.getContext("2d")
-      if (!ctx) return
-
-      canvas.width = qrSettings.size
-      canvas.height = qrSettings.size
-
-      // QR kodunu çiz
+      // SVG'yi string'e çevir
       const svgData = new XMLSerializer().serializeToString(svg)
-      const qrImg = new Image()
-      
-      await new Promise((resolve) => {
-        qrImg.onload = () => {
-          ctx.drawImage(qrImg, 0, 0)
-          resolve(null)
-        }
-        qrImg.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
-      })
+      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
+      const svgUrl = URL.createObjectURL(svgBlob)
 
-      // Logo varsa ekle
-      if (qrSettings.logoUrl) {
-        const logoImg = new Image()
-        await new Promise((resolve) => {
-          logoImg.onload = () => {
-            // Logo pozisyonunu merkeze hesapla
-            const x = (qrSettings.size - qrSettings.logoSize) / 2
-            const y = (qrSettings.size - qrSettings.logoSize) / 2
-            
-            // Logo arka planı
-            ctx.fillStyle = qrSettings.bgColor
-            ctx.fillRect(x, y, qrSettings.logoSize, qrSettings.logoSize)
-            
-            // Logo çiz
-            ctx.drawImage(logoImg, x, y, qrSettings.logoSize, qrSettings.logoSize)
-            resolve(null)
-          }
-          logoImg.src = qrSettings.logoUrl
-        })
-      }
-
-      // PNG olarak indir
       const link = document.createElement("a")
-      link.download = "menu-qr-code.png"
-      link.href = canvas.toDataURL("image/png")
+      link.href = svgUrl
+      link.download = "menu-qr-code.svg"
+      document.body.appendChild(link)
       link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(svgUrl)
     }
 
     return (
