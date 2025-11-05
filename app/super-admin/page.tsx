@@ -116,7 +116,6 @@ export default function SuperAdminPanel() {
 
       if (error) throw error
       if (data) {
-        console.log("Loaded tenants:", data)
         setTenants(data)
       }
     } catch (error) {
@@ -165,8 +164,6 @@ export default function SuperAdminPanel() {
         }
       }
 
-      console.log("Updating tenant with:", updates)
-
       const { data, error } = await supabase
         .from("tenants")
         .update(updates)
@@ -177,8 +174,6 @@ export default function SuperAdminPanel() {
         console.error("Supabase error:", error)
         throw error
       }
-
-      console.log("Update successful:", data)
 
       await loadTenants()
       await loadStats()
@@ -230,8 +225,6 @@ export default function SuperAdminPanel() {
 
   const saveLandingContent = async (sectionKey: string, content: any) => {
     try {
-      console.log("Saving content for:", sectionKey, content)
-
       const { data, error } = await supabase
         .from("landing_page_content")
         .update({
@@ -246,7 +239,6 @@ export default function SuperAdminPanel() {
         throw error
       }
 
-      console.log("Save successful:", data)
       alert("İçerik kaydedildi!")
       await loadLandingContent()
     } catch (error: any) {
@@ -512,10 +504,6 @@ export default function SuperAdminPanel() {
                         >
                           {tenant.is_active ? "Pasifleştir" : "Aktifleştir"}
                         </Button>
-                        {/* Debug info - remove after fixing */}
-                        <div className="text-xs text-gray-400 w-full">
-                          Plan: {JSON.stringify(tenant.subscription_plan)} | Status: {tenant.subscription_status}
-                        </div>
 
                         {(!tenant.subscription_plan || tenant.subscription_plan === "trial") && (
                           <Button
