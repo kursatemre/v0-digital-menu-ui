@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/utils/supabase/client"
+import { createClient } from "@/lib/supabase/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle2, XCircle, Loader2 } from "lucide-react"
 
