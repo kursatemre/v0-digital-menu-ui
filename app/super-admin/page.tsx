@@ -1,11 +1,13 @@
 "use client"
 
-import { useState, useEffect } from "react"
+// @ts-ignore
+import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
   DialogContent,
@@ -33,9 +35,10 @@ import {
   Trash2,
   Globe
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
+import { PlatformTab } from "./components/platform-tab"
 
-type Tenant = {
+// Types
+interface Tenant {
   id: string
   slug: string
   business_name: string
@@ -47,7 +50,15 @@ type Tenant = {
   created_at: string
 }
 
-type PlatformSettings = {
+interface LandingContent {
+  id: string
+  section_key: string
+  title: string
+  content: Record<string, any>
+  created_at: string
+}
+
+interface PlatformSettings {
   logo: string
   favicon: string
   site_title: string
@@ -56,12 +67,25 @@ type PlatformSettings = {
   google_verification: string
 }
 
-import { PlatformTab } from "./components/platform-tab"
+interface Stats {
+  totalTenants: number
+  activeTenants: number
+  premiumTenants: number
+  trialTenants: number
+}
+
+// @ts-ignore
+declare namespace JSX {
+  interface IntrinsicElements {
+    [elemName: string]: any
+  }
+}
 
 export default function SuperAdminPanel() {
   const router = useRouter()
   const supabase = createClient()
-  
+
+  // States
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loginForm, setLoginForm] = useState({ username: "", password: "" })
@@ -104,6 +128,75 @@ export default function SuperAdminPanel() {
     months: "1"
   })
 
+  // Actions
+  const loadTenants = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      if (data) {
+        setTenants(data)
+      }
+    } catch (error) {
+      console.error("Error loading tenants:", error)
+    }
+  }, [supabase])
+
+  const loadStats = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("subscription_status, subscription_plan, is_active")
+
+      if (error) throw error
+      if (data) {
+        setStats({
+          totalTenants: data.length,
+          activeTenants: data.filter((t: Tenant) => t.is_active).length,
+          premiumTenants: data.filter((t: Tenant) => t.subscription_plan === "premium").length,
+          trialTenants: data.filter((t: Tenant) => t.subscription_plan === "trial").length
+        })
+      }
+    } catch (error) {
+      console.error("Error loading stats:", error)
+    }
+  }, [supabase])
+
+  const loadLandingContent = useCallback(async () => {
+    setLoadingLanding(true)
+    try {
+      const { data, error } = await supabase
+        .from("landing_page_content")
+        .select("*")
+
+      if (error) throw error
+      if (data) {
+        const heroData = data.find((d: LandingContent) => d.section_key === "hero")
+        const pricingData = data.find((d: LandingContent) => d.section_key === "pricing")
+
+        setLandingContent({
+          hero: heroData?.content || {
+            title: "",
+            subtitle: "",
+            logoUrl: "",
+            backgroundImage: "",
+            buttonText: "",
+            buttonLink: "",
+            badgeText: ""
+          },
+          pricing: pricingData?.content || { plans: [] }
+        })
+      }
+    } catch (error) {
+      console.error("Error loading landing content:", error)
+    } finally {
+      setLoadingLanding(false)
+    }
+  }, [supabase])
+
   useEffect(() => {
     checkAuth()
   }, [])
@@ -115,6 +208,12 @@ export default function SuperAdminPanel() {
       if (activeTab === "landing") {
         loadLandingContent()
       }
+    }
+  }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent])
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "platform") {
+      loadPlatformSettings()
     }
   }, [isAuthenticated, activeTab])
 
@@ -148,43 +247,7 @@ export default function SuperAdminPanel() {
     setIsAuthenticated(false)
   }
 
-  const loadTenants = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-      if (data) {
-        setTenants(data)
-      }
-    } catch (error) {
-      console.error("Error loading tenants:", error)
-    }
-  }
-
-  const loadStats = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("subscription_status, subscription_plan, is_active")
-
-      if (error) throw error
-      if (data) {
-        setStats({
-          totalTenants: data.length,
-          activeTenants: data.filter(t => t.is_active).length,
-          premiumTenants: data.filter(t => t.subscription_plan === "premium").length,
-          trialTenants: data.filter(t => t.subscription_plan === "trial").length
-        })
-      }
-    } catch (error) {
-      console.error("Error loading stats:", error)
-    }
-  }
-
-  const updateTenantSubscription = async (
+  const updateTenantSubscription = useCallback(async (
     tenantId: string,
     plan: "trial" | "premium",
     status: "trial" | "active" | "cancelled",
@@ -223,9 +286,9 @@ export default function SuperAdminPanel() {
       console.error("Error updating subscription:", error)
       alert(`Hata oluştu: ${error?.message || "Bilinmeyen hata"}`)
     }
-  }
+  }, [supabase, loadTenants, loadStats])
 
-  const toggleTenantStatus = async (tenantId: string, currentStatus: boolean) => {
+  const toggleTenantStatus = useCallback(async (tenantId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
         .from("tenants")
@@ -238,39 +301,7 @@ export default function SuperAdminPanel() {
     } catch (error) {
       console.error("Error toggling tenant status:", error)
     }
-  }
-
-  const loadLandingContent = async () => {
-    setLoadingLanding(true)
-    try {
-      const { data, error } = await supabase
-        .from("landing_page_content")
-        .select("*")
-
-      if (error) throw error
-      if (data) {
-        const heroData = data.find(d => d.section_key === "hero")
-        const pricingData = data.find(d => d.section_key === "pricing")
-
-        setLandingContent({
-          hero: heroData?.content || {
-            title: "",
-            subtitle: "",
-            logoUrl: "",
-            backgroundImage: "",
-            buttonText: "",
-            buttonLink: "",
-            badgeText: ""
-          },
-          pricing: pricingData?.content || { plans: [] }
-        })
-      }
-    } catch (error) {
-      console.error("Error loading landing content:", error)
-    } finally {
-      setLoadingLanding(false)
-    }
-  }
+  }, [supabase, loadTenants, loadStats])
 
   const saveLandingContent = async (sectionKey: string, content: any) => {
     try {
@@ -328,7 +359,7 @@ export default function SuperAdminPanel() {
     }
   }
 
-  const filteredTenants = tenants.filter(tenant => {
+  const filteredTenants = tenants.filter((tenant: Tenant) => {
     const matchesSearch = tenant.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tenant.slug.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === "all" || tenant.subscription_status === filterStatus
@@ -367,8 +398,8 @@ export default function SuperAdminPanel() {
               <Input
                 type="password"
                 value={loginForm.password}
-                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setLoginForm({ ...loginForm, password: e.target.value })}
+                onKeyPress={(e: KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && handleLogin()}
                 placeholder="••••••••"
               />
             </div>
@@ -570,7 +601,7 @@ export default function SuperAdminPanel() {
                       <Input
                         placeholder="Restoran ara..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         className="pl-10"
                       />
                     </div>
@@ -611,7 +642,7 @@ export default function SuperAdminPanel() {
 
             {/* Tenants List */}
             <div className="grid gap-4">
-              {filteredTenants.map((tenant) => (
+              {filteredTenants.map((tenant: Tenant) => (
                 <Card key={tenant.id}>
                   <CardContent className="pt-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -745,7 +776,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Logo URL</label>
                         <Input
                           value={landingContent.hero.logoUrl || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, logoUrl: e.target.value }
                           })}
@@ -758,7 +789,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Arka Plan Görseli URL</label>
                         <Input
                           value={landingContent.hero.backgroundImage || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, backgroundImage: e.target.value }
                           })}
@@ -771,7 +802,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Başlık</label>
                         <Input
                           value={landingContent.hero.title || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, title: e.target.value }
                           })}
@@ -783,7 +814,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Alt Başlık</label>
                         <Input
                           value={landingContent.hero.subtitle || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, subtitle: e.target.value }
                           })}
@@ -795,7 +826,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Rozet Metni</label>
                         <Input
                           value={landingContent.hero.badgeText || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, badgeText: e.target.value }
                           })}
@@ -807,7 +838,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Buton Metni</label>
                         <Input
                           value={landingContent.hero.buttonText || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, buttonText: e.target.value }
                           })}
@@ -877,7 +908,7 @@ export default function SuperAdminPanel() {
       </div>
 
       {/* Extension Dialog */}
-      <Dialog open={extensionDialog.open} onOpenChange={(open) => setExtensionDialog({ ...extensionDialog, open })}>
+      <Dialog open={extensionDialog.open} onOpenChange={(open: boolean) => setExtensionDialog({ ...extensionDialog, open })}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Abonelik Süresini Uzat</DialogTitle>
@@ -893,7 +924,7 @@ export default function SuperAdminPanel() {
                 type="number"
                 min="1"
                 value={extensionDialog.months}
-                onChange={(e) => setExtensionDialog({ ...extensionDialog, months: e.target.value })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setExtensionDialog({ ...extensionDialog, months: e.target.value })}
                 placeholder="1"
               />
             </div>
