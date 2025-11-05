@@ -16,9 +16,10 @@ import {
   Star,
 } from "lucide-react"
 import Link from "next/link"
-import { supabase } from "@/lib/supabaseClient"
+import { createClient } from "@/lib/supabase/client"
 
 export default function LandingPage() {
+  const supabase = createClient()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [heroContent, setHeroContent] = useState({
     title: "Kağıt Menü Derdine Son Verin!",
