@@ -86,13 +86,13 @@ export default function LandingPage() {
     },
     {
       icon: <Globe className="w-8 h-8" />,
-      title: "Çoklu Dil Desteği",
-      description: "Menünüzü istediğiniz dillerde sunun. Yabancı misafirlerinize kendi dillerinde hizmet verin.",
+      title: "Mobil Uyumlu",
+      description: "Tüm cihazlarda mükemmel görünüm. Telefon, tablet, her yerden kolay erişim ve sipariş.",
     },
     {
       icon: <TrendingUp className="w-8 h-8" />,
       title: "Sipariş Yönetimi",
-      description: "Gelen siparişleri anlık takip edin. WhatsApp bildirimleri ile hiçbir siparişi kaçırmayın.",
+      description: "Gelen siparişleri anlık takip edin. E-posta bildirimleri ile hiçbir siparişi kaçırmayın.",
     },
     {
       icon: <Star className="w-8 h-8" />,
@@ -103,16 +103,16 @@ export default function LandingPage() {
 
   const benefits = [
     "Sınırsız kategori ve ürün ekleme",
-    "Çoklu dil desteği (sınırsız dil)",
     "QR kod özelleştirme (logo, renk, boyut)",
     "Gerçek zamanlı sipariş bildirimleri",
-    "WhatsApp entegrasyonu",
+    "E-posta ile sipariş takibi",
     "Garson çağırma butonu",
     "Detaylı raporlama ve analizler",
     "Stok takibi ve yönetimi",
-    "Toplu fiyat güncelleme",
-    "Özel domain desteği",
-    "Mobil uyumlu tasarım",
+    "Ürün rozet sistemi (Yeni, Popüler)",
+    "Mobil uyumlu responsive tasarım",
+    "Özel renk ve tema ayarları",
+    "Güvenli ödeme entegrasyonu",
     "7/24 teknik destek",
   ]
 
@@ -130,24 +130,24 @@ export default function LandingPage() {
       answer: "Evet! Menumgo'yu 3 gün boyunca tamamen ücretsiz deneyebilirsiniz. Tüm premium özelliklere erişim sağlarsınız ve kredi kartı bilgisi gerektirmez. Beğenirseniz aylık 299₺ ile devam edebilirsiniz."
     },
     {
-      question: "Menümü kaç dilde sunabilirim?",
-      answer: "Menumgo ile menünüzü sınırsız dilde sunabilirsiniz. Türkçe, İngilizce, Almanca, Rusça, Arapça ve daha fazlası... Yabancı misafirlerinize kendi dillerinde hizmet vererek müşteri memnuniyetini artırın."
-    },
-    {
       question: "Fiyat ve ürün güncellemeleri nasıl yapılır?",
       answer: "Yönetim panelinizden istediğiniz zaman kolayca güncelleme yapabilirsiniz. Değişiklikler anında tüm müşterilere yansır. Toplu fiyat güncelleme özelliği ile tüm ürünlerinizi tek seferde güncelleyebilirsiniz."
     },
     {
       question: "Sipariş bildirimleri nasıl alırım?",
-      answer: "Gelen siparişleri yönetim panelinizden, e-posta ile veya WhatsApp üzerinden anında alabilirsiniz. Hiçbir siparişi kaçırmaz, müşterilerinize hızlı hizmet verebilirsiniz."
+      answer: "Gelen siparişleri yönetim panelinizden ve e-posta ile anında alabilirsiniz. Hiçbir siparişi kaçırmaz, müşterilerinize hızlı hizmet verebilirsiniz."
     },
     {
       question: "QR kodumu özelleştirebilir miyim?",
       answer: "Evet! QR kodunuza logonuzu ekleyebilir, renk ve boyut ayarlarını yapabilirsiniz. Markanıza özel, profesyonel görünümlü QR kodlar oluşturabilirsiniz."
     },
     {
+      question: "Hangi ödeme yöntemlerini kabul ediyorsunuz?",
+      answer: "Kredi kartı ve banka kartı ile güvenli ödeme alabilirsiniz. Tüm ödemeler SSL sertifikası ile şifrelenir ve güvenli bir şekilde işlenir."
+    },
+    {
       question: "Teknik destek sağlanıyor mu?",
-      answer: "Elbette! 7/24 teknik destek ekibimiz her zaman yanınızda. E-posta, WhatsApp veya canlı destek ile sorularınızı sorabilir, sorunlarınıza hızlı çözüm bulabilirsiniz."
+      answer: "Elbette! 7/24 teknik destek ekibimiz her zaman yanınızda. E-posta veya canlı destek ile sorularınızı sorabilir, sorunlarınıza hızlı çözüm bulabilirsiniz."
     },
     {
       question: "İptal etmek istersem ne olur?",

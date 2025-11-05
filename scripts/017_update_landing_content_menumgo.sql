@@ -28,7 +28,7 @@ SET content = jsonb_build_object(
         'Sınırsız kategori ve ürün',
         'QR kod özelleştirme',
         'Gerçek zamanlı siparişler',
-        'Çoklu dil desteği',
+        'Mobil uyumlu tasarım',
         'Garson çağırma',
         'Detaylı raporlama'
       ),
@@ -42,14 +42,14 @@ SET content = jsonb_build_object(
       'description', 'Profesyonel restoranlar için',
       'features', jsonb_build_array(
         'Sınırsız kategori ve ürün',
-        'Çoklu dil desteği',
         'QR kod özelleştirme',
-        'WhatsApp bildirimleri',
+        'E-posta bildirimleri',
         'Garson çağırma butonu',
         'Detaylı raporlama',
         'Stok yönetimi',
         'Toplu fiyat güncelleme',
-        'Özel domain',
+        'Özel renk ve tema',
+        'Mobil uyumlu tasarım',
         '7/24 teknik destek'
       ),
       'buttonText', 'Premium Başlat',
