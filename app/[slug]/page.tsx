@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { LanguageProvider } from "@/contexts/language-context"
+import { LanguageSwitch } from "@/components/language-switch"
+import { LanguageAwareText } from "@/components/language-aware-text"
 
 type CartItem = {
   id: string
@@ -622,5 +625,53 @@ export default function MenuPage() {
         </div>
       )}
     </div>
+  )
+
+  return (
+    <LanguageProvider>
+      <div className="min-h-screen" style={{ backgroundColor: theme.backgroundColor }}>
+        {/* Language Switch */}
+        <LanguageSwitch />
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
+              <p className="text-primary">
+                <LanguageAwareText tr="Menü yükleniyor..." en="Loading menu..." />
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Trial Expired Message */}
+        {trialExpired && (
+          <div className="fixed inset-0 bg-white z-50 flex items-center justify-center p-4">
+            <div className="max-w-md text-center">
+              <h2 className="text-2xl font-bold mb-4">
+                <LanguageAwareText 
+                  tr="Deneme Süresi Doldu" 
+                  en="Trial Period Expired" 
+                />
+              </h2>
+              <p className="mb-4">
+                <LanguageAwareText 
+                  tr="Bu menüye artık erişilemiyor. Premium pakete geçiş yaparak menünüzü tekrar aktif edebilirsiniz." 
+                  en="This menu is no longer accessible. You can reactivate your menu by upgrading to the premium package." 
+                />
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Rest of the menu content */}
+        <MenuHeader tenant={tenant} theme={theme} />
+        <CartButton cart={cart} onClick={() => setCartOpen(true)} theme={theme} />
+        
+        {/* Other menu components */}
+
+      </div>
+    </LanguageProvider>
   )
 }
