@@ -2148,7 +2148,7 @@ export default function AdminPanel() {
   )
 
   const renderQRTab = () => {
-    const downloadQRCode = () => {
+    const downloadQRCode = async () => {
       const svg = document.getElementById("qr-code-svg")
       if (!svg) return
 
@@ -2156,18 +2156,47 @@ export default function AdminPanel() {
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
+      canvas.width = qrSettings.size
+      canvas.height = qrSettings.size
+
+      // QR kodunu çiz
       const svgData = new XMLSerializer().serializeToString(svg)
-      const img = new Image()
-      img.onload = () => {
-        canvas.width = qrSettings.size
-        canvas.height = qrSettings.size
-        ctx.drawImage(img, 0, 0)
-        const link = document.createElement("a")
-        link.download = "menu-qr-code.png"
-        link.href = canvas.toDataURL("image/png")
-        link.click()
+      const qrImg = new Image()
+      
+      await new Promise((resolve) => {
+        qrImg.onload = () => {
+          ctx.drawImage(qrImg, 0, 0)
+          resolve(null)
+        }
+        qrImg.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+      })
+
+      // Logo varsa ekle
+      if (qrSettings.logoUrl) {
+        const logoImg = new Image()
+        await new Promise((resolve) => {
+          logoImg.onload = () => {
+            // Logo pozisyonunu merkeze hesapla
+            const x = (qrSettings.size - qrSettings.logoSize) / 2
+            const y = (qrSettings.size - qrSettings.logoSize) / 2
+            
+            // Logo arka planı
+            ctx.fillStyle = qrSettings.bgColor
+            ctx.fillRect(x, y, qrSettings.logoSize, qrSettings.logoSize)
+            
+            // Logo çiz
+            ctx.drawImage(logoImg, x, y, qrSettings.logoSize, qrSettings.logoSize)
+            resolve(null)
+          }
+          logoImg.src = qrSettings.logoUrl
+        })
       }
-      img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
+
+      // PNG olarak indir
+      const link = document.createElement("a")
+      link.download = "menu-qr-code.png"
+      link.href = canvas.toDataURL("image/png")
+      link.click()
     }
 
     return (
