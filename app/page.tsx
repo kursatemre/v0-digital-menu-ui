@@ -23,7 +23,12 @@ export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [heroContent, setHeroContent] = useState({
     title: "Kağıt Menü Derdine Son Verin!",
-    subtitle: "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!"
+    subtitle: "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
+    logoUrl: "",
+    backgroundImage: "",
+    badgeText: "🎉 3 Gün Boyunca Tamamen Ücretsiz!",
+    buttonText: "3 Gün Ücretsiz Dene",
+    buttonLink: "/register"
   })
   const [loading, setLoading] = useState(true)
 
@@ -43,8 +48,13 @@ export default function LandingPage() {
 
       if (data?.content) {
         setHeroContent({
-          title: data.content.title || heroContent.title,
-          subtitle: data.content.subtitle || heroContent.subtitle
+          title: data.content.title || "Kağıt Menü Derdine Son Verin!",
+          subtitle: data.content.subtitle || "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
+          logoUrl: data.content.logoUrl || "",
+          backgroundImage: data.content.backgroundImage || "",
+          badgeText: data.content.badgeText || "🎉 3 Gün Boyunca Tamamen Ücretsiz!",
+          buttonText: data.content.buttonText || "3 Gün Ücretsiz Dene",
+          buttonLink: data.content.buttonLink || "/register"
         })
       }
     } catch (error) {
@@ -229,7 +239,7 @@ export default function LandingPage() {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Link href="/register">
+              <Link href={heroContent.buttonLink || "/register"}>
                 <Button
                   size="lg"
                   className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 gap-2 shadow-xl hover:shadow-2xl transition-all hover:scale-105"
