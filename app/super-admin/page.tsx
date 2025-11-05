@@ -29,7 +29,9 @@ import {
   Clock,
   Check,
   X,
-  Calendar
+  Calendar,
+  Trash2,
+  Globe
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
@@ -45,19 +47,49 @@ type Tenant = {
   created_at: string
 }
 
+type PlatformSettings = {
+  logo: string
+  favicon: string
+  site_title: string
+  site_description: string
+  meta_keywords: string[]
+  google_verification: string
+}
+
+import { PlatformTab } from "./components/platform-tab"
+
 export default function SuperAdminPanel() {
   const router = useRouter()
   const supabase = createClient()
-
+  
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
+    logo: "",
+    favicon: "",
+    site_title: "MenuMGO - Dijital Menü Çözümü",
+    site_description: "MenuMGO ile dijital menünüzü oluşturun, QR kodla müşterilerinize ulaşın.",
+    meta_keywords: ["dijital menü", "qr menü", "restoran menüsü", "cafe menüsü"],
+    google_verification: ""
+  })
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loginForm, setLoginForm] = useState({ username: "", password: "" })
   const [loginError, setLoginError] = useState("")
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing" | "platform" | "settings">("dashboard")
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "trial" | "active" | "cancelled">("all")
+
+  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
+    logo: "",
+    favicon: "",
+    site_title: "MenuMGO - Dijital Menü Çözümü",
+    site_description: "MenuMGO ile dijital menünüzü kolayca oluşturun ve yönetin.",
+    meta_keywords: ["dijital menü", "qr menü", "restoran menüsü", "cafe menüsü"],
+    google_verification: ""
+  })
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   const [stats, setStats] = useState({
     totalTenants: 0,
@@ -361,6 +393,67 @@ export default function SuperAdminPanel() {
     )
   }
 
+  // Platform ayarları için gerekli fonksiyonlar
+  const loadPlatformSettings = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("*")
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setPlatformSettings(data)
+      }
+    } catch (error) {
+      console.error("Error loading platform settings:", error)
+    }
+  }
+
+  const uploadPlatformImage = async (file: File, type: "logo" | "favicon") => {
+    setUploadingImage(true)
+    try {
+      const fileExt = file.name.split(".").pop()
+      const fileName = `${type}-${Date.now()}.${fileExt}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("public")
+        .upload(`platform/${fileName}`, file)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("public")
+        .getPublicUrl(`platform/${fileName}`)
+
+      return publicUrl
+    } catch (error) {
+      console.error(`Error uploading ${type}:`, error)
+      return null
+    } finally {
+      setUploadingImage(false)
+    }
+  }
+
+  const savePlatformSettings = async () => {
+    try {
+      const { error } = await supabase
+        .from("platform_settings")
+        .upsert(platformSettings)
+
+      if (error) throw error
+      alert("Platform ayarları kaydedildi!")
+    } catch (error) {
+      console.error("Error saving platform settings:", error)
+      alert("Platform ayarları kaydedilemedi!")
+    }
+  }
+
+  useEffect(() => {
+    if (isAuthenticated && activeTab === "platform") {
+      loadPlatformSettings()
+    }
+  }, [isAuthenticated, activeTab])
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -406,6 +499,14 @@ export default function SuperAdminPanel() {
           >
             <FileEdit className="w-4 h-4" />
             Landing Page
+          </Button>
+          <Button
+            variant={activeTab === "platform" ? "default" : "outline"}
+            onClick={() => setActiveTab("platform")}
+            className="gap-2"
+          >
+            <Globe className="w-4 h-4" />
+            Platform
           </Button>
         </div>
 
@@ -619,6 +720,17 @@ export default function SuperAdminPanel() {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Platform Tab */}
+        {activeTab === "platform" && (
+          <PlatformTab
+            platformSettings={platformSettings}
+            uploadingImage={uploadingImage}
+            setPlatformSettings={setPlatformSettings}
+            uploadPlatformImage={uploadPlatformImage}
+            savePlatformSettings={savePlatformSettings}
+          />
         )}
 
         {/* Landing Page Tab */}
