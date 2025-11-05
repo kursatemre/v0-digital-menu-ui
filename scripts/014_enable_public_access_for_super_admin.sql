@@ -11,13 +11,18 @@ ALTER TABLE landing_page_content ENABLE ROW LEVEL SECURITY;
 
 -- Create policies to allow all operations (you should restrict this in production)
 -- For tenants table
+-- First drop all existing policies
+DROP POLICY IF EXISTS "Public can read active tenants" ON tenants;
+DROP POLICY IF EXISTS "Tenants can update own data" ON tenants;
 DROP POLICY IF EXISTS "Allow public read access to tenants" ON tenants;
-CREATE POLICY "Allow public read access to tenants"
+DROP POLICY IF EXISTS "Allow public update access to tenants" ON tenants;
+
+-- Create new permissive policies for super admin
+CREATE POLICY "Allow all read access to tenants"
   ON tenants FOR SELECT
   USING (true);
 
-DROP POLICY IF EXISTS "Allow public update access to tenants" ON tenants;
-CREATE POLICY "Allow public update access to tenants"
+CREATE POLICY "Allow all update access to tenants"
   ON tenants FOR UPDATE
   USING (true)
   WITH CHECK (true);
