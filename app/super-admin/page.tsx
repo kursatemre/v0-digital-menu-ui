@@ -115,7 +115,10 @@ export default function SuperAdminPanel() {
         .order("created_at", { ascending: false })
 
       if (error) throw error
-      if (data) setTenants(data)
+      if (data) {
+        console.log("Loaded tenants:", data)
+        setTenants(data)
+      }
     } catch (error) {
       console.error("Error loading tenants:", error)
     }
@@ -479,8 +482,10 @@ export default function SuperAdminPanel() {
                           <Badge variant={tenant.subscription_plan === "premium" ? "default" : "outline"}>
                             {tenant.subscription_plan === "premium" ? (
                               <><Crown className="w-3 h-3 mr-1" /> Premium</>
-                            ) : (
+                            ) : tenant.subscription_plan === "trial" ? (
                               <><Clock className="w-3 h-3 mr-1" /> Trial</>
+                            ) : (
+                              <><Clock className="w-3 h-3 mr-1" /> {tenant.subscription_plan || "N/A"}</>
                             )}
                           </Badge>
                         </div>
@@ -507,7 +512,12 @@ export default function SuperAdminPanel() {
                         >
                           {tenant.is_active ? "Pasifleştir" : "Aktifleştir"}
                         </Button>
-                        {tenant.subscription_plan === "trial" && (
+                        {/* Debug info - remove after fixing */}
+                        <div className="text-xs text-gray-400 w-full">
+                          Plan: {JSON.stringify(tenant.subscription_plan)} | Status: {tenant.subscription_status}
+                        </div>
+
+                        {(!tenant.subscription_plan || tenant.subscription_plan === "trial") && (
                           <Button
                             size="sm"
                             onClick={() => {
