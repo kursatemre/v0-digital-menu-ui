@@ -1,8 +1,9 @@
 "use client"
 
-import type React from "react"
+/* @jsxRuntime automatic */
+/* @jsxImportSource react */
 
-import { useState, useEffect, useRef } from "react"
+import { type FormEvent, type ReactNode, type ChangeEvent, useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,37 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { QRCodeSVG } from "qrcode.react"
 import { createClient } from "@/lib/supabase/client"
+import { useToast } from "@/components/ui/use-toast"
+
+interface HeaderSettings {
+  title: string
+  subtitle: string
+  backgroundImage?: string
+  logo?: string
+}
+
+interface BaseCategory {
+  id: string
+  name: string
+  image: string
+}
+
+interface BaseProduct {
+  id: string
+  name: string
+  price: number
+}
+
+interface OrderItem {
+  id: string
+  price: number
+  quantity: number
+}
+
+interface OrderForm {
+  items: OrderItem[]
+  isDelivery?: boolean
+}
 
 type Order = {
   id: string
@@ -555,28 +587,35 @@ export default function AdminPanel() {
     try {
       setIsSaving(true)
 
-      // Save theme
-      await supabase.from("settings").upsert({ key: "theme", value: theme, tenant_id: tenantId }, { onConflict: "key" })
+      // Header ayarlarını Supabase'e kaydet
+      const { error: headerError } = await supabase
+        .from("settings")
+        .upsert([
+          { key: "header", value: headerSettings, tenant_id: tenantId }
+        ], { onConflict: ["key", "tenant_id"] })
 
-      // Save header settings
-      await supabase.from("settings").upsert({ key: "header", value: headerSettings, tenant_id: tenantId }, { onConflict: "key" })
+      if (headerError) throw headerError
 
-      // Save QR settings
-      await supabase.from("settings").upsert({ key: "qr", value: qrSettings, tenant_id: tenantId }, { onConflict: "key" })
-
-      // Update localStorage
-      localStorage.setItem("restaurant_theme", JSON.stringify(theme))
+      // LocalStorage'a header ayarlarını yaz
       localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
-      localStorage.setItem("restaurant_qr", JSON.stringify(qrSettings))
 
-      // Apply theme to CSS variables
-      document.documentElement.style.setProperty("--primary", theme.primaryColor)
-      document.documentElement.style.setProperty("--secondary", theme.secondaryColor)
+      // Tema ayarlarını Supabase'e kaydet
+      const { error: themeError } = await supabase
+        .from("settings")
+        .upsert([
+          { key: "theme", value: theme, tenant_id: tenantId }
+        ], { onConflict: ["key", "tenant_id"] })
 
+      if (themeError) throw themeError
+
+      // Tema ayarlarını localStorage'a kaydet
+      localStorage.setItem("restaurant_theme", JSON.stringify(theme))
+
+      // Başarılı mesajı göster
       alert("Ayarlar başarıyla kaydedildi!")
     } catch (error) {
-      console.error("Error saving settings:", error)
-      alert("Ayarlar kaydedilirken hata oluştu")
+      console.error("Görünüm ayarları kaydedilemedi:", error)
+      alert("Ayarlar kaydedilirken hata oluştu!")
     } finally {
       setIsSaving(false)
     }
@@ -617,7 +656,7 @@ export default function AdminPanel() {
         }
       } else {
         const newOrders = data || []
-        const pendingCount = newOrders.filter((o) => o.status === "pending").length
+        const pendingCount = newOrders.filter((o: Order) => o.status === "pending").length
 
         // Play sound if new orders arrived (after initial load)
         if (ordersInitializedRef.current && pendingCount > previousOrderCountRef.current) {
@@ -649,7 +688,7 @@ export default function AdminPanel() {
         console.error("Error loading waiter calls:", error)
       } else {
         const newCalls = data || []
-        const pendingCount = newCalls.filter((c) => c.status === "pending").length
+        const pendingCount = newCalls.filter((c: { status: string }) => c.status === "pending").length
 
         // Play sound if new waiter calls arrived (after initial load)
         if (waiterCallsInitializedRef.current && pendingCount > previousWaiterCallCountRef.current) {
@@ -778,8 +817,6 @@ export default function AdminPanel() {
 
     loadSettings()
   }, [tenantId, supabase])
-
-  // Removed auto-save useEffects - now using manual save button
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("restaurant_theme")
@@ -935,7 +972,7 @@ export default function AdminPanel() {
       if (error) throw error
 
       // Update local state
-      setProducts(products.map(p =>
+      setProducts(products.map((p: Product) =>
         p.id === productId ? { ...p, is_available: !currentStatus } : p
       ))
     } catch (error) {
@@ -946,11 +983,11 @@ export default function AdminPanel() {
   const handleAddProductToOrder = () => {
     if (!selectedProduct) return
 
-    const product = products.find((p) => p.id === selectedProduct)
+    const product = products.find((p: Product) => p.id === selectedProduct)
     if (!product) return
 
     // Check if product already in items
-    const existingItemIndex = newOrderForm.items.findIndex((item) => item.id === product.id)
+    const existingItemIndex = newOrderForm.items.findIndex((item: OrderItem) => item.id === product.id)
 
     if (existingItemIndex >= 0) {
       // Update quantity
@@ -980,7 +1017,7 @@ export default function AdminPanel() {
   const handleRemoveProductFromOrder = (productId: string) => {
     setNewOrderForm({
       ...newOrderForm,
-      items: newOrderForm.items.filter((item) => item.id !== productId),
+      items: newOrderForm.items.filter((item: OrderItem) => item.id !== productId),
     })
   }
 
@@ -1003,7 +1040,7 @@ export default function AdminPanel() {
       return
     }
 
-    const total = newOrderForm.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const total = newOrderForm.items.reduce((sum: number, item: OrderItem) => sum + item.price * item.quantity, 0)
 
     try {
       const { error } = await supabase.from("orders").insert([
@@ -1091,7 +1128,7 @@ export default function AdminPanel() {
   }
 
   const moveCategory = async (id: string, direction: "up" | "down") => {
-    const index = categories.findIndex((c) => c.id === id)
+    const index = categories.findIndex((c: Category) => c.id === id)
     if ((direction === "up" && index === 0) || (direction === "down" && index === categories.length - 1)) {
       return
     }
@@ -1113,7 +1150,7 @@ export default function AdminPanel() {
   }
 
   const moveProduct = async (id: string, direction: "up" | "down") => {
-    const index = products.findIndex((p) => p.id === id)
+    const index = products.findIndex((p: Product) => p.id === id)
     if ((direction === "up" && index === 0) || (direction === "down" && index === products.length - 1)) {
       return
     }
@@ -1161,7 +1198,7 @@ export default function AdminPanel() {
     }
   }
 
-  const filteredOrders = filter === "all" ? orders : orders.filter((order) => order.status === filter)
+  const filteredOrders = filter === "all" ? orders : orders.filter((order: Order) => order.status === filter)
 
   const renderOrdersTab = () => (
     <div>
@@ -1961,33 +1998,7 @@ export default function AdminPanel() {
     </div>
   )
 
-  // Görünüm ayarlarını kaydetme fonksiyonunu güncelle
-  const saveAppearanceSettings = async () => {
-    setIsSaving(true);
-    try {
-      // Header ayarlarını Supabase'e kaydet
-      await supabase
-        .from("settings")
-        .upsert([
-          { key: "header", value: headerSettings, tenant_id: tenantId }
-        ], { onConflict: ["key", "tenant_id"] });
 
-      // LocalStorage'a header ayarlarını yaz
-      localStorage.setItem("restaurant_header", JSON.stringify(headerSettings));
-
-      // Tema ayarlarını da kaydet
-      await supabase
-        .from("settings")
-        .upsert([
-          { key: "theme", value: theme, tenant_id: tenantId }
-        ], { onConflict: ["key", "tenant_id"] });
-
-      localStorage.setItem("restaurant_theme", JSON.stringify(theme));
-    } catch (err) {
-      console.error("Görünüm ayarları kaydedilemedi:", err);
-    }
-    setIsSaving(false);
-  }
 
   const renderAppearanceTab = () => (
     <div>
@@ -2009,7 +2020,7 @@ export default function AdminPanel() {
             <label className="text-sm font-medium mb-2 block">Header Başlık</label>
             <Input
               value={headerSettings.title}
-              onChange={(e) => setHeaderSettings({ ...headerSettings, title: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderSettings({ ...headerSettings, title: e.target.value })}
               placeholder="Menümüz"
               className="mb-2"
             />
@@ -2018,7 +2029,7 @@ export default function AdminPanel() {
             <label className="text-sm font-medium mb-2 block">Header Alt Başlık</label>
             <Input
               value={headerSettings.subtitle}
-              onChange={(e) => setHeaderSettings({ ...headerSettings, subtitle: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderSettings({ ...headerSettings, subtitle: e.target.value })}
               placeholder="Lezzetli yemeklerimizi keşfedin!"
               className="mb-2"
             />
