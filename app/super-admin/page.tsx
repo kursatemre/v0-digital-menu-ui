@@ -230,7 +230,15 @@ export default function SuperAdminPanel() {
         const pricingData = data.find(d => d.section_key === "pricing")
 
         setLandingContent({
-          hero: heroData?.content || { title: "", subtitle: "" },
+          hero: heroData?.content || {
+            title: "",
+            subtitle: "",
+            logoUrl: "",
+            backgroundImage: "",
+            buttonText: "",
+            buttonLink: "",
+            badgeText: ""
+          },
           pricing: pricingData?.content || { plans: [] }
         })
       }
@@ -629,29 +637,83 @@ export default function SuperAdminPanel() {
                   <p>Yükleniyor...</p>
                 ) : (
                   <>
-                    <div>
-                      <label className="text-sm font-medium">Başlık</label>
-                      <Input
-                        value={landingContent.hero.title || ""}
-                        onChange={(e) => setLandingContent({
-                          ...landingContent,
-                          hero: { ...landingContent.hero, title: e.target.value }
-                        })}
-                        placeholder="Dijital Menü Sisteminiz..."
-                      />
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Logo URL</label>
+                        <Input
+                          value={landingContent.hero.logoUrl || ""}
+                          onChange={(e) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, logoUrl: e.target.value }
+                          })}
+                          placeholder="https://example.com/logo.png"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Logo görselinin URL'sini girin</p>
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Arka Plan Görseli URL</label>
+                        <Input
+                          value={landingContent.hero.backgroundImage || ""}
+                          onChange={(e) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, backgroundImage: e.target.value }
+                          })}
+                          placeholder="https://images.unsplash.com/..."
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">Hero bölümü arka plan resminin URL'sini girin</p>
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Başlık</label>
+                        <Input
+                          value={landingContent.hero.title || ""}
+                          onChange={(e) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, title: e.target.value }
+                          })}
+                          placeholder="Dijital Menü Sisteminiz..."
+                        />
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Alt Başlık</label>
+                        <Input
+                          value={landingContent.hero.subtitle || ""}
+                          onChange={(e) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, subtitle: e.target.value }
+                          })}
+                          placeholder="QR kod ile müşterilerinize..."
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium">Rozet Metni</label>
+                        <Input
+                          value={landingContent.hero.badgeText || ""}
+                          onChange={(e) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, badgeText: e.target.value }
+                          })}
+                          placeholder="🎉 3 Gün Ücretsiz!"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-sm font-medium">Buton Metni</label>
+                        <Input
+                          value={landingContent.hero.buttonText || ""}
+                          onChange={(e) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, buttonText: e.target.value }
+                          })}
+                          placeholder="Ücretsiz Deneyin"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium">Alt Başlık</label>
-                      <Input
-                        value={landingContent.hero.subtitle || ""}
-                        onChange={(e) => setLandingContent({
-                          ...landingContent,
-                          hero: { ...landingContent.hero, subtitle: e.target.value }
-                        })}
-                        placeholder="QR kod ile müşterilerinize..."
-                      />
-                    </div>
-                    <Button onClick={() => saveLandingContent("hero", landingContent.hero)}>
+
+                    <Button onClick={() => saveLandingContent("hero", landingContent.hero)} className="w-full">
                       Hero Bölümünü Kaydet
                     </Button>
                   </>

@@ -107,9 +107,17 @@ export default function LandingPage() {
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
-                <MenuIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
-              </div>
+              {heroContent.logoUrl ? (
+                <img
+                  src={heroContent.logoUrl}
+                  alt="Logo"
+                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                />
+              ) : (
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
+                  <MenuIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                </div>
+              )}
               <div>
                 <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
                   Dijital Menü
@@ -183,7 +191,17 @@ export default function LandingPage() {
 
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-primary/10" />
+        {heroContent.backgroundImage ? (
+          <>
+            <div
+              className="absolute inset-0 bg-cover bg-center"
+              style={{ backgroundImage: `url(${heroContent.backgroundImage})` }}
+            />
+            <div className="absolute inset-0 bg-black/40" />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-primary/10" />
+        )}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-28">
           <div className="text-center space-y-6 sm:space-y-8">
             {/* Badge */}
@@ -193,19 +211,19 @@ export default function LandingPage() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
               </span>
               <span className="text-xs sm:text-sm font-medium text-foreground">
-                🎉 3 Gün Boyunca Tamamen Ücretsiz!
+                {heroContent.badgeText || "🎉 3 Gün Boyunca Tamamen Ücretsiz!"}
               </span>
             </div>
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              <span className="block bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
+              <span className={`block ${heroContent.backgroundImage ? "text-white" : "bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent"}`}>
                 {loading ? "Yükleniyor..." : heroContent.title}
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="max-w-2xl mx-auto text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed px-4">
+            <p className={`max-w-2xl mx-auto text-base sm:text-lg lg:text-xl leading-relaxed px-4 ${heroContent.backgroundImage ? "text-white/90" : "text-muted-foreground"}`}>
               {loading ? "Lütfen bekleyin..." : heroContent.subtitle}
             </p>
 
@@ -216,7 +234,7 @@ export default function LandingPage() {
                   size="lg"
                   className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 gap-2 shadow-xl hover:shadow-2xl transition-all hover:scale-105"
                 >
-                  3 Gün Ücretsiz Dene
+                  {heroContent.buttonText || "3 Gün Ücretsiz Dene"}
                   <ArrowRight className="w-5 h-5" />
                 </Button>
               </Link>
