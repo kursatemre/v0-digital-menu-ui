@@ -1,16 +1,17 @@
 -- Fix subscription_plan NULL values and set proper defaults
 -- This migration ensures all tenants have a subscription_plan value
 
--- 1. Update existing NULL subscription_plan values based on subscription_status
+-- 1. First, update ALL subscription_plan values to be either 'trial' or 'premium'
+-- This includes NULL values and any other unexpected values
 UPDATE tenants
 SET subscription_plan = CASE
-  WHEN subscription_status = 'trial' THEN 'trial'
   WHEN subscription_status = 'active' THEN 'premium'
-  WHEN subscription_status = 'expired' THEN 'trial'
   WHEN subscription_status = 'cancelled' THEN 'premium'
-  ELSE 'trial'
+  WHEN subscription_status = 'expired' THEN 'trial'
+  ELSE 'trial'  -- Default to trial for 'trial' status and any other cases
 END
-WHERE subscription_plan IS NULL;
+WHERE subscription_plan IS NULL
+   OR subscription_plan NOT IN ('trial', 'premium');
 
 -- 2. Set default value for future inserts
 ALTER TABLE tenants
