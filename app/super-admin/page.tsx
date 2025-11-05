@@ -7,6 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import {
   Shield,
   Building2,
   Users,
@@ -62,6 +71,15 @@ export default function SuperAdminPanel() {
     pricing: { plans: [] as any[] }
   })
   const [loadingLanding, setLoadingLanding] = useState(false)
+
+  // Extension dialog state
+  const [extensionDialog, setExtensionDialog] = useState({
+    open: false,
+    tenantId: "",
+    tenantName: "",
+    currentEndDate: null as string | null,
+    months: "1"
+  })
 
   useEffect(() => {
     checkAuth()
@@ -244,6 +262,38 @@ export default function SuperAdminPanel() {
     } catch (error: any) {
       console.error("Error saving landing content:", error)
       alert(`Hata oluştu: ${error?.message || "Bilinmeyen hata"}`)
+    }
+  }
+
+  const handleExtendSubscription = async () => {
+    try {
+      const monthsToAdd = parseInt(extensionDialog.months)
+      if (isNaN(monthsToAdd) || monthsToAdd < 1) {
+        alert("Lütfen geçerli bir ay sayısı girin")
+        return
+      }
+
+      const currentEnd = extensionDialog.currentEndDate
+        ? new Date(extensionDialog.currentEndDate)
+        : new Date()
+      currentEnd.setMonth(currentEnd.getMonth() + monthsToAdd)
+
+      await updateTenantSubscription(
+        extensionDialog.tenantId,
+        "premium",
+        "active",
+        currentEnd.toISOString()
+      )
+
+      setExtensionDialog({
+        open: false,
+        tenantId: "",
+        tenantName: "",
+        currentEndDate: null,
+        months: "1"
+      })
+    } catch (error) {
+      console.error("Error extending subscription:", error)
     }
   }
 
@@ -529,19 +579,13 @@ export default function SuperAdminPanel() {
                               size="sm"
                               variant="outline"
                               onClick={() => {
-                                const months = prompt("Kaç ay uzatmak istiyorsunuz?", "1")
-                                if (months) {
-                                  const currentEnd = tenant.subscription_end_date
-                                    ? new Date(tenant.subscription_end_date)
-                                    : new Date()
-                                  currentEnd.setMonth(currentEnd.getMonth() + parseInt(months))
-                                  updateTenantSubscription(
-                                    tenant.id,
-                                    "premium",
-                                    "active",
-                                    currentEnd.toISOString()
-                                  )
-                                }
+                                setExtensionDialog({
+                                  open: true,
+                                  tenantId: tenant.id,
+                                  tenantName: tenant.business_name,
+                                  currentEndDate: tenant.subscription_end_date,
+                                  months: "1"
+                                })
                               }}
                             >
                               <Calendar className="w-4 h-4 mr-1" />
@@ -666,6 +710,58 @@ export default function SuperAdminPanel() {
           </div>
         )}
       </div>
+
+      {/* Extension Dialog */}
+      <Dialog open={extensionDialog.open} onOpenChange={(open) => setExtensionDialog({ ...extensionDialog, open })}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Abonelik Süresini Uzat</DialogTitle>
+            <DialogDescription>
+              {extensionDialog.tenantName} için premium abonelik süresini uzatın
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="months">Kaç ay uzatmak istiyorsunuz?</Label>
+              <Input
+                id="months"
+                type="number"
+                min="1"
+                value={extensionDialog.months}
+                onChange={(e) => setExtensionDialog({ ...extensionDialog, months: e.target.value })}
+                placeholder="1"
+              />
+            </div>
+            {extensionDialog.currentEndDate && (
+              <p className="text-sm text-muted-foreground">
+                Mevcut bitiş tarihi: {new Date(extensionDialog.currentEndDate).toLocaleDateString("tr-TR")}
+              </p>
+            )}
+            {extensionDialog.months && parseInt(extensionDialog.months) > 0 && (
+              <p className="text-sm text-primary font-medium">
+                Yeni bitiş tarihi: {(() => {
+                  const currentEnd = extensionDialog.currentEndDate
+                    ? new Date(extensionDialog.currentEndDate)
+                    : new Date()
+                  currentEnd.setMonth(currentEnd.getMonth() + parseInt(extensionDialog.months))
+                  return currentEnd.toLocaleDateString("tr-TR")
+                })()}
+              </p>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setExtensionDialog({ ...extensionDialog, open: false })}
+            >
+              İptal
+            </Button>
+            <Button onClick={handleExtendSubscription}>
+              Uzat
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
