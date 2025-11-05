@@ -162,19 +162,27 @@ export default function SuperAdminPanel() {
         }
       }
 
-      const { error } = await supabase
+      console.log("Updating tenant with:", updates)
+
+      const { data, error } = await supabase
         .from("tenants")
         .update(updates)
         .eq("id", tenantId)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error("Supabase error:", error)
+        throw error
+      }
+
+      console.log("Update successful:", data)
 
       await loadTenants()
       await loadStats()
       alert("Abonelik güncellendi!")
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating subscription:", error)
-      alert("Hata oluştu!")
+      alert(`Hata oluştu: ${error?.message || "Bilinmeyen hata"}`)
     }
   }
 
@@ -219,20 +227,28 @@ export default function SuperAdminPanel() {
 
   const saveLandingContent = async (sectionKey: string, content: any) => {
     try {
-      const { error } = await supabase
+      console.log("Saving content for:", sectionKey, content)
+
+      const { data, error } = await supabase
         .from("landing_page_content")
         .update({
           content,
           updated_at: new Date().toISOString()
         })
         .eq("section_key", sectionKey)
+        .select()
 
-      if (error) throw error
+      if (error) {
+        console.error("Supabase error:", error)
+        throw error
+      }
+
+      console.log("Save successful:", data)
       alert("İçerik kaydedildi!")
       await loadLandingContent()
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving landing content:", error)
-      alert("Hata oluştu!")
+      alert(`Hata oluştu: ${error?.message || "Bilinmeyen hata"}`)
     }
   }
 
