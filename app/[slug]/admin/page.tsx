@@ -97,6 +97,7 @@ type Category = {
 
 type Theme = {
   primaryColor: string
+  primaryTextColor: string
   secondaryColor: string
   backgroundColor: string
   textColor: string
@@ -198,6 +199,7 @@ export default function AdminPanel() {
   const [categories, setCategories] = useState<Category[]>([])
   const [theme, setTheme] = useState<Theme>({
     primaryColor: "#8B5A3C",
+    primaryTextColor: "#FFFFFF",
     secondaryColor: "#C9A961",
     backgroundColor: "#FFFFFF",
     textColor: "#1A1A1A",
@@ -242,6 +244,7 @@ export default function AdminPanel() {
     title: "Menümüz",
     subtitle: "Lezzetli yemeklerimizi keşfedin!",
     logo: "",
+    backgroundImage: "",
   })
 
   const [qrSettings, setQrSettings] = useState({
@@ -2043,7 +2046,7 @@ export default function AdminPanel() {
         <CardContent className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="text-sm font-medium mb-2 block">Ana Renk</label>
+              <label className="text-sm font-medium mb-2 block">Ana Düğme Rengi</label>
               <div className="flex gap-3 items-center">
                 <input
                   type="color"
@@ -2055,6 +2058,23 @@ export default function AdminPanel() {
                   value={theme.primaryColor}
                   onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
                   placeholder="#8B5A3C"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Ana Düğme Metin Rengi</label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={theme.primaryTextColor}
+                  onChange={(e) => setTheme({ ...theme, primaryTextColor: e.target.value })}
+                  className="w-12 h-12 rounded cursor-pointer border"
+                />
+                <Input
+                  value={theme.primaryTextColor}
+                  onChange={(e) => setTheme({ ...theme, primaryTextColor: e.target.value })}
+                  placeholder="#FFFFFF"
                 />
               </div>
             </div>
@@ -2119,7 +2139,7 @@ export default function AdminPanel() {
               Önizleme
             </h3>
             <div className="flex gap-4 flex-wrap">
-              <Button style={{ backgroundColor: theme.primaryColor, color: "#fff" }}>Ana Düğme</Button>
+              <Button style={{ backgroundColor: theme.primaryColor, color: theme.primaryTextColor }}>Ana Düğme</Button>
               <Button style={{ backgroundColor: theme.secondaryColor, color: theme.textColor }}>Vurgu Düğmesi</Button>
             </div>
             <p style={{ color: theme.textColor }} className="mt-4 text-sm">
