@@ -62,15 +62,6 @@ export default function SuperAdminPanel() {
   const router = useRouter()
   const supabase = createClient()
   
-  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
-    logo: "",
-    favicon: "",
-    site_title: "MenuMGO - Dijital Menü Çözümü",
-    site_description: "MenuMGO ile dijital menünüzü oluşturun, QR kodla müşterilerinize ulaşın.",
-    meta_keywords: ["dijital menü", "qr menü", "restoran menüsü", "cafe menüsü"],
-    google_verification: ""
-  })
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loginForm, setLoginForm] = useState({ username: "", password: "" })
@@ -80,7 +71,7 @@ export default function SuperAdminPanel() {
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "trial" | "active" | "cancelled">("all")
-
+  
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
     logo: "",
     favicon: "",
