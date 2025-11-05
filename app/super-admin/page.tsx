@@ -248,34 +248,18 @@ export default function SuperAdminPanel() {
   useEffect(() => {
     if (!isAuthenticated) return
 
-    const loadData = async () => {
-      try {
-        await loadTenants()
-        await loadStats()
-        if (activeTab === "landing") {
-          await loadLandingContent()
-        }
-      } catch (error) {
-        console.error("Error loading data:", error)
-      }
+    loadTenants()
+    loadStats()
+    if (activeTab === "landing") {
+      loadLandingContent()
     }
-
-    loadData()
   }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent])
 
   // Platform settings effect
   useEffect(() => {
     if (!isAuthenticated || activeTab !== "platform") return
 
-    const loadSettings = async () => {
-      try {
-        await loadPlatformSettings()
-      } catch (error) {
-        console.error("Error loading platform settings:", error)
-      }
-    }
-
-    loadSettings()
+    loadPlatformSettings()
   }, [isAuthenticated, activeTab, loadPlatformSettings])
 
   const handleLogin = async () => {
