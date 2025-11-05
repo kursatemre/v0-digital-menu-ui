@@ -595,13 +595,13 @@ export default function AdminPanel() {
         .in("key", ["header", "theme"])
 
       // Header ayarlarını güncelle veya ekle
-      const headerSettings = existingSettings?.find(s => s.key === "header")
+      const existingHeader = existingSettings?.find(s => s.key === "header")
       const { error: headerError } = await supabase
         .from("settings")
         .upsert({
-          id: headerSettings?.id, // Eğer varsa mevcut kaydın ID'sini kullan
+          id: existingHeader?.id, // Eğer varsa mevcut kaydın ID'sini kullan
           key: "header",
-          value: headerSettings,
+          value: headerSettings, // State'teki güncel headerSettings değerini kullan
           tenant_id: tenantId,
           updated_at: new Date().toISOString()
         }, {
@@ -617,13 +617,13 @@ export default function AdminPanel() {
       localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
 
       // Tema ayarlarını güncelle veya ekle
-      const themeSettings = existingSettings?.find(s => s.key === "theme")
+      const existingTheme = existingSettings?.find(s => s.key === "theme")
       const { error: themeError } = await supabase
         .from("settings")
         .upsert({
-          id: themeSettings?.id, // Eğer varsa mevcut kaydın ID'sini kullan
+          id: existingTheme?.id, // Eğer varsa mevcut kaydın ID'sini kullan
           key: "theme",
-          value: theme,
+          value: theme, // State'teki güncel theme değerini kullan
           tenant_id: tenantId,
           updated_at: new Date().toISOString()
         }, {
