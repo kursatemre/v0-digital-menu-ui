@@ -65,20 +65,20 @@ export function MenuHeader() {
   return (
     <div className="relative overflow-hidden border-b border-primary/10">
       {/* Background Image */}
-      {headerConfig.backgroundImage && (
+      {headerConfig.backgroundImage ? (
         <div 
           className="absolute inset-0 z-0"
           style={{
             backgroundImage: `url(${headerConfig.backgroundImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            opacity: 0.15
+            opacity: 0.5
           }}
         />
+      ) : (
+        /* Default Background Pattern */
+        <div className="absolute inset-0 z-0 bg-white dotted-bg" />
       )}
-      
-      {/* Default Background Pattern */}
-      <div className="absolute inset-0 z-0 bg-white dotted-bg" />
 
       {/* Content */}
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 lg:py-16">
