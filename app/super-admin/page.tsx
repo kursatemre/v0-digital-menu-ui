@@ -21,7 +21,6 @@ import {
   Building2,
   Users,
   TrendingUp,
-  Settings,
   FileEdit,
   LogOut,
   Search,
@@ -31,10 +30,8 @@ import {
   Check,
   X,
   Calendar,
-  Trash2,
-  Globe
+  Trash2
 } from "lucide-react"
-import { PlatformTab } from "./components/platform-tab"
 
 // Types
 interface Tenant {
@@ -67,15 +64,6 @@ interface LandingContent {
   created_at: string
 }
 
-interface PlatformSettings {
-  logo: string
-  favicon: string
-  site_title: string
-  site_description: string
-  meta_keywords: string[]
-  google_verification: string
-}
-
 interface Stats {
   totalTenants: number
   activeTenants: number
@@ -95,21 +83,10 @@ export default function SuperAdminPanel() {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" })
   const [loginError, setLoginError] = useState("")
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing" | "platform" | "settings">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing">("dashboard")
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "trial" | "active" | "cancelled">("all")
-  
-  const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
-    logo: "",
-    favicon: "",
-    site_title: "MenuMGO - Dijital Menü Çözümü",
-    site_description: "MenuMGO ile dijital menünüzü kolayca oluşturun ve yönetin.",
-    meta_keywords: ["dijital menü", "qr menü", "restoran menüsü", "cafe menüsü"],
-    google_verification: ""
-  })
-  const [uploadingImage, setUploadingImage] = useState(false)
-
   const [stats, setStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
@@ -144,21 +121,6 @@ export default function SuperAdminPanel() {
   })
 
   // Actions
-  const loadPlatformSettings = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from("platform_settings")
-        .select("*")
-        .single()
-
-      if (error) throw error
-      if (data) {
-        setPlatformSettings(data)
-      }
-    } catch (error) {
-      console.error("Error loading platform settings:", error)
-    }
-  }, [supabase])
 
   const loadTenants = useCallback(async () => {
     try {
@@ -259,15 +221,7 @@ export default function SuperAdminPanel() {
     loadData()
   }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent])
 
-  // Platform settings effect
-  useEffect(() => {
-    const initPlatformSettings = async () => {
-      if (!isAuthenticated || activeTab !== "platform") return
-      await loadPlatformSettings()
-    }
 
-    initPlatformSettings()
-  }, [isAuthenticated, activeTab, loadPlatformSettings])
 
   const handleLogin = async () => {
     setLoginError("")
@@ -457,50 +411,7 @@ export default function SuperAdminPanel() {
     )
   }
 
-  // Platform ayarları için gerekli fonksiyonlar
-  const uploadPlatformImage = async (file: File, type: "logo" | "favicon") => {
-    setUploadingImage(true)
-    try {
-      const fileExt = file.name.split(".").pop()
-      const fileName = `${type}-${Date.now()}.${fileExt}`
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("public")
-        .upload(`platform/${fileName}`, file)
 
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("public")
-        .getPublicUrl(`platform/${fileName}`)
-
-      return publicUrl
-    } catch (error) {
-      console.error(`Error uploading ${type}:`, error)
-      return null
-    } finally {
-      setUploadingImage(false)
-    }
-  }
-
-  const savePlatformSettings = async () => {
-    try {
-      const { error } = await supabase
-        .from("platform_settings")
-        .upsert(platformSettings)
-
-      if (error) throw error
-      alert("Platform ayarları kaydedildi!")
-    } catch (error) {
-      console.error("Error saving platform settings:", error)
-      alert("Platform ayarları kaydedilemedi!")
-    }
-  }
-
-  useEffect(() => {
-    if (isAuthenticated && activeTab === "platform") {
-      loadPlatformSettings()
-    }
-  }, [isAuthenticated, activeTab])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -548,14 +459,7 @@ export default function SuperAdminPanel() {
             <FileEdit className="w-4 h-4" />
             Landing Page
           </Button>
-          <Button
-            variant={activeTab === "platform" ? "default" : "outline"}
-            onClick={() => setActiveTab("platform")}
-            className="gap-2"
-          >
-            <Globe className="w-4 h-4" />
-            Platform
-          </Button>
+
         </div>
 
         {/* Dashboard Tab */}
@@ -770,16 +674,7 @@ export default function SuperAdminPanel() {
           </div>
         )}
 
-        {/* Platform Tab */}
-        {activeTab === "platform" && (
-          <PlatformTab
-            platformSettings={platformSettings}
-            uploadingImage={uploadingImage}
-            setPlatformSettings={setPlatformSettings}
-            uploadPlatformImage={uploadPlatformImage}
-            savePlatformSettings={savePlatformSettings}
-          />
-        )}
+
 
         {/* Landing Page Tab */}
         {activeTab === "landing" && (
