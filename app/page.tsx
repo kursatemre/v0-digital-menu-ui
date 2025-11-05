@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -16,9 +16,43 @@ import {
   Star,
 } from "lucide-react"
 import Link from "next/link"
+import { supabase } from "@/lib/supabaseClient"
 
 export default function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [heroContent, setHeroContent] = useState({
+    title: "Kağıt Menü Derdine Son Verin!",
+    subtitle: "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!"
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    loadHeroContent()
+  }, [])
+
+  const loadHeroContent = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("landing_page_content")
+        .select("content")
+        .eq("section_key", "hero")
+        .single()
+
+      if (error) throw error
+
+      if (data?.content) {
+        setHeroContent({
+          title: data.content.title || heroContent.title,
+          subtitle: data.content.subtitle || heroContent.subtitle
+        })
+      }
+    } catch (error) {
+      console.error("Error loading hero content:", error)
+      // Keep default content on error
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const features = [
     {
@@ -164,16 +198,14 @@ export default function LandingPage() {
 
             {/* Main Heading */}
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              <span className="block text-foreground">Kağıt Menü Derdine</span>
               <span className="block bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent">
-                Son Verin!
+                {loading ? "Yükleniyor..." : heroContent.title}
               </span>
             </h1>
 
             {/* Subtitle */}
             <p className="max-w-2xl mx-auto text-base sm:text-lg lg:text-xl text-muted-foreground leading-relaxed px-4">
-              Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin.
-              Kod bilgisi gerektirmez, kullanımı kolaydır!
+              {loading ? "Lütfen bekleyin..." : heroContent.subtitle}
             </p>
 
             {/* CTA Buttons */}
