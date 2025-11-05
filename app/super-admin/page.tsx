@@ -246,20 +246,27 @@ export default function SuperAdminPanel() {
 
   // Data loading effect
   useEffect(() => {
-    if (!isAuthenticated) return
+    const loadData = async () => {
+      if (!isAuthenticated) return
 
-    loadTenants()
-    loadStats()
-    if (activeTab === "landing") {
-      loadLandingContent()
+      await Promise.all([
+        loadTenants(),
+        loadStats(),
+        activeTab === "landing" ? loadLandingContent() : Promise.resolve()
+      ])
     }
+
+    loadData()
   }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent])
 
   // Platform settings effect
   useEffect(() => {
-    if (!isAuthenticated || activeTab !== "platform") return
+    const initPlatformSettings = async () => {
+      if (!isAuthenticated || activeTab !== "platform") return
+      await loadPlatformSettings()
+    }
 
-    loadPlatformSettings()
+    initPlatformSettings()
   }, [isAuthenticated, activeTab, loadPlatformSettings])
 
   const handleLogin = async () => {
