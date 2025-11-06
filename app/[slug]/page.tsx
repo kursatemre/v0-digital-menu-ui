@@ -386,23 +386,21 @@ export default function MenuPage() {
           </div>
         ) : tenant ? (
           <>
-            <div className="relative">
-              <MenuHeader title={tenant.business_name} theme={theme} />
-              <div className="absolute top-4 right-4">
-                <LanguageSwitch />
-              </div>
-            </div>
+            <MenuHeader title={tenant.business_name} theme={theme} />
 
-            {/* Waiter Call Button */}
+            {/* Waiter Call Button & Language Switcher */}
             <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-                <button
-                  onClick={() => setWaiterCallOpen(true)}
-                  className="w-full bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
-                >
-                  <Bell className="w-5 h-5" />
-                  <span>Garson Çağır</span>
-                </button>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setWaiterCallOpen(true)}
+                    className="flex-1 bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span>Garson Çağır</span>
+                  </button>
+                  <LanguageSwitch />
+                </div>
               </div>
             </div>
 

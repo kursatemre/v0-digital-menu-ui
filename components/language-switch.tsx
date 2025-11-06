@@ -10,13 +10,13 @@ export function LanguageSwitch() {
 
   return (
     <Button
-      variant="ghost"
+      variant="outline"
       size="sm"
       onClick={() => setLanguage(language === "tr" ? "en" : "tr")}
-      className="fixed top-4 right-20 z-50"
+      className="flex items-center gap-2 bg-white hover:bg-gray-50 border-2 border-primary/20 hover:border-primary/40 transition-all"
     >
-      <Globe className="w-4 h-4 mr-2" />
-      {language.toUpperCase()}
+      <Globe className="w-4 h-4" />
+      <span className="font-semibold">{language === "tr" ? "EN" : "TR"}</span>
     </Button>
   )
 }
