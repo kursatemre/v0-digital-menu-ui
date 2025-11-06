@@ -29,6 +29,8 @@ import {
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { SupportChatButton } from "@/components/support-chat-button"
+import { SupportChatWidget } from "@/components/support-chat-widget"
 
 export default function LandingPage() {
   const supabase = createClient()
@@ -37,6 +39,7 @@ export default function LandingPage() {
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null)
   const [restaurantLoginOpen, setRestaurantLoginOpen] = useState(false)
   const [restaurantSlug, setRestaurantSlug] = useState("")
+  const [chatOpen, setChatOpen] = useState(false)
   const [heroContent, setHeroContent] = useState({
     title: "Kağıt Menü Derdine Son Verin!",
     subtitle: "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
@@ -619,6 +622,10 @@ export default function LandingPage() {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Support Chat */}
+      <SupportChatButton onClick={() => setChatOpen(!chatOpen)} isOpen={chatOpen} />
+      {chatOpen && <SupportChatWidget />}
 
       {/* Footer */}
       <footer id="iletisim" className="bg-slate-900 text-slate-300 py-8 sm:py-12">
