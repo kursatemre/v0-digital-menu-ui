@@ -14,75 +14,93 @@ export default function PaymentPage() {
   const slug = params.slug as string
 
   const [tenant, setTenant] = useState<any>(null)
+  const [pricing, setPricing] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<"monthly" | "yearly">("monthly")
+  const [paytrToken, setPaytrToken] = useState<string | null>(null)
 
-  const [cardInfo, setCardInfo] = useState({
-    cardNumber: "",
-    cardName: "",
-    expiryDate: "",
-    cvv: "",
+  const [userInfo, setUserInfo] = useState({
+    user_name: "",
+    user_email: "",
+    user_phone: "",
+    user_address: "",
   })
 
-  const supabase = createClient()
-
   useEffect(() => {
-    const loadTenant = async () => {
-      const { data, error } = await supabase
+    const supabase = createClient()
+    
+    const loadData = async () => {
+      // Load tenant
+      const { data: tenantData, error: tenantError } = await supabase
         .from("tenants")
         .select("*")
         .eq("slug", slug)
         .single()
 
-      if (error || !data) {
+      if (tenantError || !tenantData) {
         router.push("/")
         return
       }
 
-      setTenant(data)
+      // Load dynamic pricing
+      const { data: pricingData } = await supabase
+        .from("pricing_view")
+        .select("*")
+        .single()
+
+      setTenant(tenantData)
+      setPricing(pricingData)
       setIsLoading(false)
     }
 
-    loadTenant()
-  }, [slug, router, supabase])
-
-  const monthlyPrice = 299
-  const yearlyPrice = 2990 // 2 ay bedava (10 ay fiyatı)
-  const discountedFirstMonth = 149
+    loadData()
+  }, [slug, router])
 
   const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault()
     setProcessing(true)
 
-    // Simulate payment processing
-    setTimeout(async () => {
-      try {
-        // Update tenant subscription status
-        const { error } = await supabase
-          .from("tenants")
-          .update({
-            subscription_status: "active",
-            subscription_plan: selectedPlan,
-            subscription_start_date: new Date().toISOString(),
-            subscription_end_date: new Date(
-              Date.now() + (selectedPlan === "monthly" ? 30 : 365) * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", tenant.id)
+    try {
+      console.log('Payment request data:', {
+        tenant_id: tenant.id,
+        user_name: userInfo.user_name,
+        user_email: userInfo.user_email,
+        user_phone: userInfo.user_phone,
+        user_address: userInfo.user_address,
+        amount: pricing?.premium_price_try || 299,
+      })
 
-        if (error) throw error
+      const response = await fetch('/api/paytr/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenant.id,
+          user_name: userInfo.user_name,
+          user_email: userInfo.user_email,
+          user_phone: userInfo.user_phone,
+          user_address: userInfo.user_address,
+          amount: pricing?.premium_price_try || 299,
+        }),
+      })
 
-        alert("Ödeme başarılı! Hoş geldiniz 🎉")
-        router.push(`/${slug}/admin`)
-      } catch (error) {
-        console.error("Payment error:", error)
-        alert("Ödeme sırasında bir hata oluştu. Lütfen tekrar deneyin.")
-      } finally {
-        setProcessing(false)
+      console.log('Response status:', response.status)
+      const data = await response.json()
+      console.log('Response data:', data)
+
+      if (!response.ok) {
+        throw new Error(data.error || `HTTP ${response.status}`)
       }
-    }, 2000)
+
+      if (data.success && data.iframe_token) {
+        setPaytrToken(data.iframe_token)
+      } else {
+        throw new Error(data.error || 'Token alınamadı')
+      }
+    } catch (error: any) {
+      console.error('Payment error:', error)
+      alert('Ödeme oluşturulamadı: ' + error.message)
+      setProcessing(false)
+    }
   }
 
   if (isLoading) {
