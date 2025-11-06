@@ -25,7 +25,9 @@ type CartItem = {
 type Product = {
   id: string
   name: string
+  name_en?: string
   description: string
+  description_en?: string
   price: number
   categoryId: string
   image: string
@@ -36,6 +38,7 @@ type Product = {
 type Category = {
   id: string
   name: string
+  name_en?: string
   image: string
 }
 
@@ -49,9 +52,17 @@ type Tenant = {
 }
 
 export default function MenuPage() {
+  useEffect(() => {
+    // Save language preference to localStorage
+    const savedLanguage = localStorage.getItem("preferred_language")
+    if (savedLanguage === "tr" || savedLanguage === "en") {
+      setLanguage(savedLanguage as "tr" | "en")
+    }
+  }, [])
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
+  const [language, setLanguage] = useState<"tr" | "en">("tr")
 
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [trialExpired, setTrialExpired] = useState(false)
@@ -77,6 +88,8 @@ export default function MenuPage() {
 
   const supabase = createClient()
 
+
+  
   // Load cart from localStorage on mount
   useEffect(() => {
     const savedCart = localStorage.getItem("restaurant_cart")
@@ -141,7 +154,7 @@ export default function MenuPage() {
         // 4. Load categories (with tenant_id filter)
         const { data: categoriesData, error: catError } = await supabase
           .from("categories")
-          .select("*")
+          .select("id, name, name_en, image")
           .eq("tenant_id", tenantData.id)
           .order("display_order", { ascending: true })
 
@@ -150,6 +163,7 @@ export default function MenuPage() {
           const formattedCategories = categoriesData.map((cat: any) => ({
             id: cat.id,
             name: cat.name,
+            name_en: cat.name_en,
             image: cat.image || "",
           }))
           setCategories(formattedCategories)
@@ -161,7 +175,7 @@ export default function MenuPage() {
         // 5. Load products (with tenant_id filter)
         const { data: productsData, error: prodError } = await supabase
           .from("products")
-          .select("*")
+          .select("id, name, name_en, description, description_en, price, category_id, image, badge, is_available")
           .eq("tenant_id", tenantData.id)
           .order("display_order", { ascending: true })
 
@@ -170,7 +184,9 @@ export default function MenuPage() {
           const formattedProducts = productsData.map((prod: any) => ({
             id: prod.id,
             name: prod.name,
+            name_en: prod.name_en,
             description: prod.description || "",
+            description_en: prod.description_en,
             price: prod.price,
             categoryId: prod.category_id,
             image: prod.image || "",
@@ -359,8 +375,23 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <MenuHeader />
+    <LanguageProvider>
+      <div className="min-h-screen bg-background">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <LanguageAwareText tr="Yükleniyor..." en="Loading..." />
+            </div>
+          </div>
+        ) : tenant ? (
+          <>
+            <div className="relative">
+              <MenuHeader title={tenant.business_name} theme={theme} />
+              <div className="absolute top-4 right-4">
+                <LanguageSwitch />
+              </div>
+            </div>
 
       {/* Waiter Call Button */}
       <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
@@ -395,6 +426,7 @@ export default function MenuPage() {
             {categories.map((category) => {
               const categoryProducts = getCategoryProducts(category.id)
               const isExpanded = expandedCategories.has(category.id)
+              const displayName = language === "tr" ? category.name : (category.name_en || category.name)
 
               return (
                 <div
@@ -411,7 +443,7 @@ export default function MenuPage() {
                       {category.image ? (
                         <img
                           src={category.image}
-                          alt={category.name}
+                          alt={displayName}
                           className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg flex-shrink-0"
                         />
                       ) : (
@@ -420,7 +452,7 @@ export default function MenuPage() {
                         </div>
                       )}
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <h2 className="text-lg sm:text-xl font-bold text-foreground">{category.name}</h2>
+                        <h2 className="text-lg sm:text-xl font-bold text-foreground">{displayName}</h2>
                         <span className="text-xs sm:text-sm text-muted-foreground bg-primary/10 px-2 sm:px-3 py-1 rounded-full font-medium">
                           {categoryProducts.length}
                         </span>
@@ -480,12 +512,12 @@ export default function MenuPage() {
                             <div className="flex-1 p-3 sm:p-4 flex flex-col">
                               {/* Product Name */}
                               <h3 className="text-base sm:text-lg font-bold text-foreground mb-1.5 line-clamp-2">
-                                {product.name}
+                                {language === "tr" ? product.name : (product.name_en || product.name)}
                               </h3>
 
                               {/* Product Description */}
                               <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2 flex-1">
-                                {product.description}
+                                {language === "tr" ? product.description : (product.description_en || product.description)}
                               </p>
 
                               {/* Price and Add to Cart Button */}
@@ -505,7 +537,17 @@ export default function MenuPage() {
                                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                   }`}
                                 >
-                                  {isAvailable ? 'Sepete Ekle' : 'Tükendi'}
+                                  {isAvailable ? (
+                                    <LanguageAwareText 
+                                      tr="Sepete Ekle" 
+                                      en="Add to Cart" 
+                                    />
+                                  ) : (
+                                    <LanguageAwareText 
+                                      tr="Tükendi" 
+                                      en="Sold Out" 
+                                    />
+                                  )}
                                 </button>
                               </div>
                             </div>
@@ -513,7 +555,10 @@ export default function MenuPage() {
                         )})
                       ) : (
                         <div className="col-span-full px-6 py-8 text-center text-muted-foreground">
-                          Bu kategoride ürün bulunmamaktadır.
+                          <LanguageAwareText 
+                            tr="Bu kategoride ürün bulunmamaktadır." 
+                            en="No products found in this category." 
+                          />
                         </div>
                       )}
                     </div>
@@ -524,8 +569,16 @@ export default function MenuPage() {
           </div>
         ) : (
           <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg mb-6">Henüz kategori eklenmemiştir.</p>
-            <p className="text-sm text-muted-foreground">/admin sayfasından kategoriler ve ürünler ekleyebilirsiniz.</p>
+            <LanguageAwareText 
+              tr="Henüz kategori eklenmemiştir." 
+              en="No categories have been added yet." 
+            />
+            <p className="text-sm text-muted-foreground">
+              <LanguageAwareText 
+                tr="/admin sayfasından kategoriler ve ürünler ekleyebilirsiniz." 
+                en="You can add categories and products from the /admin page." 
+              />
+            </p>
           </div>
         )}
       </main>
@@ -627,51 +680,5 @@ export default function MenuPage() {
     </div>
   )
 
-  return (
-    <LanguageProvider>
-      <div className="min-h-screen" style={{ backgroundColor: theme.backgroundColor }}>
-        {/* Language Switch */}
-        <LanguageSwitch />
 
-        {/* Loading State */}
-        {isLoading && (
-          <div className="fixed inset-0 bg-white z-50 flex items-center justify-center">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4" />
-              <p className="text-primary">
-                <LanguageAwareText tr="Menü yükleniyor..." en="Loading menu..." />
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Trial Expired Message */}
-        {trialExpired && (
-          <div className="fixed inset-0 bg-white z-50 flex items-center justify-center p-4">
-            <div className="max-w-md text-center">
-              <h2 className="text-2xl font-bold mb-4">
-                <LanguageAwareText 
-                  tr="Deneme Süresi Doldu" 
-                  en="Trial Period Expired" 
-                />
-              </h2>
-              <p className="mb-4">
-                <LanguageAwareText 
-                  tr="Bu menüye artık erişilemiyor. Premium pakete geçiş yaparak menünüzü tekrar aktif edebilirsiniz." 
-                  en="This menu is no longer accessible. You can reactivate your menu by upgrading to the premium package." 
-                />
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Rest of the menu content */}
-        <MenuHeader tenant={tenant} theme={theme} />
-        <CartButton cart={cart} onClick={() => setCartOpen(true)} theme={theme} />
-        
-        {/* Other menu components */}
-
-      </div>
-    </LanguageProvider>
-  )
 }

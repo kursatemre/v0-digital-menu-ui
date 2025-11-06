@@ -3,7 +3,17 @@
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 
-export function MenuHeader() {
+interface MenuHeaderProps {
+  title?: string;
+  theme?: {
+    primaryColor: string;
+    secondaryColor: string;
+    backgroundColor: string;
+    textColor: string;
+  };
+}
+
+export function MenuHeader({ title = "Menümüz", theme }: MenuHeaderProps) {
   const [headerConfig, setHeaderConfig] = useState({
     title: "Menümüz",
     subtitle: "Lezzetli yemeklerimizi keşfedin!",

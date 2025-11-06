@@ -8,46 +8,18 @@ import { useLanguage } from "@/contexts/language-context"
 interface Product {
   id: string
   name: string
-  name_en: string
+  name_en?: string
   description: string
-  description_en: string
+  description_en?: string
   price: number
   badge: string | null
+  categoryId: string
+  image?: string
+  is_available?: boolean
 }
 
 const PRODUCTS: Record<string, Product[]> = {
-  appetizers: [
-    { 
-      id: "1", 
-      name: "Humus", 
-      name_en: "Hummus",
-      description: "Nohut püresi, zeytinyağı, limon", 
-      description_en: "Chickpea puree, olive oil, lemon",
-      price: 45, 
-      badge: "Popüler" 
-    },
-    { 
-      id: "2", 
-      name: "Falafel Tabağı", 
-      name_en: "Falafel Plate",
-      description: "Kızarmış nohut köfte, soslar", 
-      description_en: "Fried chickpea balls with sauces",
-      price: 55, 
-      badge: "Vegan" 
-    },
-    { 
-      id: "3", 
-      name: "Çoban Salatası", 
-      name_en: "Shepherd's Salad",
-      description: "Taze sebzeler, zeytinyağı, limon", 
-      description_en: "Fresh vegetables, olive oil, lemon",
-      price: 50, 
-      badge: null 
-    },
-  ],
-  mains: [
-    {
-      id: "4",
+}
       name: "Somon Izgara",
       name_en: "Grilled Salmon",
       description: "Izgara somon, sebzeler, limon soslu",
