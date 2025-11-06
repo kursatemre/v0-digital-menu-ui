@@ -25,6 +25,7 @@ import {
   Star,
   ChevronDown,
   HelpCircle,
+  Languages,
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -119,6 +120,11 @@ export default function LandingPage() {
       icon: <QrCode className="w-8 h-8" />,
       title: "QR Menü Oluşturma",
       description: "Saniyeler içinde dijital menünüzü oluşturun. QR kod ile müşterileriniz temassız sipariş versin. Basılı menü masraflarına son!",
+    },
+    {
+      icon: <Languages className="w-8 h-8" />,
+      title: "Çoklu Dil Desteği",
+      description: "Türkçe ve İngilizce dillerinde menü gösterimi. Yabancı müşterileriniz kendi dillerinde sipariş versin, global işletmeniz olsun!",
     },
     {
       icon: <Zap className="w-8 h-8" />,
