@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
-import { LanguageProvider } from "@/contexts/language-context"
+import { LanguageProvider, useLanguage } from "@/contexts/language-context"
 import { LanguageSwitch } from "@/components/language-switch"
 import { LanguageAwareText } from "@/components/language-aware-text"
 
@@ -51,18 +51,11 @@ type Tenant = {
   is_active: boolean
 }
 
-export default function MenuPage() {
-  useEffect(() => {
-    // Save language preference to localStorage
-    const savedLanguage = localStorage.getItem("preferred_language")
-    if (savedLanguage === "tr" || savedLanguage === "en") {
-      setLanguage(savedLanguage as "tr" | "en")
-    }
-  }, [])
+function MenuPageContent() {
+  const { language } = useLanguage()
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
-  const [language, setLanguage] = useState<"tr" | "en">("tr")
 
   const [tenant, setTenant] = useState<Tenant | null>(null)
   const [trialExpired, setTrialExpired] = useState(false)
@@ -166,7 +159,6 @@ export default function MenuPage() {
             name_en: cat.name_en,
             image: cat.image || "",
           }))
-          console.log('Loaded categories:', formattedCategories) // Debug log
           setCategories(formattedCategories)
           if (formattedCategories.length > 0) {
             setExpandedCategories(new Set([formattedCategories[0].id]))
@@ -194,7 +186,6 @@ export default function MenuPage() {
             badge: prod.badge || null,
             is_available: prod.is_available,
           }))
-          console.log('Loaded products:', formattedProducts) // Debug log
           setProducts(formattedProducts)
         }
       } catch (error) {
@@ -377,7 +368,6 @@ export default function MenuPage() {
   }
 
   return (
-    <LanguageProvider>
       <div className="min-h-screen bg-background">
         {isLoading ? (
           <div className="flex items-center justify-center h-screen">
@@ -429,7 +419,6 @@ export default function MenuPage() {
               const categoryProducts = getCategoryProducts(category.id)
               const isExpanded = expandedCategories.has(category.id)
               const displayName = language === "tr" ? category.name : (category.name_en || category.name)
-              console.log(`Category ${category.id}: language=${language}, name=${category.name}, name_en=${category.name_en}, displayName=${displayName}`) // Debug log
 
               return (
                 <div
@@ -697,6 +686,13 @@ export default function MenuPage() {
     </>
   ) : null}
       </div>
+  )
+}
+
+export default function MenuPage() {
+  return (
+    <LanguageProvider>
+      <MenuPageContent />
     </LanguageProvider>
   );
 }
