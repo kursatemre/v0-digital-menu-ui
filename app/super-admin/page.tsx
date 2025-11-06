@@ -83,7 +83,7 @@ export default function SuperAdminPanel() {
   const [loginForm, setLoginForm] = useState({ username: "", password: "" })
   const [loginError, setLoginError] = useState("")
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing" | "pricing">("dashboard")
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "trial" | "active" | "cancelled">("all")
@@ -93,6 +93,16 @@ export default function SuperAdminPanel() {
     premiumTenants: 0,
     trialTenants: 0
   })
+
+  // Pricing settings state
+  const [pricingSettings, setPricingSettings] = useState({
+    usdToTryRate: 34.50,
+    premiumPriceUsd: 9.99,
+    lastRateUpdate: null as string | null,
+    settingsId: null as string | null
+  })
+  const [loadingPricing, setLoadingPricing] = useState(false)
+  const [savingPricing, setSavingPricing] = useState(false)
 
   const [landingContent, setLandingContent] = useState<{
     hero: Hero,
@@ -191,6 +201,58 @@ export default function SuperAdminPanel() {
     }
   }, [supabase])
 
+  const loadPricingSettings = useCallback(async () => {
+    setLoadingPricing(true)
+    try {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("id, usd_to_try_rate, premium_price_usd, last_rate_update")
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setPricingSettings({
+          usdToTryRate: data.usd_to_try_rate || 34.50,
+          premiumPriceUsd: data.premium_price_usd || 9.99,
+          lastRateUpdate: data.last_rate_update,
+          settingsId: data.id
+        })
+      }
+    } catch (error) {
+      console.error("Error loading pricing settings:", error)
+    } finally {
+      setLoadingPricing(false)
+    }
+  }, [supabase])
+
+  const savePricingSettings = async () => {
+    if (!pricingSettings.settingsId) {
+      alert("Platform ayarları bulunamadı")
+      return
+    }
+
+    setSavingPricing(true)
+    try {
+      const { error } = await supabase
+        .from("platform_settings")
+        .update({
+          usd_to_try_rate: pricingSettings.usdToTryRate,
+          premium_price_usd: pricingSettings.premiumPriceUsd
+        })
+        .eq("id", pricingSettings.settingsId)
+
+      if (error) throw error
+      
+      alert("Fiyatlandırma ayarları başarıyla güncellendi!")
+      await loadPricingSettings() // Reload to get updated timestamp
+    } catch (error) {
+      console.error("Error saving pricing settings:", error)
+      alert("Fiyatlandırma ayarları güncellenirken hata oluştu")
+    } finally {
+      setSavingPricing(false)
+    }
+  }
+
   // Auth check effect
   useEffect(() => {
     const checkAuth = () => {
@@ -214,12 +276,13 @@ export default function SuperAdminPanel() {
       await Promise.all([
         loadTenants(),
         loadStats(),
-        activeTab === "landing" ? loadLandingContent() : Promise.resolve()
+        activeTab === "landing" ? loadLandingContent() : Promise.resolve(),
+        activeTab === "pricing" ? loadPricingSettings() : Promise.resolve()
       ])
     }
 
     loadData()
-  }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent])
+  }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent, loadPricingSettings])
 
 
 
@@ -458,6 +521,14 @@ export default function SuperAdminPanel() {
           >
             <FileEdit className="w-4 h-4" />
             Landing Page
+          </Button>
+          <Button
+            variant={activeTab === "pricing" ? "default" : "outline"}
+            onClick={() => setActiveTab("pricing")}
+            className="gap-2"
+          >
+            <Crown className="w-4 h-4" />
+            Fiyatlandırma
           </Button>
 
         </div>
@@ -824,6 +895,159 @@ export default function SuperAdminPanel() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Pricing Tab */}
+        {activeTab === "pricing" && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="w-5 h-5" />
+                  Fiyatlandırma Ayarları
+                </CardTitle>
+                <CardDescription>
+                  Premium abonelik fiyatını USD cinsinden belirleyin. TL karşılığı otomatik hesaplanır.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {loadingPricing ? (
+                  <div className="text-center py-8 text-gray-500">Yükleniyor...</div>
+                ) : (
+                  <>
+                    {/* Exchange Rate Section */}
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                      <div>
+                        <Label htmlFor="exchangeRate" className="text-sm font-medium">
+                          USD/TRY Kuru
+                        </Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-2xl font-bold text-gray-700">$1 =</span>
+                          <Input
+                            id="exchangeRate"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={pricingSettings.usdToTryRate}
+                            onChange={(e) => setPricingSettings({
+                              ...pricingSettings,
+                              usdToTryRate: parseFloat(e.target.value) || 0
+                            })}
+                            className="max-w-[150px] text-lg font-semibold"
+                          />
+                          <span className="text-2xl font-bold text-gray-700">₺</span>
+                        </div>
+                        {pricingSettings.lastRateUpdate && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Son güncelleme: {new Date(pricingSettings.lastRateUpdate).toLocaleString('tr-TR')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Pricing Section */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="premiumPrice" className="text-sm font-medium">
+                          Premium Aylık Fiyat (USD)
+                        </Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xl font-bold text-gray-700">$</span>
+                          <Input
+                            id="premiumPrice"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={pricingSettings.premiumPriceUsd}
+                            onChange={(e) => setPricingSettings({
+                              ...pricingSettings,
+                              premiumPriceUsd: parseFloat(e.target.value) || 0
+                            })}
+                            className="max-w-[150px] text-lg font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Calculated TL Price Display */}
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-green-900">TL Karşılığı (Otomatik)</p>
+                            <p className="text-xs text-green-700 mt-1">
+                              Müşterilere gösterilecek aylık ücret
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-3xl font-bold text-green-900">
+                              ₺{(pricingSettings.premiumPriceUsd * pricingSettings.usdToTryRate).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-green-700 mt-1">
+                              / ay
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Calculation Details */}
+                      <div className="text-xs text-gray-500 p-3 bg-blue-50 border border-blue-200 rounded">
+                        <p className="font-semibold text-blue-900 mb-1">ℹ️ Hesaplama Detayı:</p>
+                        <p>
+                          ${pricingSettings.premiumPriceUsd} × ₺{pricingSettings.usdToTryRate} = 
+                          <span className="font-bold text-blue-900">
+                            {' '}₺{(pricingSettings.premiumPriceUsd * pricingSettings.usdToTryRate).toFixed(2)}
+                          </span>
+                        </p>
+                        <p className="mt-2 text-blue-800">
+                          Kur değiştiğinde tüm fiyatlar otomatik olarak güncellenir.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="pt-4">
+                      <Button 
+                        onClick={savePricingSettings}
+                        disabled={savingPricing}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {savingPricing ? "Kaydediliyor..." : "Fiyatlandırma Ayarlarını Kaydet"}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">💡 Neden USD?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-gray-600">
+                  <ul className="space-y-2 list-disc list-inside">
+                    <li>Sabit değer, enflasyondan korunma</li>
+                    <li>Uluslararası müşteriler için şeffaflık</li>
+                    <li>Kur değişikliklerinde esnek fiyatlandırma</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">🔄 Otomatik Güncelleme</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-gray-600">
+                  <ul className="space-y-2 list-disc list-inside">
+                    <li>Kur güncellemesi tüm fiyatları etkiler</li>
+                    <li>Mevcut abonelikler etkilenmez</li>
+                    <li>Yeni aboneliklerde güncel kur kullanılır</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
       </div>

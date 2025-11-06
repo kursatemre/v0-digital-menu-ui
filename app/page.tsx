@@ -51,10 +51,29 @@ export default function LandingPage() {
     buttonLink: "/register"
   })
   const [loading, setLoading] = useState(true)
+  const [premiumPriceTry, setPremiumPriceTry] = useState<number>(299)
 
   useEffect(() => {
     loadHeroContent()
+    loadPricing()
   }, [])
+
+  const loadPricing = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("pricing_view")
+        .select("premium_price_try")
+        .single()
+
+      if (error) throw error
+      if (data?.premium_price_try) {
+        setPremiumPriceTry(Math.round(data.premium_price_try))
+      }
+    } catch (error) {
+      console.error("Error loading pricing:", error)
+      // Keep default 299₺ on error
+    }
+  }
 
   const loadHeroContent = async () => {
     try {
@@ -179,7 +198,7 @@ export default function LandingPage() {
     },
     {
       question: "Ücretsiz deneme süresi var mı?",
-      answer: "Evet! Menumgo'yu 3 gün boyunca tamamen ücretsiz deneyebilirsiniz. Tüm premium özelliklere erişim sağlarsınız ve kredi kartı bilgisi gerektirmez. Beğenirseniz aylık 299₺ ile devam edebilirsiniz."
+      answer: `Evet! Menumgo'yu 3 gün boyunca tamamen ücretsiz deneyebilirsiniz. Tüm premium özelliklere erişim sağlarsınız ve kredi kartı bilgisi gerektirmez. Beğenirseniz aylık ${premiumPriceTry}₺ ile devam edebilirsiniz.`
     },
     {
       question: "Fiyat ve ürün güncellemeleri nasıl yapılır?",
@@ -483,7 +502,7 @@ export default function LandingPage() {
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-bold mb-2">Başlangıç Paketi</h3>
                 <div className="flex items-baseline justify-center gap-2 mb-4">
-                  <span className="text-4xl sm:text-5xl lg:text-6xl font-bold">₺299</span>
+                  <span className="text-4xl sm:text-5xl lg:text-6xl font-bold">₺{premiumPriceTry}</span>
                   <span className="text-lg sm:text-xl text-muted-foreground">/ay</span>
                 </div>
                 <p className="text-sm sm:text-base text-muted-foreground">
