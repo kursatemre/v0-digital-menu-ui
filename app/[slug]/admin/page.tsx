@@ -285,6 +285,7 @@ export default function AdminPanel() {
     subtitle: "Lezzetli yemeklerimizi keşfedin!",
     logo: "",
     backgroundImage: "",
+    backgroundOpacity: 0.3,
   })
 
   const [qrSettings, setQrSettings] = useState({
@@ -2143,11 +2144,30 @@ export default function AdminPanel() {
                 />
               </div>
               {headerSettings.backgroundImage && (
-                <img
-                  src={headerSettings.backgroundImage}
-                  alt="Header arkaplan önizleme"
-                  className="mt-2 h-32 object-cover rounded"
-                />
+                <>
+                  <img
+                    src={headerSettings.backgroundImage}
+                    alt="Header arkaplan önizleme"
+                    className="mt-2 h-32 object-cover rounded"
+                  />
+                  <div className="mt-4">
+                    <label className="text-sm font-medium mb-2 block">
+                      Arkaplan Opaklığı: {Math.round((headerSettings.backgroundOpacity || 0.3) * 100)}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={headerSettings.backgroundOpacity || 0.3}
+                      onChange={(e) => setHeaderSettings({ ...headerSettings, backgroundOpacity: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Arkaplan görselinin şeffaflık derecesini ayarlayın (0% = tamamen şeffaf, 100% = tamamen opak)
+                    </p>
+                  </div>
+                </>
               )}
             </div>
           </div>

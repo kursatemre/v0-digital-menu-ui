@@ -19,6 +19,7 @@ export function MenuHeader({ title = "Menümüz", theme }: MenuHeaderProps) {
     subtitle: "Lezzetli yemeklerimizi keşfedin!",
     logo: "",
     backgroundImage: "",
+    backgroundOpacity: 0.3,
   })
 
   useEffect(() => {
@@ -82,7 +83,7 @@ export function MenuHeader({ title = "Menümüz", theme }: MenuHeaderProps) {
             backgroundImage: `url(${headerConfig.backgroundImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            opacity: 0.5
+            opacity: headerConfig.backgroundOpacity || 0.3
           }}
         />
       ) : (
