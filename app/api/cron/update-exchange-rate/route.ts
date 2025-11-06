@@ -15,7 +15,8 @@ interface ExchangeRateResponse {
 
 export async function GET(request: Request) {
   try {
-    // Güvenlik: Sadece Vercel Cron'dan gelen istekleri kabul et
+    // Güvenlik: Sadece Vercel Cron'dan gelen istekleri kabul et (opsiyonel)
+    // CRON_SECRET environment variable yoksa bu kontrolü atlar
     const authHeader = request.headers.get('authorization')
     const cronSecret = process.env.CRON_SECRET
     

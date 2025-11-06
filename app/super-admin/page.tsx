@@ -259,7 +259,7 @@ export default function SuperAdminPanel() {
       const response = await fetch('/api/cron/update-exchange-rate', {
         method: 'GET',
         headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ''}`
+          'Authorization': 'Bearer ran22dom_se2cure_s2k1m1y3tri22ng'
         }
       })
 
