@@ -253,6 +253,32 @@ export default function SuperAdminPanel() {
     }
   }
 
+  const updateExchangeRateFromAPI = async () => {
+    setSavingPricing(true)
+    try {
+      const response = await fetch('/api/cron/update-exchange-rate', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ''}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'API güncellemesi başarısız')
+      }
+
+      alert(`✅ Kur başarıyla güncellendi!\n\nYeni kur: $1 = ₺${data.rate}\nZaman: ${new Date(data.timestamp).toLocaleString('tr-TR')}`)
+      await loadPricingSettings() // Reload to get updated rate
+    } catch (error: any) {
+      console.error("Error fetching exchange rate:", error)
+      alert(`❌ Kur güncellenirken hata oluştu:\n${error.message}`)
+    } finally {
+      setSavingPricing(false)
+    }
+  }
+
   // Auth check effect
   useEffect(() => {
     const checkAuth = () => {
@@ -918,10 +944,21 @@ export default function SuperAdminPanel() {
                   <>
                     {/* Exchange Rate Section */}
                     <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-                      <div>
+                      <div className="flex items-center justify-between mb-2">
                         <Label htmlFor="exchangeRate" className="text-sm font-medium">
                           USD/TRY Kuru
                         </Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={updateExchangeRateFromAPI}
+                          disabled={savingPricing}
+                          className="text-xs"
+                        >
+                          {savingPricing ? "Güncelleniyor..." : "🔄 API'den Güncelle"}
+                        </Button>
+                      </div>
+                      <div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-2xl font-bold text-gray-700">$1 =</span>
                           <Input
@@ -1041,6 +1078,9 @@ export default function SuperAdminPanel() {
                 </CardHeader>
                 <CardContent className="text-sm text-gray-600">
                   <ul className="space-y-2 list-disc list-inside">
+                    <li>Her gün saat 09:00'da otomatik güncellenir</li>
+                    <li>exchangerate-api.com API kullanılır</li>
+                    <li>Manuel "API'den Güncelle" butonu ile anında güncelleme</li>
                     <li>Kur güncellemesi tüm fiyatları etkiler</li>
                     <li>Mevcut abonelikler etkilenmez</li>
                     <li>Yeni aboneliklerde güncel kur kullanılır</li>
