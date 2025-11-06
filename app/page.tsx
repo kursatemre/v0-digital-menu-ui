@@ -86,6 +86,7 @@ export default function LandingPage() {
       if (error) throw error
 
       if (data?.content) {
+        console.log('Hero content from DB:', data.content) // Debug log
         setHeroContent({
           title: data.content.title || "Kağıt Menü Derdine Son Verin!",
           subtitle: data.content.subtitle || "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
@@ -237,10 +238,16 @@ export default function LandingPage() {
               {heroContent.logoUrl ? (
                 <img
                   src={heroContent.logoUrl}
-                  alt="Logo"
-                  className="w-10 h-10 sm:w-12 sm:h-12 object-contain"
+                  alt="MenuMGO Logo"
+                  className="h-10 sm:h-12 w-auto max-w-[200px] object-contain"
+                  onError={(e) => {
+                    console.error('Logo yükleme hatası:', heroContent.logoUrl)
+                    e.currentTarget.style.display = 'none'
+                  }}
+                  onLoad={() => console.log('Logo başarıyla yüklendi:', heroContent.logoUrl)}
                 />
-              ) : (
+              ) : null}
+              {(!heroContent.logoUrl || !heroContent.logoUrl.trim()) && (
                 <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-primary to-primary/80 rounded-xl flex items-center justify-center shadow-lg">
                   <MenuIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>

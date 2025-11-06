@@ -801,7 +801,9 @@ export default function SuperAdminPanel() {
                           })}
                           placeholder="https://example.com/logo.png"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">Logo görselinin URL'sini girin</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ana sayfadaki logo için tam URL (önerilen: PNG/SVG, max genişlik 200-300px, yükseklik 60-80px)
+                        </p>
                       </div>
 
                       <div className="col-span-2">
