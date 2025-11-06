@@ -63,42 +63,29 @@ export function SupportChatWidget() {
       const assistantId = (Date.now() + 1).toString()
 
       if (reader) {
+        // Önce assistant message placeholder'ını ekle
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: assistantId,
+            role: "assistant" as const,
+            content: "",
+          },
+        ])
+
         while (true) {
           const { done, value } = await reader.read()
           if (done) break
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split("\n").filter((line) => line.trim())
+          const chunk = decoder.decode(value, { stream: true })
+          assistantMessage += chunk
 
-          for (const line of lines) {
-            if (line.startsWith("0:")) {
-              try {
-                const jsonStr = line.substring(2)
-                const parsed = JSON.parse(jsonStr)
-                if (parsed && typeof parsed === "string") {
-                  assistantMessage += parsed
-                  setMessages((prev) => {
-                    const existing = prev.find((m) => m.id === assistantId)
-                    if (existing) {
-                      return prev.map((m) =>
-                        m.id === assistantId ? { ...m, content: assistantMessage } : m
-                      )
-                    }
-                    return [
-                      ...prev,
-                      {
-                        id: assistantId,
-                        role: "assistant" as const,
-                        content: assistantMessage,
-                      },
-                    ]
-                  })
-                }
-              } catch (e) {
-                console.error("Parse error:", e)
-              }
-            }
-          }
+          // Mesajı güncelle
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: assistantMessage } : m
+            )
+          )
         }
       }
     } catch (error) {

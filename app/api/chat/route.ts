@@ -56,22 +56,36 @@ Eğer bir şey bilmiyorsan, dürüstçe söyle ve destek@menumgo.com ile iletiş
 
 export async function POST(req: Request) {
   try {
+    // API key kontrolü
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("OPENAI_API_KEY environment variable is missing!")
+      return new Response(
+        JSON.stringify({ 
+          error: "API yapılandırması eksik. Lütfen sistem yöneticisi ile iletişime geçin." 
+        }),
+        { 
+          status: 500,
+          headers: { "Content-Type": "application/json" }
+        }
+      )
+    }
+
     const { messages } = await req.json()
 
-    const result = streamText({
+    const result = await streamText({
       model: openai("gpt-4o-mini"),
       system: systemPrompt,
       messages,
       temperature: 0.7,
-      maxTokens: 500,
     })
 
-    return result.toDataStreamResponse()
+    return result.toTextStreamResponse()
   } catch (error) {
     console.error("Chat API error:", error)
     return new Response(
       JSON.stringify({ 
-        error: "Bir hata oluştu. Lütfen tekrar deneyin." 
+        error: "Bir hata oluştu. Lütfen tekrar deneyin.",
+        details: error instanceof Error ? error.message : "Unknown error"
       }),
       { 
         status: 500,
