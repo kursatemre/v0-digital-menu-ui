@@ -52,7 +52,12 @@ Görevin:
 - Kullanıcıyı doğru sayfaya yönlendir
 - Türkçe cevap ver
 
-Eğer bir şey bilmiyorsan, dürüstçe söyle ve destek@menumgo.com ile iletişime geçmelerini öner.`
+İletişim Bilgileri:
+- E-posta: info@menumgo.digital
+- Telefon: 0545 715 43 05
+- Adres: Reis Mahallesi Ulu Önder Caddesi No: 34/1, Karabağlar / İzmir
+
+Eğer bir şey bilmiyorsan, dürüstçe söyle ve info@menumgo.digital ile iletişime geçmelerini öner.`
 
 export async function POST(req: Request) {
   try {
