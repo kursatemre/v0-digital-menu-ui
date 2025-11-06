@@ -109,6 +109,8 @@ type Product = {
   display_order?: number
   badge?: string | null
   is_available?: boolean
+  name_en?: string
+  description_en?: string
 }
 
 type AdminUser = {
@@ -125,6 +127,8 @@ type Category = {
   name: string
   image: string
   display_order?: number
+  name_en?: string
+  description_en?: string
 }
 
 type Theme = {
@@ -265,11 +269,15 @@ export default function AdminPanel() {
     image: "",
     badge: null,
     is_available: true,
+    name_en: "",
+    description_en: "",
   })
 
   const [categoryForm, setCategoryForm] = useState<Omit<Category, "id">>({
     name: "",
     image: "",
+    name_en: "",
+    description_en: "",
   })
 
   const [headerSettings, setHeaderSettings] = useState({
@@ -753,6 +761,8 @@ export default function AdminPanel() {
           display_order: prod.display_order,
           badge: prod.badge || null,
           is_available: prod.is_available,
+          name_en: prod.name_en || "",
+          description_en: prod.description_en || "",
         }))
         setProducts(formattedProducts)
       }
@@ -778,6 +788,8 @@ export default function AdminPanel() {
           name: cat.name,
           image: cat.image || "",
           display_order: cat.display_order,
+          name_en: cat.name_en || "",
+          description_en: cat.description_en || "",
         }))
         setCategories(formattedCategories)
       }
@@ -941,6 +953,8 @@ export default function AdminPanel() {
             image: productForm.image,
             badge: productForm.badge || null,
             is_available: productForm.is_available !== false,
+            name_en: productForm.name_en || null,
+            description_en: productForm.description_en || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingProduct.id)
@@ -964,6 +978,8 @@ export default function AdminPanel() {
             image: productForm.image,
             badge: productForm.badge || null,
             is_available: productForm.is_available !== false,
+            name_en: productForm.name_en || null,
+            description_en: productForm.description_en || null,
             display_order: products.length,
             tenant_id: tenantId,
           },
@@ -975,7 +991,7 @@ export default function AdminPanel() {
         console.error("Error adding product:", error)
       }
     }
-    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true })
+    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true, name_en: "", description_en: "" })
     setShowProductForm(false)
   }
 
@@ -1111,6 +1127,8 @@ export default function AdminPanel() {
           .update({
             name: categoryForm.name,
             image: categoryForm.image,
+            name_en: categoryForm.name_en || null,
+            description_en: categoryForm.description_en || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingCategory.id)
@@ -1129,6 +1147,8 @@ export default function AdminPanel() {
           {
             name: categoryForm.name,
             image: categoryForm.image,
+            name_en: categoryForm.name_en || null,
+            description_en: categoryForm.description_en || null,
             display_order: categories.length,
             tenant_id: tenantId,
           },
@@ -1140,7 +1160,7 @@ export default function AdminPanel() {
         console.error("Error adding category:", error)
       }
     }
-    setCategoryForm({ name: "", image: "" })
+    setCategoryForm({ name: "", image: "", name_en: "", description_en: "" })
     setShowCategoryForm(false)
   }
 
@@ -1667,22 +1687,43 @@ export default function AdminPanel() {
             <CardTitle>{editingProduct ? "Ürünü Düzenle" : "Yeni Ürün Ekle"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Ürün Adı</label>
-              <Input
-                value={productForm.name}
-                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                placeholder="Örn: Kuzu Şiş"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Ürün Adı (Türkçe)</label>
+                <Input
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  placeholder="Örn: Kuzu Şiş"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Product Name (English)</label>
+                <Input
+                  value={productForm.name_en}
+                  onChange={(e) => setProductForm({ ...productForm, name_en: e.target.value })}
+                  placeholder="e.g., Lamb Skewer"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium">Açıklama</label>
-              <Textarea
-                value={productForm.description}
-                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                placeholder="Ürün açıklaması"
-                rows={3}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Açıklama (Türkçe)</label>
+                <Textarea
+                  value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                  placeholder="Ürün açıklaması"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Description (English)</label>
+                <Textarea
+                  value={productForm.description_en}
+                  onChange={(e) => setProductForm({ ...productForm, description_en: e.target.value })}
+                  placeholder="Product description"
+                  rows={3}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1786,7 +1827,7 @@ export default function AdminPanel() {
                 onClick={() => {
                   setShowProductForm(false)
                   setEditingProduct(null)
-                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true })
+                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true, name_en: "", description_en: "" })
                 }}
               >
                 İptal
@@ -1892,13 +1933,23 @@ export default function AdminPanel() {
             <CardTitle>{editingCategory ? "Kategoriyi Düzenle" : "Yeni Kategori Ekle"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Kategori Adı</label>
-              <Input
-                value={categoryForm.name}
-                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                placeholder="Örn: Ara Sıcaklar"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Kategori Adı (Türkçe)</label>
+                <Input
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  placeholder="Örn: Ara Sıcaklar"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Category Name (English)</label>
+                <Input
+                  value={categoryForm.name_en}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name_en: e.target.value })}
+                  placeholder="e.g., Appetizers"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Resim</label>
@@ -1946,7 +1997,7 @@ export default function AdminPanel() {
                 onClick={() => {
                   setShowCategoryForm(false)
                   setEditingCategory(null)
-                  setCategoryForm({ name: "", image: "" })
+                  setCategoryForm({ name: "", image: "", name_en: "", description_en: "" })
                 }}
               >
                 İptal

@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
 import { useLanguage } from "@/contexts/language-context"
+import { LanguageAwareText } from "@/components/language-aware-text"
 
 interface ProductCardProps {
   product: {
@@ -81,7 +82,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         {/* Add to Cart Button */}
         <Button onClick={handleAddToCart} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-          Sepete Ekle
+          <LanguageAwareText tr="Sepete Ekle" en="Add to Cart" />
         </Button>
       </div>
     </div>
