@@ -69,28 +69,9 @@ export const metadata: Metadata = {
   },
   category: 'technology',
   icons: {
-    icon: '/favicon.ico',
-    shortcut: '/favicon-16x16.png',
-    apple: '/apple-touch-icon.png',
-    other: [
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '32x32',
-        url: '/favicon-32x32.png',
-      },
-      {
-        rel: 'icon',
-        type: 'image/png',
-        sizes: '16x16',
-        url: '/favicon-16x16.png',
-      },
-      {
-        rel: 'mask-icon',
-        url: '/safari-pinned-tab.svg',
-        color: '#8B5A3C'
-      },
-    ],
+    icon: '/placeholder-logo.png',
+    shortcut: '/placeholder-logo.png',
+    apple: '/placeholder-logo.png',
   },
   manifest: '/site.webmanifest',
   viewport: {
