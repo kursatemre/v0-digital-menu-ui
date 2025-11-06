@@ -166,6 +166,7 @@ export default function MenuPage() {
             name_en: cat.name_en,
             image: cat.image || "",
           }))
+          console.log('Loaded categories:', formattedCategories) // Debug log
           setCategories(formattedCategories)
           if (formattedCategories.length > 0) {
             setExpandedCategories(new Set([formattedCategories[0].id]))
@@ -193,6 +194,7 @@ export default function MenuPage() {
             badge: prod.badge || null,
             is_available: prod.is_available,
           }))
+          console.log('Loaded products:', formattedProducts) // Debug log
           setProducts(formattedProducts)
         }
       } catch (error) {
@@ -397,7 +399,9 @@ export default function MenuPage() {
                     className="flex-1 bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
                   >
                     <Bell className="w-5 h-5" />
-                    <span>Garson Çağır</span>
+                    <span>
+                      <LanguageAwareText tr="Garson Çağır" en="Call Waiter" />
+                    </span>
                   </button>
                   <LanguageSwitch />
                 </div>
@@ -425,6 +429,7 @@ export default function MenuPage() {
               const categoryProducts = getCategoryProducts(category.id)
               const isExpanded = expandedCategories.has(category.id)
               const displayName = language === "tr" ? category.name : (category.name_en || category.name)
+              console.log(`Category ${category.id}: language=${language}, name=${category.name}, name_en=${category.name_en}, displayName=${displayName}`) // Debug log
 
               return (
                 <div
@@ -624,8 +629,12 @@ export default function MenuPage() {
             {/* Header */}
             <div className="border-b border-primary/20 bg-gradient-to-r from-secondary/10 to-primary/10 p-4 sm:p-5 flex items-center justify-between rounded-t-2xl">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-primary">Garson Çağır</h2>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Masa numaranızı girin</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-primary">
+                  <LanguageAwareText tr="Garson Çağır" en="Call Waiter" />
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  <LanguageAwareText tr="Masa numaranızı girin" en="Enter your table number" />
+                </p>
               </div>
               <button
                 onClick={() => setWaiterCallOpen(false)}
@@ -640,11 +649,11 @@ export default function MenuPage() {
             <div className="p-5 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2">
-                  🪑 Masa Numarası <span className="text-red-500">*</span>
+                  🪑 <LanguageAwareText tr="Masa Numarası" en="Table Number" /> <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
-                  placeholder="A5, 12, Bahçe-3..."
+                  placeholder={language === 'tr' ? 'A5, 12, Bahçe-3...' : 'A5, 12, Garden-3...'}
                   value={waiterTableNumber}
                   onChange={(e) => setWaiterTableNumber(e.target.value)}
                   className="w-full text-lg"
@@ -653,11 +662,11 @@ export default function MenuPage() {
 
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2">
-                  👤 İsim (İsteğe bağlı)
+                  👤 <LanguageAwareText tr="İsim (İsteğe bağlı)" en="Name (Optional)" />
                 </label>
                 <Input
                   type="text"
-                  placeholder="Adınız"
+                  placeholder={language === 'tr' ? 'Adınız' : 'Your name'}
                   value={waiterName}
                   onChange={(e) => setWaiterName(e.target.value)}
                   className="w-full"
@@ -672,12 +681,12 @@ export default function MenuPage() {
                 {waiterCallLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Gönderiliyor...
+                    <LanguageAwareText tr="Gönderiliyor..." en="Sending..." />
                   </>
                 ) : (
                   <>
                     <Bell className="w-5 h-5 mr-2" />
-                    Garson Çağır
+                    <LanguageAwareText tr="Garson Çağır" en="Call Waiter" />
                   </>
                 )}
               </Button>
