@@ -491,17 +491,25 @@ export default function MenuPage() {
                               {/* Sold Out Badge */}
                               {!isAvailable && (
                                 <div className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md">
-                                  TÜKENDİ
+                                  <LanguageAwareText tr="TÜKENDİ" en="SOLD OUT" />
                                 </div>
                               )}
 
                               {/* Product Badge */}
                               {product.badge && isAvailable && (
                                 <div className="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-semibold shadow-md">
-                                  {product.badge === "gunun_urunu" && "Günün Ürünü"}
-                                  {product.badge === "sefin_onerisi" && "Şefin Önerisi"}
-                                  {product.badge === "yeni" && "Yeni"}
-                                  {product.badge === "populer" && "Popüler"}
+                                  {product.badge === "gunun_urunu" && (
+                                    <LanguageAwareText tr="Günün Ürünü" en="Today's Special" />
+                                  )}
+                                  {product.badge === "sefin_onerisi" && (
+                                    <LanguageAwareText tr="Şefin Önerisi" en="Chef's Choice" />
+                                  )}
+                                  {product.badge === "yeni" && (
+                                    <LanguageAwareText tr="Yeni" en="New" />
+                                  )}
+                                  {product.badge === "populer" && (
+                                    <LanguageAwareText tr="Popüler" en="Popular" />
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -521,7 +529,9 @@ export default function MenuPage() {
                               {/* Price and Add to Cart Button */}
                               <div className="flex items-center gap-2 sm:gap-3 mt-auto">
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Fiyat</p>
+                                  <p className="text-xs text-muted-foreground mb-0.5">
+                                    <LanguageAwareText tr="Fiyat" en="Price" />
+                                  </p>
                                   <p className="text-xl sm:text-2xl font-bold text-primary">
                                     ₺{product.price.toFixed(2)}
                                   </p>

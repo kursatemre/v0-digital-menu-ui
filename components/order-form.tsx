@@ -137,8 +137,12 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
         {/* Header */}
         <div className="border-b border-primary/20 bg-gradient-to-r from-primary/10 to-secondary/10 p-4 sm:p-5 flex items-center justify-between sticky top-0 rounded-t-2xl z-10">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-primary">Sipariş Bilgileri</h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Formu doldurun</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-primary">
+              <LanguageAwareText tr="Sipariş Bilgileri" en="Order Details" />
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              <LanguageAwareText tr="Formu doldurun" en="Fill out the form" />
+            </p>
           </div>
           <button
             onClick={onClose}
