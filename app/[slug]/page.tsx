@@ -380,7 +380,7 @@ export default function MenuPage() {
         {isLoading ? (
           <div className="flex items-center justify-center h-screen">
             <div className="text-center">
-              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
               <LanguageAwareText tr="Yükleniyor..." en="Loading..." />
             </div>
           </div>
@@ -393,18 +393,18 @@ export default function MenuPage() {
               </div>
             </div>
 
-      {/* Waiter Call Button */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <button
-            onClick={() => setWaiterCallOpen(true)}
-            className="w-full bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
-          >
-            <Bell className="w-5 h-5" />
-            <span>Garson Çağır</span>
-          </button>
-        </div>
-      </div>
+            {/* Waiter Call Button */}
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <button
+                  onClick={() => setWaiterCallOpen(true)}
+                  className="w-full bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
+                >
+                  <Bell className="w-5 h-5" />
+                  <span>Garson Çağır</span>
+                </button>
+              </div>
+            </div>
 
       {showToast && (
         <div className="fixed top-4 right-4 z-40 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -677,8 +677,9 @@ export default function MenuPage() {
           </div>
         </div>
       )}
-    </div>
-  )
-
-
+    </>
+  ) : null}
+      </div>
+    </LanguageProvider>
+  );
 }
