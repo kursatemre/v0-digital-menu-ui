@@ -50,6 +50,7 @@ interface Hero {
   title: string
   subtitle: string
   logoUrl?: string
+  faviconUrl?: string
   backgroundImage?: string
   buttonText?: string
   buttonLink?: string
@@ -804,6 +805,21 @@ export default function SuperAdminPanel() {
                       </div>
 
                       <div className="col-span-2">
+                        <label className="text-sm font-medium">Favicon URL</label>
+                        <Input
+                          value={landingContent.hero.faviconUrl || ""}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, faviconUrl: e.target.value }
+                          })}
+                          placeholder="https://example.com/favicon.png"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Tarayıcı sekmesinde görünecek favicon URL'si (önerilen: 32x32 veya 192x192 PNG)
+                        </p>
+                      </div>
+
+                      <div className="col-span-2">
                         <label className="text-sm font-medium">Arka Plan Görseli URL</label>
                         <Input
                           value={landingContent.hero.backgroundImage || ""}
@@ -870,29 +886,6 @@ export default function SuperAdminPanel() {
                     </Button>
                   </>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Pricing Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Fiyatlandırma</CardTitle>
-                <CardDescription>
-                  Paket bilgileri ve fiyatlandırma (şu an database'de kayıtlı)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
-                    Trial Plan: 7 gün ücretsiz
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Premium Plan: 499₺/ay
-                  </p>
-                  <p className="text-xs text-gray-500 mt-4">
-                    Not: Detaylı düzenleme için database'deki landing_page_content tablosunu güncelleyin.
-                  </p>
-                </div>
               </CardContent>
             </Card>
 
