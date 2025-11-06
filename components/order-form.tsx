@@ -118,11 +118,13 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
               </svg>
             </div>
           </div>
-          <h2 className="text-3xl font-bold text-green-700">Başarılı! 🎉</h2>
+          <h2 className="text-3xl font-bold text-green-700">
+            <LanguageAwareText tr="Başarılı! 🎉" en="Success! 🎉" />
+          </h2>
           <p className="text-foreground text-lg leading-relaxed">{successMessage}</p>
           <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-            <p>Sipariş mutfağa iletildi</p>
+            <p><LanguageAwareText tr="Sipariş mutfağa iletildi" en="Order sent to kitchen" /></p>
           </div>
         </div>
       </div>
@@ -159,7 +161,9 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
                   onChange={() => setIsDelivery(false)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-medium">🏠 Restoran İçinde</span>
+                <span className="text-sm font-medium">
+                  🏠 <LanguageAwareText tr="Restoran İçinde" en="Dine-In" />
+                </span>
               </label>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -168,11 +172,13 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
                   onChange={() => setIsDelivery(true)}
                   className="w-4 h-4"
                 />
-                <span className="text-sm font-medium">📞 Ön Sipariş</span>
+                <span className="text-sm font-medium">
+                  📞 <LanguageAwareText tr="Ön Sipariş" en="Pre-Order" />
+                </span>
               </label>
             </div>
             <p className="text-xs text-foreground/80">
-              💡 Ödeme adımı atlanmıştır. Siparişiniz doğrudan mutfağa iletilecektir.
+              💡 <LanguageAwareText tr="Ödeme adımı atlanmıştır. Siparişiniz doğrudan mutfağa iletilecektir." en="Payment step is skipped. Your order will be sent directly to the kitchen." />
             </p>
           </div>
 
@@ -180,13 +186,13 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
             {isDelivery ? (
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2">
-                  📱 Telefon Numarası <span className="text-red-500">*</span>
+                  📱 <LanguageAwareText tr="Telefon Numarası" en="Phone Number" /> <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="tel"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  placeholder="5551234567"
+                  placeholder={language === 'tr' ? '5551234567' : '555 123 4567'}
                   value={phoneNumber}
                   onChange={(e) => {
                     setPhoneNumber(e.target.value)
@@ -199,11 +205,11 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
             ) : (
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2">
-                  🪑 Masa Numarası <span className="text-red-500">*</span>
+                  🪑 <LanguageAwareText tr="Masa Numarası" en="Table Number" /> <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
-                  placeholder="A5, 12, Bahçe-3..."
+                  placeholder={language === 'tr' ? 'A5, 12, Bahçe-3...' : 'A5, 12, Garden-3...'}
                   value={tableNumber}
                   onChange={(e) => {
                     setTableNumber(e.target.value)
@@ -217,11 +223,11 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
 
             <div>
               <label className="block text-sm font-bold text-foreground mb-2">
-                👤 İsim Soyisim <span className="text-red-500">*</span>
+                👤 <LanguageAwareText tr="İsim Soyisim" en="Full Name" /> <span className="text-red-500">*</span>
               </label>
               <Input
                 type="text"
-                placeholder="Adınız ve soyadınız"
+                placeholder={language === 'tr' ? 'Adınız ve soyadınız' : 'Your full name'}
                 value={name}
                 onChange={(e) => {
                   setName(e.target.value)
@@ -233,9 +239,11 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
             </div>
 
             <div>
-              <label className="block text-sm font-bold text-foreground mb-2">📝 Özel Not (İsteğe bağlı)</label>
+              <label className="block text-sm font-bold text-foreground mb-2">
+                📝 <LanguageAwareText tr="Özel Not (İsteğe bağlı)" en="Special Note (Optional)" />
+              </label>
               <Textarea
-                placeholder="Örn: Acısız hazırla, az tuz vb..."
+                placeholder={language === 'tr' ? 'Örn: Acısız hazırla, az tuz vb...' : 'e.g., No spice, less salt, etc...'}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full min-h-24"
@@ -244,7 +252,9 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
 
             <div className="bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/30 rounded-xl p-4">
               <div className="flex justify-between items-center">
-                <span className="text-foreground font-bold">💰 Toplam Tutar:</span>
+                <span className="text-foreground font-bold">
+                  💰 <LanguageAwareText tr="Toplam Tutar:" en="Total Amount:" />
+                </span>
                 <span className="text-2xl sm:text-3xl font-bold text-primary">₺{total.toFixed(2)}</span>
               </div>
             </div>
@@ -263,10 +273,10 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
               {isLoading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  Gönderiliyor...
+                  <LanguageAwareText tr="Gönderiliyor..." en="Sending..." />
                 </>
               ) : (
-                <>✅ Siparişi Onayla ve Gönder</>
+                <>✅ <LanguageAwareText tr="Siparişi Onayla ve Gönder" en="Confirm and Send Order" /></>
               )}
             </Button>
           </form>
