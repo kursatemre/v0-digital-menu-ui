@@ -241,6 +241,7 @@ export default function AdminPanel() {
     textColor: "#1A1A1A",
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [premiumPriceTry, setPremiumPriceTry] = useState<number>(299)
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "pending" | "preparing" | "ready" | "completed">("all")
@@ -353,6 +354,26 @@ export default function AdminPanel() {
 
     loadTenant()
   }, [slug, router, supabase])
+
+  // Load dynamic pricing
+  useEffect(() => {
+    const loadPricing = async () => {
+      try {
+        const { data } = await supabase
+          .from("pricing_view")
+          .select("premium_price_try")
+          .single()
+
+        if (data?.premium_price_try) {
+          setPremiumPriceTry(Math.round(data.premium_price_try))
+        }
+      } catch (error) {
+        console.error("Pricing load error:", error)
+      }
+    }
+
+    loadPricing()
+  }, [supabase])
 
   // Check if user is already logged in
   useEffect(() => {
@@ -2979,11 +3000,10 @@ export default function AdminPanel() {
                 </div>
                 <div className="pt-4 border-t space-y-2">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-primary">₺149</span>
-                    <span className="text-lg text-muted-foreground line-through">₺299</span>
-                    <span className="text-sm text-green-600 font-semibold">İlk ay %50 İndirim</span>
+                    <span className="text-3xl font-bold text-primary">₺{premiumPriceTry}</span>
+                    <span className="text-sm text-muted-foreground">/ay</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Sonraki aylar ₺299/ay</p>
+                  <p className="text-xs text-muted-foreground">30 günlük premium üyelik</p>
                 </div>
                 <Button
                   size="lg"
@@ -3222,8 +3242,8 @@ export default function AdminPanel() {
                 </li>
               </ul>
               <div className="text-center">
-                <p className="text-3xl font-bold text-primary mb-2">₺299/ay</p>
-                <p className="text-sm text-muted-foreground">İlk ay %50 indirimli - Sadece ₺149</p>
+                <p className="text-3xl font-bold text-primary mb-2">₺{premiumPriceTry}/ay</p>
+                <p className="text-sm text-muted-foreground">30 günlük premium üyelik</p>
               </div>
             </div>
 
