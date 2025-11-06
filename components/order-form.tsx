@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { createClient } from "@/lib/supabase/client"
+import { useLanguage } from "@/contexts/language-context"
+import { LanguageAwareText } from "./language-aware-text"
 
 interface OrderFormProps {
   onClose: () => void
@@ -20,6 +22,7 @@ interface OrderFormProps {
 }
 
 export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenantId }: OrderFormProps) {
+  const { language } = useLanguage()
   const [tableNumber, setTableNumber] = useState("")
   const [name, setName] = useState("")
   const [notes, setNotes] = useState("")
@@ -41,11 +44,11 @@ export function OrderForm({ onClose, total, items, onSuccess, onClearCart, tenan
   const validate = () => {
     const newErrors: Record<string, string> = {}
     if (isDelivery) {
-      if (!phoneNumber.trim()) newErrors.phoneNumber = "Telefon numarası gerekli"
+      if (!phoneNumber.trim()) newErrors.phoneNumber = language === "tr" ? "Telefon numarası gerekli" : "Phone number is required"
     } else {
-      if (!tableNumber.trim()) newErrors.tableNumber = "Masa numarası gerekli"
+      if (!tableNumber.trim()) newErrors.tableNumber = language === "tr" ? "Masa numarası gerekli" : "Table number is required"
     }
-    if (!name.trim()) newErrors.name = "İsim gerekli"
+    if (!name.trim()) newErrors.name = language === "tr" ? "İsim gerekli" : "Name is required"
     return newErrors
   }
 
