@@ -9,6 +9,7 @@ import QRCodeLib from "qrcode"
 interface Category {
   id: string
   name: string
+  image: string | null
   display_order: number
 }
 
@@ -97,7 +98,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         // Get categories
         const { data: categoriesData, error: categoriesError } = await supabase
           .from("categories")
-          .select("id, name, display_order")
+          .select("id, name, image, display_order")
           .eq("tenant_id", tenantData.id)
           .order("display_order")
 
@@ -162,13 +163,14 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
   const currentCategory = categories[currentCategoryIndex]
   const categoryProducts = products.filter((p) => p.category_id === currentCategory.id)
 
-  // Get category image (first product with image in category)
-  const categoryImage = categoryProducts.find((p) => p.image)?.image
+  // Get category image - use category's own image or first product's image as fallback
+  const categoryImage = currentCategory.image || categoryProducts.find((p) => p.image)?.image
 
   // Debug logging
   console.log("Current category:", currentCategory?.name)
+  console.log("Category image from category:", currentCategory.image)
   console.log("Category products count:", categoryProducts.length)
-  console.log("Category image URL:", categoryImage)
+  console.log("Final category image URL:", categoryImage)
 
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden flex flex-col">
@@ -193,14 +195,27 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
             </div>
           )}
 
-          {/* Category Name - Centered Vertically */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-            <h2 className="text-6xl font-bold text-center bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent mb-8 drop-shadow-2xl">
+          {/* Category Name and Image - Centered */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-8 gap-6">
+            {/* Category Name */}
+            <h2 className="text-6xl font-bold text-center bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent drop-shadow-2xl">
               {currentCategory.name}
             </h2>
 
+            {/* Category Image if available */}
+            {currentCategory.image && (
+              <div className="relative w-64 h-64 rounded-2xl overflow-hidden shadow-2xl border-4 border-white/20">
+                <Image
+                  src={currentCategory.image}
+                  alt={currentCategory.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            )}
+
             {/* Category Indicators */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 mt-4">
               {categories.map((_, index) => (
                 <div
                   key={index}
