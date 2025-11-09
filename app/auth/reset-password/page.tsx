@@ -179,11 +179,16 @@ export default function ResetPasswordPage() {
         setErrorMessage("Şifre güncellenemedi. Lütfen tekrar deneyin.")
         setStatus("error")
       } else {
+        console.log("Password updated successfully")
         setStatus("success")
-        // Redirect to home after 3 seconds
+        
+        // Sign out to ensure fresh login with new password
+        await supabase.auth.signOut()
+        
+        // Redirect to login page after 2 seconds
         setTimeout(() => {
           router.push("/")
-        }, 3000)
+        }, 2000)
       }
     } catch (error) {
       console.error("Unexpected error:", error)
