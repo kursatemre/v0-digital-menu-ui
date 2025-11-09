@@ -255,6 +255,7 @@ export default function PaymentPage() {
             <Card className="shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg">Premium Özellikleri</CardTitle>
+                <CardDescription>Tüm özellikler dahil</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3 text-sm">
@@ -268,31 +269,67 @@ export default function PaymentPage() {
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <CheckCircle2 className="w-4 h-4 text-primary" />
                     </div>
-                    <span>QR kod menü sistemi</span>
+                    <span>QR kod menü sistemi ve özelleştirme</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Clock className="w-4 h-4 text-primary" />
                     </div>
-                    <span>Sipariş ve garson çağrı yönetimi</span>
+                    <span>Gerçek zamanlı sipariş takibi</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Users className="w-4 h-4 text-primary" />
                     </div>
-                    <span>Sınırsız admin kullanıcısı</span>
+                    <span>Garson çağırma sistemi</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Award className="w-4 h-4 text-primary" />
+                    </div>
+                    <span>Çoklu kullanıcı ve rol yönetimi</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <TrendingUp className="w-4 h-4 text-primary" />
                     </div>
-                    <span>Gelişmiş raporlama</span>
+                    <span>Gelişmiş raporlama ve analiz</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <Sparkles className="w-4 h-4 text-primary" />
+                    </div>
+                    <span>TV ekran menü görünümü</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <span>Çok dilli destek (TR/EN)</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <span>Ürün rozet ve etiketleri</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <span>Tema ve renk özelleştirme</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                      <CheckCircle2 className="w-4 h-4 text-primary" />
+                    </div>
+                    <span>Mobil responsive tasarım</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                       <Shield className="w-4 h-4 text-primary" />
                     </div>
-                    <span>7/24 öncelikli destek</span>
+                    <span>7/24 öncelikli teknik destek</span>
                   </div>
                 </div>
               </CardContent>
