@@ -129,9 +129,11 @@ export default function PaymentSuccessPage() {
               <li>Premium özellikleriniz şu anda aktif</li>
             </ul>
           </div>
-          <Button size="lg" onClick={() => window.location.href = '/'}>
-            🏠 Ana Sayfaya Dön
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Button size="lg" onClick={() => window.location.href = '/'}>
+              🏠 Ana Sayfaya Dön
+            </Button>
+          </div>
         </Card>
       </div>
     )
