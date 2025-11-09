@@ -124,7 +124,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         // Generate QR code
         const menuUrl = `${window.location.origin}/${slug}`
         const qrCode = await QRCodeLib.toDataURL(menuUrl, {
-          width: 200,
+          width: 180,
           margin: 2,
           color: {
             dark: "#1e293b",
@@ -146,7 +146,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
 
     const interval = setInterval(() => {
       setCurrentCategoryIndex((prev) => (prev + 1) % categories.length)
-    }, 8000) // 8 seconds per category
+    }, 10000) // 10 seconds per category
 
     return () => clearInterval(interval)
   }, [categories.length])
@@ -166,132 +166,116 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
   const categoryImage = categoryProducts.find((p) => p.image)?.image
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">
-      {/* Header */}
-      <header className="absolute top-0 left-0 right-0 z-10 bg-black/30 backdrop-blur-md border-b border-white/10">
-        <div className="container mx-auto px-8 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {logo && (
-              <Image
-                src={logo}
-                alt={tenant.business_name}
-                width={60}
-                height={60}
-                className="rounded-lg"
-              />
-            )}
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                {tenant.business_name}
-              </h1>
-              <p className="text-slate-400 text-sm">Dijital Menü</p>
-            </div>
-          </div>
-
-          {/* QR Code */}
-          <div className="flex items-center gap-4 bg-white/10 backdrop-blur-xl rounded-2xl p-4 border border-white/20">
-            <div className="text-right">
-              <p className="text-sm text-slate-300 font-medium">Sipariş Vermek İçin</p>
-              <p className="text-xs text-slate-400">QR kodu okutun</p>
-            </div>
-            {qrCodeUrl && (
-              <div className="bg-white p-2 rounded-xl">
-                <img src={qrCodeUrl} alt="QR Code" className="w-24 h-24" />
-              </div>
-            )}
+    <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden flex flex-col">
+      {/* Header with Logo and Restaurant Name */}
+      <header className="absolute top-0 left-0 right-0 z-20 bg-black/40 backdrop-blur-lg border-b border-white/10">
+        <div className="px-8 py-4 flex items-center gap-4">
+          {logo && (
+            <Image
+              src={logo}
+              alt={tenant.business_name}
+              width={50}
+              height={50}
+              className="rounded-lg"
+            />
+          )}
+          <div>
+            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
+              {tenant.business_name}
+            </h1>
+            <p className="text-slate-400 text-xs">Dijital Menü - TV Görünümü</p>
           </div>
         </div>
       </header>
 
-      {/* Main Content */}
-      <div className="pt-32 pb-12 px-8 h-screen flex items-center">
-        <div className="container mx-auto grid grid-cols-5 gap-8 h-full">
-          {/* Left Side - Category */}
-          <div className="col-span-2 flex flex-col justify-center">
-            <div className="relative group">
-              {/* Category Image */}
-              {categoryImage ? (
-                <div className="relative h-[500px] rounded-3xl overflow-hidden mb-8 shadow-2xl shadow-blue-500/20 border-4 border-white/10">
-                  <Image
-                    src={categoryImage}
-                    alt={currentCategory.name}
-                    fill
-                    className="object-cover animate-ken-burns"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                </div>
-              ) : (
-                <div className="relative h-[500px] rounded-3xl overflow-hidden mb-8 bg-gradient-to-br from-blue-600/20 to-cyan-600/20 border-4 border-white/10 flex items-center justify-center">
-                  <QrCode className="w-32 h-32 text-white/20" />
-                </div>
-              )}
+      {/* Main Content - Full Height Split Layout */}
+      <div className="flex-1 flex pt-20 pb-24">
+        {/* Left Side - Category (30% width, full height, vertical rectangle) */}
+        <div className="w-[30%] h-full relative">
+          {/* Category Background Image - Full Height */}
+          {categoryImage ? (
+            <div className="absolute inset-0">
+              <Image
+                src={categoryImage}
+                alt={currentCategory.name}
+                fill
+                className="object-cover animate-ken-burns"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-black/30" />
+            </div>
+          ) : (
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 to-cyan-600/30 flex items-center justify-center">
+              <QrCode className="w-32 h-32 text-white/20" />
+            </div>
+          )}
 
-              {/* Category Name */}
-              <div className="text-center space-y-4">
-                <h2 className="text-6xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
-                  {currentCategory.name}
-                </h2>
+          {/* Category Name - Centered Vertically */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+            <h2 className="text-6xl font-bold text-center bg-gradient-to-r from-white via-blue-200 to-white bg-clip-text text-transparent mb-8 drop-shadow-2xl">
+              {currentCategory.name}
+            </h2>
 
-                {/* Category Indicators */}
-                <div className="flex justify-center gap-2 mt-6">
-                  {categories.map((_, index) => (
-                    <div
-                      key={index}
-                      className={`h-2 rounded-full transition-all duration-500 ${
-                        index === currentCategoryIndex
-                          ? "w-12 bg-gradient-to-r from-blue-500 to-cyan-500"
-                          : "w-2 bg-white/20"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+            {/* Category Indicators */}
+            <div className="flex gap-2">
+              {categories.map((_, index) => (
+                <div
+                  key={index}
+                  className={`h-2 rounded-full transition-all duration-500 ${
+                    index === currentCategoryIndex
+                      ? "w-12 bg-gradient-to-r from-blue-500 to-cyan-500"
+                      : "w-2 bg-white/30"
+                  }`}
+                />
+              ))}
             </div>
           </div>
+        </div>
 
-          {/* Right Side - Products */}
-          <div className="col-span-3 overflow-hidden">
-            <div className="h-full flex flex-col">
-              <h3 className="text-2xl font-semibold text-slate-300 mb-6 flex items-center gap-3">
-                <span className="w-12 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" />
-                Ürünlerimiz
-              </h3>
+        {/* Right Side - Products (70% width) */}
+        <div className="w-[70%] h-full px-8 py-6 overflow-hidden">
+          <div className="h-full flex flex-col">
+            <h3 className="text-3xl font-bold text-white mb-6 flex items-center gap-3">
+              <span className="w-16 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full" />
+              Ürünlerimiz
+            </h3>
 
-              <div className="grid grid-cols-2 gap-6 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-blue-500/50 scrollbar-track-white/5">
+            {/* Products Grid - Scrollable */}
+            <div className="flex-1 overflow-y-auto pr-4 scrollbar-thin scrollbar-thumb-blue-500/50 scrollbar-track-white/5">
+              <div className="grid grid-cols-3 gap-6">
                 {categoryProducts.map((product, index) => (
                   <div
                     key={product.id}
-                    className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10 hover:border-blue-500/50 transition-all duration-300 group hover:scale-[1.02]"
+                    className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 hover:border-blue-500/50 transition-all duration-300 hover:scale-105"
                     style={{
-                      animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`,
+                      animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`,
                     }}
                   >
                     {/* Product Image */}
                     {product.image && (
-                      <div className="relative h-48 rounded-xl overflow-hidden mb-4 shadow-lg">
+                      <div className="relative h-40 rounded-xl overflow-hidden mb-4 shadow-lg">
                         <Image
                           src={product.image}
                           alt={product.name}
                           fill
-                          className="object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="object-cover transition-transform duration-500 hover:scale-110"
                         />
                       </div>
                     )}
 
                     {/* Product Info */}
                     <div>
-                      <h4 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
+                      <h4 className="text-lg font-bold text-white mb-2 line-clamp-1">
                         {product.name}
                       </h4>
 
                       {product.description && (
-                        <p className="text-sm text-slate-400 mb-3 line-clamp-2">
+                        <p className="text-xs text-slate-400 mb-3 line-clamp-2">
                           {product.description}
                         </p>
                       )}
 
                       {/* Price */}
-                      <div className="flex items-center justify-between pt-3 border-t border-white/10">
+                      <div className="pt-3 border-t border-white/10">
                         <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
                           {product.price} {currency}
                         </span>
@@ -302,6 +286,21 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
               </div>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* QR Code - Bottom Center Fixed */}
+      <div className="absolute bottom-0 left-0 right-0 z-20 bg-black/40 backdrop-blur-lg border-t border-white/10 py-4">
+        <div className="flex items-center justify-center gap-4">
+          <div className="text-right">
+            <p className="text-lg font-semibold text-white">Sipariş Vermek İçin</p>
+            <p className="text-sm text-slate-300">QR Kodu Okutun</p>
+          </div>
+          {qrCodeUrl && (
+            <div className="bg-white p-3 rounded-xl shadow-2xl">
+              <img src={qrCodeUrl} alt="QR Code" className="w-20 h-20" />
+            </div>
+          )}
         </div>
       </div>
 
@@ -323,7 +322,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
             transform: scale(1);
           }
           50% {
-            transform: scale(1.1);
+            transform: scale(1.15);
           }
           100% {
             transform: scale(1);
@@ -331,12 +330,12 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         }
 
         .animate-ken-burns {
-          animation: ken-burns 8s ease-in-out infinite;
+          animation: ken-burns 12s ease-in-out infinite;
         }
 
         /* Scrollbar styling */
         .scrollbar-thin::-webkit-scrollbar {
-          width: 8px;
+          width: 6px;
         }
 
         .scrollbar-thin::-webkit-scrollbar-track {
