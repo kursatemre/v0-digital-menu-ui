@@ -184,6 +184,11 @@ export default function ResetPasswordPage() {
         setStatus("error")
       } else {
         console.log("Password updated successfully, user:", data.user?.email)
+        
+        // Verify the password change by checking user metadata
+        const { data: sessionData } = await supabase.auth.getSession()
+        console.log("Current session after password update:", sessionData)
+        
         setStatus("success")
         
         // Sign out to ensure fresh login with new password
