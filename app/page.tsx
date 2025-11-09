@@ -417,19 +417,19 @@ export default function LandingPage() {
               </a>
             </div>
 
-            {/* Trust Badges */}
-            <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-8 pt-8 text-xs sm:text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                <span>Kredi Kartı Gerektirmez</span>
+            {/* Trust Badges - Enhanced visibility */}
+            <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 pt-10">
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur-xl rounded-full shadow-lg border border-green-200/50">
+                <CheckCircle2 className="w-5 h-5 text-green-600 drop-shadow-sm" />
+                <span className="text-sm sm:text-base font-semibold text-slate-800">Kredi Kartı Gerektirmez</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                <span>Anında Aktif</span>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur-xl rounded-full shadow-lg border border-blue-200/50">
+                <CheckCircle2 className="w-5 h-5 text-blue-600 drop-shadow-sm" />
+                <span className="text-sm sm:text-base font-semibold text-slate-800">Anında Aktif</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                <span>İstediğiniz Zaman İptal</span>
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-white/90 backdrop-blur-xl rounded-full shadow-lg border border-cyan-200/50">
+                <CheckCircle2 className="w-5 h-5 text-cyan-600 drop-shadow-sm" />
+                <span className="text-sm sm:text-base font-semibold text-slate-800">İstediğiniz Zaman İptal</span>
               </div>
             </div>
           </div>
