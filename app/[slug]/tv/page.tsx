@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs"
+import { createClient } from "@/lib/supabase/client"
 import { QrCode } from "lucide-react"
 import Image from "next/image"
 import QRCodeLib from "qrcode"
@@ -35,7 +35,7 @@ export default function TVMenuPage({ params }: { params: { slug: string } }) {
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
   const [tenantId, setTenantId] = useState<string | null>(null)
   
-  const supabase = createClientComponentClient()
+  const supabase = createClient()
   const slug = params.slug
 
   useEffect(() => {
