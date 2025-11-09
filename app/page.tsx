@@ -238,9 +238,16 @@ export default function LandingPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50/30 to-blue-100/50">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 -left-48 w-96 h-96 bg-gradient-to-br from-blue-400/20 to-cyan-400/20 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-1/4 -right-48 w-96 h-96 bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-full blur-3xl animate-pulse animation-delay-1000" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-gradient-to-br from-blue-300/10 to-cyan-300/10 rounded-full blur-3xl animate-spin-slow" />
+      </div>
+      
       {/* Header / Navigation */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm">
+      <header className="sticky top-0 z-50 bg-white/70 backdrop-blur-xl border-b border-blue-200/50 shadow-lg shadow-blue-500/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-20">
             {/* Logo */}
@@ -350,7 +357,7 @@ export default function LandingPage() {
         </div>
       </header>
 
-      {/* Hero Section */}
+      {/* Hero Section - Ultra Modern */}
       <section className="relative overflow-hidden">
         {heroContent.backgroundImage ? (
           <>
@@ -358,52 +365,52 @@ export default function LandingPage() {
               className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${heroContent.backgroundImage})` }}
             />
-            <div className="absolute inset-0 bg-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-900/60 via-cyan-900/50 to-blue-900/60 backdrop-blur-sm" />
           </>
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-secondary/5 to-primary/10" />
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-cyan-400/10 to-blue-600/15" />
         )}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-20 lg:py-28">
-          <div className="text-center space-y-6 sm:space-y-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow-md border border-primary/20">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24 lg:py-32">
+          <div className="text-center space-y-6 sm:space-y-10">
+            {/* Badge - Glassmorphism style */}
+            <div className="inline-flex items-center gap-2 px-5 py-2.5 bg-white/80 backdrop-blur-xl rounded-full shadow-2xl shadow-blue-500/20 border border-blue-200/50 ring-1 ring-blue-400/10 hover:scale-105 transition-transform duration-300">
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-500 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600 shadow-lg shadow-blue-500/50"></span>
               </span>
-              <span className="text-xs sm:text-sm font-medium text-foreground">
+              <span className="text-xs sm:text-sm font-semibold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
                 {heroContent.badgeText || "🎉 3 Gün Boyunca Tamamen Ücretsiz!"}
               </span>
             </div>
 
-            {/* Main Heading */}
-            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight">
-              <span className={`block ${heroContent.backgroundImage ? "text-white" : "bg-gradient-to-r from-primary via-secondary to-primary bg-clip-text text-transparent"}`}>
+            {/* Main Heading - Modern gradient */}
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight tracking-tight">
+              <span className={`block ${heroContent.backgroundImage ? "text-white drop-shadow-2xl" : "bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-700 bg-clip-text text-transparent animate-gradient-x"}`}>
                 {loading ? "Yükleniyor..." : heroContent.title}
               </span>
             </h1>
 
-            {/* Subtitle */}
-            <p className={`max-w-2xl mx-auto text-base sm:text-lg lg:text-xl leading-relaxed px-4 ${heroContent.backgroundImage ? "text-white/90" : "text-muted-foreground"}`}>
+            {/* Subtitle - Enhanced */}
+            <p className={`max-w-3xl mx-auto text-base sm:text-lg lg:text-xl leading-relaxed px-4 font-medium ${heroContent.backgroundImage ? "text-white/95 drop-shadow-lg" : "text-slate-600"}`}>
               {loading ? "Lütfen bekleyin..." : heroContent.subtitle}
             </p>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+            {/* CTA Buttons - Modern glass effect */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6">
               <Link href={heroContent.buttonLink || "/register"}>
                 <Button
                   size="lg"
-                  className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 gap-2 shadow-xl hover:shadow-2xl transition-all hover:scale-105"
+                  className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-10 py-6 sm:py-7 gap-3 bg-gradient-to-r from-blue-600 via-cyan-600 to-blue-700 hover:from-blue-700 hover:via-cyan-700 hover:to-blue-800 shadow-2xl shadow-blue-500/50 hover:shadow-blue-600/60 transition-all hover:scale-105 border border-blue-400/20 rounded-xl font-bold"
                 >
                   {heroContent.buttonText || "3 Gün Ücretsiz Dene"}
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5 animate-pulse" />
                 </Button>
               </Link>
               <a href="#ozellikler">
                 <Button
                   size="lg"
                   variant="outline"
-                  className="w-full sm:w-auto text-base sm:text-lg px-6 sm:px-8 py-5 sm:py-6 gap-2 border-2 hover:bg-slate-50"
+                  className="w-full sm:w-auto text-base sm:text-lg px-8 sm:px-10 py-6 sm:py-7 gap-3 border-2 border-blue-300/50 bg-white/60 backdrop-blur-xl hover:bg-blue-50/80 hover:border-blue-400/70 text-blue-700 font-semibold shadow-lg hover:shadow-xl transition-all rounded-xl"
                 >
                   Özellikleri Gör
                 </Button>
@@ -430,13 +437,13 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="ozellikler" className="py-12 sm:py-20 lg:py-28">
+      <section id="ozellikler" className="py-16 sm:py-24 lg:py-32 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12 sm:mb-16">
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
+          <div className="text-center mb-16 sm:mb-20">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-700 bg-clip-text text-transparent">
               Neden Dijital Menü?
             </h2>
-            <p className="text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto font-medium">
               Restoranınızı dijital çağa taşıyan tüm özellikler bir arada
             </p>
           </div>
@@ -445,14 +452,14 @@ export default function LandingPage() {
             {features.map((feature, index) => (
               <Card
                 key={index}
-                className="border-2 hover:border-primary/50 transition-all duration-300 hover:shadow-xl group"
+                className="glass-card border-2 border-blue-200/50 hover:border-blue-400/70 transition-all duration-500 hover:shadow-2xl hover:shadow-blue-500/20 group hover:-translate-y-2"
               >
                 <CardContent className="p-6 sm:p-8">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 text-primary group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 sm:w-18 sm:h-18 bg-gradient-to-br from-blue-500/15 to-cyan-500/15 rounded-2xl flex items-center justify-center mb-5 sm:mb-7 text-blue-600 group-hover:scale-110 group-hover:rotate-3 transition-all duration-300 shadow-lg shadow-blue-500/20">
                     {feature.icon}
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold mb-2 sm:mb-3">{feature.title}</h3>
-                  <p className="text-sm sm:text-base text-muted-foreground leading-relaxed">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-3 text-slate-800">{feature.title}</h3>
+                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
                     {feature.description}
                   </p>
                 </CardContent>
@@ -462,15 +469,19 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Benefits Section */}
-      <section className="py-12 sm:py-20 lg:py-28 bg-gradient-to-br from-primary/5 to-secondary/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
+      {/* Benefits Section - Modern Blue */}
+      <section className="py-16 sm:py-24 lg:py-32 bg-gradient-to-br from-blue-50/80 via-cyan-50/50 to-blue-100/70 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-blue-400/10 to-cyan-400/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-br from-cyan-400/10 to-blue-500/10 rounded-full blur-3xl" />
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="grid lg:grid-cols-2 gap-12 sm:gap-16 items-center">
             <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4 sm:mb-6">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 sm:mb-8 bg-gradient-to-r from-blue-700 to-cyan-600 bg-clip-text text-transparent">
                 Tüm İhtiyaçlarınız İçin Hazır
               </h2>
-              <p className="text-base sm:text-lg text-muted-foreground mb-6 sm:mb-8">
+              <p className="text-lg sm:text-xl text-slate-600 mb-8 sm:mb-10 font-medium">
                 Profesyonel restoran yönetimi için ihtiyacınız olan her şey dahil
               </p>
               <div className="grid sm:grid-cols-2 gap-3 sm:gap-4">
