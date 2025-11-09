@@ -39,27 +39,46 @@ export default function PaymentSuccessPage() {
 
   const loadTransaction = async () => {
     const supabase = createClient()
-    const { data, error } = await supabase
+    
+    console.log('Loading transaction with merchant_oid:', merchant_oid)
+    
+    // İlk önce payment transaction'ı alalım
+    const { data: payment, error: paymentError } = await supabase
       .from('payment_transactions')
-      .select(`
-        *,
-        tenants (
-          business_name,
-          slug,
-          id,
-          subscription_plan
-        )
-      `)
+      .select('*')
       .eq('merchant_oid', merchant_oid)
       .single()
 
-    if (error) {
-      console.error('Error loading transaction:', error)
+    if (paymentError) {
+      console.error('Error loading payment:', paymentError)
       setLoading(false)
       return
     }
 
-    console.log('Transaction loaded:', data)
+    console.log('Payment loaded:', payment)
+
+    // Sonra tenant bilgisini alalım
+    const { data: tenant, error: tenantError } = await supabase
+      .from('tenants')
+      .select('business_name, slug, id, subscription_plan')
+      .eq('id', payment.tenant_id)
+      .single()
+
+    if (tenantError) {
+      console.error('Error loading tenant:', tenantError)
+      setLoading(false)
+      return
+    }
+
+    console.log('Tenant loaded:', tenant)
+
+    // Birleştir
+    const data = {
+      ...payment,
+      tenants: tenant
+    }
+
+    console.log('Combined transaction data:', data)
     setTransaction(data)
     
     // Premium aktivasyonu için API çağrısı (RLS bypass)
