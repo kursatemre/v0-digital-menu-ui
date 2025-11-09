@@ -26,11 +26,38 @@ export default function PaymentSuccessPage() {
     const supabase = createClient()
     const { data } = await supabase
       .from('payment_transactions')
-      .select('*, tenants(name, slug)')
+      .select('*, tenants(name, slug, id, subscription_plan)')
       .eq('merchant_oid', merchant_oid)
       .single()
 
     setTransaction(data)
+    
+    // Test modunda otomatik premium aktivasyonu (callback gelmiyorsa)
+    if (data && data.payment_status === 'success' && data.tenants?.subscription_plan !== 'premium') {
+      console.log('Activating premium for tenant:', data.tenant_id)
+      
+      // Manuel premium aktivasyonu
+      const { error: updateError } = await supabase
+        .from('tenants')
+        .update({
+          subscription_plan: 'premium',
+          subscription_status: 'active',
+          subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+        })
+        .eq('id', data.tenant_id)
+      
+      if (!updateError) {
+        console.log('Premium activated successfully')
+        // Reload transaction to get updated tenant data
+        const { data: updatedData } = await supabase
+          .from('payment_transactions')
+          .select('*, tenants(name, slug, subscription_plan)')
+          .eq('merchant_oid', merchant_oid)
+          .single()
+        setTransaction(updatedData)
+      }
+    }
+    
     setLoading(false)
   }
 
