@@ -232,10 +232,6 @@ export default function AdminPanel() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [resetEmail, setResetEmail] = useState("")
-  const [resetMessage, setResetMessage] = useState("")
-  const [resetError, setResetError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
     "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings"
@@ -461,57 +457,6 @@ export default function AdminPanel() {
     setPassword("")
   }
 
-  // Forgot password handler
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setResetError("")
-    setResetMessage("")
-
-    if (!resetEmail) {
-      setResetError("Lütfen e-posta adresinizi girin")
-      return
-    }
-
-    if (!tenantId) {
-      setResetError("Restoran bilgisi yükleniyor, lütfen bekleyin...")
-      return
-    }
-
-    try {
-      // Check if user exists
-      const { data: userData, error: userError } = await supabase
-        .from("admin_users")
-        .select("id, username, display_name")
-        .eq("username", resetEmail)
-        .eq("tenant_id", tenantId)
-        .single()
-
-      if (userError || !userData) {
-        setResetError("Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.")
-        return
-      }
-
-      // In a real application, you would send a password reset email here
-      // For now, we'll show a success message with contact information
-      setResetMessage(
-        "Şifre sıfırlama talebi alındı. Lütfen destek ekibimizle iletişime geçin:\n\n" +
-        "E-posta: info@menumgo.digital\n" +
-        "WhatsApp: 0545 715 43 05\n\n" +
-        "Talebiniz en kısa sürede işleme alınacaktır."
-      )
-
-      // Reset form after 5 seconds
-      setTimeout(() => {
-        setShowForgotPassword(false)
-        setResetEmail("")
-        setResetMessage("")
-        setResetError("")
-      }, 10000)
-    } catch (err) {
-      console.error("Password reset error:", err)
-      setResetError("Şifre sıfırlama talebi gönderilirken bir hata oluştu.")
-    }
-  }
 
   // Load admin users
   useEffect(() => {
@@ -3388,72 +3333,9 @@ export default function AdminPanel() {
               <Button type="submit" className="w-full">
                 Giriş Yap
               </Button>
-              <div className="text-center">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="text-sm text-muted-foreground hover:text-primary"
-                  onClick={() => setShowForgotPassword(true)}
-                >
-                  Şifremi Unuttum
-                </Button>
-              </div>
             </form>
           </CardContent>
         </Card>
-
-        {/* Forgot Password Dialog */}
-        <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Şifre Sıfırlama</DialogTitle>
-              <DialogDescription>
-                E-posta adresinizi girin, size yardımcı olalım.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <Label htmlFor="reset-email">E-posta Adresi</Label>
-                <Input
-                  id="reset-email"
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="ornek@email.com"
-                  required
-                />
-              </div>
-              {resetError && (
-                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-                  {resetError}
-                </div>
-              )}
-              {resetMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
-                  {resetMessage}
-                </div>
-              )}
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowForgotPassword(false)
-                    setResetEmail("")
-                    setResetError("")
-                    setResetMessage("")
-                  }}
-                  className="flex-1"
-                >
-                  İptal
-                </Button>
-                <Button type="submit" className="flex-1" disabled={!!resetMessage}>
-                  Gönder
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
     )
   }

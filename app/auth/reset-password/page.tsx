@@ -25,9 +25,22 @@ export default function ResetPasswordPage() {
   // Check if there's a valid access token in the URL
   useEffect(() => {
     const checkToken = async () => {
+      // Try both hash and query params (Supabase can use either)
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
-      const accessToken = hashParams.get("access_token")
-      const type = hashParams.get("type")
+      const queryParams = new URLSearchParams(window.location.search)
+
+      const accessToken = hashParams.get("access_token") || queryParams.get("access_token")
+      const type = hashParams.get("type") || queryParams.get("type")
+      const error_code = hashParams.get("error_code") || queryParams.get("error_code")
+      const error_description = hashParams.get("error_description") || queryParams.get("error_description")
+
+      // Check for errors first
+      if (error_code || error_description) {
+        setIsValidToken(false)
+        setErrorMessage(error_description || "Bir hata oluştu")
+        setCheckingToken(false)
+        return
+      }
 
       if (!accessToken || type !== "recovery") {
         setIsValidToken(false)

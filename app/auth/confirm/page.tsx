@@ -17,10 +17,24 @@ export default function ConfirmPage() {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
-        // Get the token from URL hash (Supabase sends it as #access_token=...)
+        // Try both hash and query params (Supabase can use either)
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
-        const accessToken = hashParams.get("access_token")
-        const type = hashParams.get("type")
+        const queryParams = new URLSearchParams(window.location.search)
+
+        const accessToken = hashParams.get("access_token") || queryParams.get("access_token")
+        const type = hashParams.get("type") || queryParams.get("type")
+        const error_code = hashParams.get("error_code") || queryParams.get("error_code")
+        const error_description = hashParams.get("error_description") || queryParams.get("error_description")
+
+        console.log("Confirm email debug:", { accessToken: !!accessToken, type, error_code, error_description })
+
+        // Check for errors first
+        if (error_code || error_description) {
+          console.error("Email confirmation error:", error_code, error_description)
+          setStatus("error")
+          setMessage(error_description || "E-posta doğrulama hatası oluştu.")
+          return
+        }
 
         if (!accessToken || type !== "signup") {
           setStatus("error")

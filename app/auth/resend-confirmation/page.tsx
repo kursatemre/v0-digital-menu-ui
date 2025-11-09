@@ -34,8 +34,10 @@ export default function ResendConfirmationPage() {
     setErrorMessage("")
 
     try {
+      console.log("Resending confirmation email to:", email)
+
       // Resend the confirmation email using Supabase's resend method
-      const { error } = await supabase.auth.resend({
+      const { data, error } = await supabase.auth.resend({
         type: 'signup',
         email: email,
         options: {
@@ -43,24 +45,29 @@ export default function ResendConfirmationPage() {
         }
       })
 
+      console.log("Resend response:", { data, error })
+
       if (error) {
         console.error("Resend confirmation error:", error)
 
-        // Check if user is already confirmed
-        if (error.message.includes("already confirmed") || error.message.includes("verified")) {
+        // Check specific error messages
+        if (error.message.includes("already confirmed") || error.message.includes("verified") || error.message.includes("Email link is invalid")) {
           setErrorMessage("Bu e-posta adresi zaten doğrulanmış. Giriş yapabilirsiniz.")
-        } else if (error.message.includes("not found")) {
-          setErrorMessage("Bu e-posta adresi ile kayıtlı bir hesap bulunamadı.")
+        } else if (error.message.includes("not found") || error.message.includes("User not found")) {
+          setErrorMessage("Bu e-posta adresi ile kayıtlı bir hesap bulunamadı. Önce kayıt olmanız gerekiyor.")
+        } else if (error.message.includes("rate limit")) {
+          setErrorMessage("Çok fazla istek gönderildi. Lütfen birkaç dakika bekleyin.")
         } else {
-          setErrorMessage("Doğrulama e-postası gönderilemedi. Lütfen tekrar deneyin.")
+          setErrorMessage(`Doğrulama e-postası gönderilemedi: ${error.message}`)
         }
         setStatus("error")
       } else {
+        console.log("Resend successful!")
         setStatus("success")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error:", error)
-      setErrorMessage("Bir hata oluştu. Lütfen tekrar deneyin.")
+      setErrorMessage(`Bir hata oluştu: ${error.message || "Lütfen tekrar deneyin."}`)
       setStatus("error")
     }
   }
