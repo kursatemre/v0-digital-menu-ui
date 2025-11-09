@@ -34,20 +34,36 @@ export default function ForgotPasswordPage() {
     setErrorMessage("")
 
     try {
+      console.log("Requesting password reset for:", email)
+
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
         redirectTo: `${window.location.origin}/auth/reset-password`,
       })
 
+      console.log("Password reset response:", { error })
+
       if (error) {
         console.error("Password reset error:", error)
-        setErrorMessage("Şifre sıfırlama e-postası gönderilemedi. Lütfen tekrar deneyin.")
+
+        // Check for rate limit error
+        if (error.message.includes("rate limit") || error.message.includes("too many requests")) {
+          setErrorMessage(
+            "Çok fazla şifre sıfırlama talebi gönderildi. Lütfen 1 saat bekleyip tekrar deneyin. " +
+            "Acil durumda info@menumgo.digital adresinden iletişime geçebilirsiniz."
+          )
+        } else if (error.message.includes("not found") || error.message.includes("User not found")) {
+          setErrorMessage("Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.")
+        } else {
+          setErrorMessage(`Şifre sıfırlama e-postası gönderilemedi: ${error.message}`)
+        }
         setStatus("error")
       } else {
+        console.log("Password reset email sent successfully")
         setStatus("success")
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error:", error)
-      setErrorMessage("Bir hata oluştu. Lütfen tekrar deneyin.")
+      setErrorMessage(`Bir hata oluştu: ${error.message || "Lütfen tekrar deneyin."}`)
       setStatus("error")
     }
   }
