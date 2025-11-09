@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Resend API key optional - if not set, just log instead of sending
+const resendApiKey = process.env.RESEND_API_KEY
+const resend = resendApiKey ? new Resend(resendApiKey) : null
 
 export async function POST(request: Request) {
   try {
@@ -12,6 +14,21 @@ export async function POST(request: Request) {
         { error: 'Missing required fields' },
         { status: 400 }
       )
+    }
+
+    // If Resend is not configured, just log and return success
+    if (!resend) {
+      console.log('Resend API key not configured. Email would be sent to:', {
+        to,
+        business_name,
+        amount,
+        merchant_oid,
+        plan_type
+      })
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Email logging only (Resend not configured)' 
+      })
     }
 
     const { data, error } = await resend.emails.send({
