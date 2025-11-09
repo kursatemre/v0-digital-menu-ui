@@ -165,31 +165,15 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
   // Get category image (first product with image in category)
   const categoryImage = categoryProducts.find((p) => p.image)?.image
 
+  // Debug logging
+  console.log("Current category:", currentCategory?.name)
+  console.log("Category products count:", categoryProducts.length)
+  console.log("Category image URL:", categoryImage)
+
   return (
     <div className="relative min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden flex flex-col">
-      {/* Header with Logo and Restaurant Name */}
-      <header className="absolute top-0 left-0 right-0 z-20 bg-black/40 backdrop-blur-lg border-b border-white/10">
-        <div className="px-8 py-4 flex items-center gap-4">
-          {logo && (
-            <Image
-              src={logo}
-              alt={tenant.business_name}
-              width={50}
-              height={50}
-              className="rounded-lg"
-            />
-          )}
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-              {tenant.business_name}
-            </h1>
-            <p className="text-slate-400 text-xs">Dijital Menü - TV Görünümü</p>
-          </div>
-        </div>
-      </header>
-
       {/* Main Content - Full Height Split Layout */}
-      <div className="flex-1 flex pt-20 pb-24">
+      <div className="flex-1 flex pb-24">
         {/* Left Side - Category (30% width, full height, vertical rectangle) */}
         <div className="w-[30%] h-full relative">
           {/* Category Background Image - Full Height */}
