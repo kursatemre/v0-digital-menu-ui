@@ -229,7 +229,7 @@ export default function AdminPanel() {
 
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null)
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
 
@@ -382,36 +382,45 @@ export default function AdminPanel() {
     loadPricing()
   }, [supabase])
 
-  // Check if user is already logged in
+  // Check if user is already logged in with Supabase Auth
   useEffect(() => {
-    const loadCurrentUser = async () => {
-      const loggedIn = localStorage.getItem(`admin_logged_in_${slug}`)
-      const userId = localStorage.getItem(`admin_user_id_${slug}`)
+    const checkSession = async () => {
+      if (!tenantId) return
 
-      if (loggedIn === "true" && userId) {
-        setIsAuthenticated(true)
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        // Verify user belongs to this tenant
+        const { data: tenant } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("auth_user_id", session.user.id)
+          .eq("id", tenantId)
+          .single()
 
-        // Load current user data
-        try {
-          const { data, error } = await supabase
+        if (tenant) {
+          setIsAuthenticated(true)
+          // Load user from admin_users table for role info
+          const { data: adminUser } = await supabase
             .from("admin_users")
             .select("*")
-            .eq("id", userId)
+            .eq("tenant_id", tenantId)
+            .eq("auth_user_id", session.user.id)
             .single()
 
-          if (!error && data) {
-            setCurrentUser(data)
+          if (adminUser) {
+            setCurrentUser(adminUser)
           }
-        } catch (error) {
-          console.error("Error loading current user:", error)
         }
       }
     }
 
-    loadCurrentUser()
-  }, [slug, supabase])
+    if (tenantId) {
+      checkSession()
+    }
+  }, [slug, tenantId, supabase])
 
-  // Login handler
+  // Login handler with Supabase Auth
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError("")
@@ -422,24 +431,70 @@ export default function AdminPanel() {
     }
 
     try {
-      // Check Supabase for user with tenant_id filter
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("*")
-        .eq("username", username)
-        .eq("password_hash", password)
-        .eq("tenant_id", tenantId)
-        .single()
+      // Sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      if (error || !data) {
-        setLoginError("Kullanıcı adı veya şifre hatalı!")
+      if (authError) {
+        console.error("Auth error:", authError)
+        setLoginError("E-posta veya şifre hatalı!")
         return
       }
 
+      if (!authData.user) {
+        setLoginError("Kullanıcı bulunamadı!")
+        return
+      }
+
+      // Verify user belongs to this tenant
+      const { data: tenant, error: tenantError } = await supabase
+        .from("tenants")
+        .select("*")
+        .eq("auth_user_id", authData.user.id)
+        .eq("id", tenantId)
+        .single()
+
+      if (tenantError || !tenant) {
+        console.error("Tenant error:", tenantError)
+        setLoginError("Bu restoran için yetkiniz yok!")
+        await supabase.auth.signOut()
+        return
+      }
+
+      // Load or create admin_users record for role info
+      let { data: adminUser } = await supabase
+        .from("admin_users")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .eq("auth_user_id", authData.user.id)
+        .single()
+
+      // If no admin_users record, create one (owner role)
+      if (!adminUser) {
+        const { data: newAdminUser, error: createError } = await supabase
+          .from("admin_users")
+          .insert([{
+            tenant_id: tenantId,
+            auth_user_id: authData.user.id,
+            username: authData.user.email?.split('@')[0] || 'owner',
+            display_name: authData.user.user_metadata?.owner_name || authData.user.email,
+            role: 'admin',
+            password_hash: '' // Not used anymore
+          }])
+          .select()
+          .single()
+
+        if (!createError && newAdminUser) {
+          adminUser = newAdminUser
+        }
+      }
+
+      console.log("Login successful:", { user: authData.user.email, tenant: tenant.slug })
+      
       setIsAuthenticated(true)
-      setCurrentUser(data)
-      localStorage.setItem(`admin_logged_in_${slug}`, "true")
-      localStorage.setItem(`admin_user_id_${slug}`, data.id)
+      setCurrentUser(adminUser)
       setLoginError("")
     } catch (err) {
       console.error("Login error:", err)
@@ -448,12 +503,11 @@ export default function AdminPanel() {
   }
 
   // Logout handler
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     setIsAuthenticated(false)
     setCurrentUser(null)
-    localStorage.removeItem(`admin_logged_in_${slug}`)
-    localStorage.removeItem(`admin_user_id_${slug}`)
-    setUsername("")
+    setEmail("")
     setPassword("")
   }
 
@@ -3307,8 +3361,8 @@ export default function AdminPanel() {
                 <label className="text-sm font-medium mb-2 block">E-posta</label>
                 <Input
                   type="email"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="ornek@email.com"
                   required
                   autoComplete="email"
