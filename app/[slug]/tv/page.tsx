@@ -222,8 +222,18 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         </div>
 
         {/* Bottom Info */}
-        <div className="text-center text-black text-sm relative z-10 font-semibold">
-          <p>Sipariş için QR kodu okutun</p>
+        <div className="text-center relative z-10">
+          {/* QR Code */}
+          <div className="bg-white p-4 rounded-xl inline-block mb-3 shadow-lg">
+            <Image 
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://menumgo.digital/${slug}`}
+              alt="QR Code"
+              width={150}
+              height={150}
+              className="rounded-lg"
+            />
+          </div>
+          <p className="text-black text-sm font-semibold">Sipariş için QR kodu okutun</p>
         </div>
       </div>
 
