@@ -76,6 +76,34 @@ export async function POST(request: Request) {
 
     console.log(`Payment ${merchant_oid} updated to ${paymentStatus}`)
 
+    // Başarılı ödeme için mail gönder
+    if (paymentStatus === 'success' && transaction) {
+      try {
+        // Tenant bilgilerini al
+        const { data: tenant } = await supabase
+          .from('tenants')
+          .select('business_name, owner_email')
+          .eq('id', transaction.tenant_id)
+          .single()
+
+        if (tenant?.owner_email) {
+          // Mail gönder (Resend entegrasyonu - gelecekte eklenecek)
+          console.log('TODO: Send payment confirmation email to:', tenant.owner_email)
+          
+          // Şimdilik basit bir log
+          console.log('Payment confirmation:', {
+            to: tenant.owner_email,
+            business: tenant.business_name,
+            amount: total_amount,
+            merchant_oid
+          })
+        }
+      } catch (mailError) {
+        console.error('Email send error:', mailError)
+        // Mail hatası ödemeyi etkilemez, devam et
+      }
+    }
+
     // PayTR'ye OK dön (zorunlu!)
     return new Response('OK', {
       status: 200,
