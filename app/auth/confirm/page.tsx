@@ -21,12 +21,18 @@ export default function ConfirmPage() {
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const queryParams = new URLSearchParams(window.location.search)
 
-        const accessToken = hashParams.get("access_token") || queryParams.get("access_token")
-        const type = hashParams.get("type") || queryParams.get("type")
+        const token = queryParams.get("token")
+        const type = queryParams.get("type")
         const error_code = hashParams.get("error_code") || queryParams.get("error_code")
         const error_description = hashParams.get("error_description") || queryParams.get("error_description")
 
-        console.log("Confirm email debug:", { accessToken: !!accessToken, type, error_code, error_description })
+        console.log("Confirm email debug:", { 
+          token: !!token, 
+          type, 
+          error_code, 
+          error_description,
+          fullUrl: window.location.href 
+        })
 
         // Check for errors first
         if (error_code || error_description) {
@@ -36,67 +42,78 @@ export default function ConfirmPage() {
           return
         }
 
-        if (!accessToken || type !== "signup") {
+        // Supabase PKCE flow - let Supabase handle the token exchange
+        if (token && type === "signup") {
+          // Verify the token with Supabase
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: token,
+            type: 'signup'
+          })
+
+          if (error) {
+            console.error("OTP verification error:", error)
+            setStatus("error")
+            setMessage("E-posta doğrulama başarısız. Link geçersiz veya süresi dolmuş olabilir.")
+            return
+          }
+
+          if (!data.user) {
+            setStatus("error")
+            setMessage("Kullanıcı bilgisi alınamadı.")
+            return
+          }
+
+          const user = data.user
+
+          // Find the tenant by auth_user_id
+          const { data: tenant, error: tenantError } = await supabase
+            .from("tenants")
+            .select("*")
+            .eq("auth_user_id", user.id)
+            .single()
+
+          if (tenantError || !tenant) {
+            console.error("Tenant error:", tenantError)
+            setStatus("error")
+            setMessage("Restoran kaydı bulunamadı. Lütfen destek ekibi ile iletişime geçin.")
+            return
+          }
+
+          // Calculate trial end date (3 days from now)
+          const trialEndDate = new Date()
+          trialEndDate.setDate(trialEndDate.getDate() + 3)
+
+          // Activate the tenant and set trial period
+          const { error: updateError } = await supabase
+            .from("tenants")
+            .update({
+              is_active: true,
+              trial_end_date: trialEndDate.toISOString(),
+              subscription_status: "trial",
+              subscription_plan: "trial",
+            })
+            .eq("id", tenant.id)
+
+          if (updateError) {
+            console.error("Update error:", updateError)
+            setStatus("error")
+            setMessage("Hesap aktifleştirilemedi. Lütfen destek ekibi ile iletişime geçin.")
+            return
+          }
+
+          // Success!
+          setRestaurantSlug(tenant.slug)
+          setStatus("success")
+          setMessage("E-posta adresiniz başarıyla doğrulandı! 3 günlük ücretsiz deneme süreniz başladı.")
+
+          // Redirect to admin panel after 3 seconds
+          setTimeout(() => {
+            router.push(`/${tenant.slug}/admin`)
+          }, 3000)
+        } else {
           setStatus("error")
           setMessage("Geçersiz doğrulama linki. Lütfen e-postanızdaki linki kullanın.")
-          return
         }
-
-        // Get the current user after email confirmation
-        const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken)
-
-        if (userError || !user) {
-          console.error("User error:", userError)
-          setStatus("error")
-          setMessage("E-posta doğrulanamadı. Lütfen tekrar deneyin.")
-          return
-        }
-
-        // Find the tenant by auth_user_id
-        const { data: tenant, error: tenantError } = await supabase
-          .from("tenants")
-          .select("*")
-          .eq("auth_user_id", user.id)
-          .single()
-
-        if (tenantError || !tenant) {
-          console.error("Tenant error:", tenantError)
-          setStatus("error")
-          setMessage("Restoran kaydı bulunamadı. Lütfen destek ekibi ile iletişime geçin.")
-          return
-        }
-
-        // Calculate trial end date (3 days from now)
-        const trialEndDate = new Date()
-        trialEndDate.setDate(trialEndDate.getDate() + 3)
-
-        // Activate the tenant and set trial period
-        const { error: updateError } = await supabase
-          .from("tenants")
-          .update({
-            is_active: true,
-            trial_end_date: trialEndDate.toISOString(),
-            subscription_status: "trial",
-            subscription_plan: "trial",
-          })
-          .eq("id", tenant.id)
-
-        if (updateError) {
-          console.error("Update error:", updateError)
-          setStatus("error")
-          setMessage("Hesap aktifleştirilemedi. Lütfen destek ekibi ile iletişime geçin.")
-          return
-        }
-
-        // Success!
-        setRestaurantSlug(tenant.slug)
-        setStatus("success")
-        setMessage("E-posta adresiniz başarıyla doğrulandı! 3 günlük ücretsiz deneme süreniz başladı.")
-
-        // Redirect to admin panel after 3 seconds
-        setTimeout(() => {
-          router.push(`/${tenant.slug}/admin`)
-        }, 3000)
       } catch (error) {
         console.error("Confirmation error:", error)
         setStatus("error")
