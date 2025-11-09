@@ -156,13 +156,13 @@ const playNotificationSound = () => {
 
 export default function AdminPanel() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentUser, setCurrentUser] = useState<AdminUser | null>(null)
-  const [username, setUsername] = useState("")
+  const [currentTenant, setCurrentTenant] = useState<any>(null)
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
-    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "settings"
+    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "settings"
   >("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
@@ -242,35 +242,68 @@ export default function AdminPanel() {
 
   // Check if user is already logged in
   useEffect(() => {
-    const loggedIn = localStorage.getItem("admin_logged_in")
-    if (loggedIn === "true") {
-      setIsAuthenticated(true)
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        // Get tenant for this user
+        const { data: tenant } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("auth_user_id", session.user.id)
+          .single()
+
+        if (tenant) {
+          setIsAuthenticated(true)
+          setCurrentTenant(tenant)
+        }
+      }
     }
+
+    checkSession()
   }, [])
 
-  // Login handler
+  // Login handler with Supabase Auth
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError("")
 
     try {
-      // Check Supabase for user
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("*")
-        .eq("username", username)
-        .eq("password_hash", password)
-        .single()
+      // Sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      if (error || !data) {
-        setLoginError("Kullanıcı adı veya şifre hatalı!")
+      if (authError) {
+        console.error("Auth error:", authError)
+        setLoginError("E-posta veya şifre hatalı!")
         return
       }
 
+      if (!authData.user) {
+        setLoginError("Kullanıcı bulunamadı!")
+        return
+      }
+
+      // Get tenant for this user
+      const { data: tenant, error: tenantError } = await supabase
+        .from("tenants")
+        .select("*")
+        .eq("auth_user_id", authData.user.id)
+        .single()
+
+      if (tenantError || !tenant) {
+        console.error("Tenant error:", tenantError)
+        setLoginError("Restoran hesabı bulunamadı!")
+        await supabase.auth.signOut()
+        return
+      }
+
+      console.log("Login successful:", { user: authData.user.email, tenant: tenant.slug })
+      
       setIsAuthenticated(true)
-      setCurrentUser(data)
-      localStorage.setItem("admin_logged_in", "true")
-      localStorage.setItem("admin_user_id", data.id)
+      setCurrentTenant(tenant)
       setLoginError("")
     } catch (err) {
       console.error("Login error:", err)
@@ -905,8 +938,6 @@ export default function AdminPanel() {
         return renderAppearanceTab()
       case "qr":
         return renderQRTab()
-      case "users":
-        return renderUsersTab()
       case "settings":
         return renderSettingsTab()
       default:
@@ -2159,20 +2190,35 @@ export default function AdminPanel() {
         </CardContent>
       </Card>
 
-      {currentUser && (
+      {currentTenant && (
         <Card className="mt-6">
           <CardHeader>
             <CardTitle>Hesap Bilgileri</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             <div>
-              <p className="text-sm font-medium">Kullanıcı Adı</p>
-              <p className="text-sm text-muted-foreground">@{currentUser.username}</p>
+              <p className="text-sm font-medium">Restoran Adı</p>
+              <p className="text-sm text-muted-foreground">{currentTenant.business_name}</p>
             </div>
             <div>
-              <p className="text-sm font-medium">Görünen Ad</p>
-              <p className="text-sm text-muted-foreground">{currentUser.display_name || "Belirtilmemiş"}</p>
+              <p className="text-sm font-medium">URL</p>
+              <p className="text-sm text-muted-foreground">/{currentTenant.slug}</p>
             </div>
+            <div>
+              <p className="text-sm font-medium">Abonelik</p>
+              <p className="text-sm text-muted-foreground capitalize">{currentTenant.subscription_plan || 'trial'}</p>
+            </div>
+            <Button 
+              variant="outline" 
+              className="w-full mt-4"
+              onClick={async () => {
+                await supabase.auth.signOut()
+                setIsAuthenticated(false)
+                setCurrentTenant(null)
+              }}
+            >
+              Çıkış Yap
+            </Button>
           </CardContent>
         </Card>
       )}
@@ -2198,14 +2244,14 @@ export default function AdminPanel() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="text-sm font-medium mb-2 block">Kullanıcı Adı</label>
+                <label className="text-sm font-medium mb-2 block">E-posta</label>
                 <Input
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Kullanıcı adınızı girin"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ornek@email.com"
                   required
-                  autoComplete="username"
+                  autoComplete="email"
                 />
               </div>
               <div>
@@ -2227,6 +2273,11 @@ export default function AdminPanel() {
               <Button type="submit" className="w-full">
                 Giriş Yap
               </Button>
+              <div className="text-center text-sm text-muted-foreground">
+                <a href="/auth/forgot-password" className="hover:underline">
+                  Şifrenizi mi unuttunuz?
+                </a>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -2282,12 +2333,6 @@ export default function AdminPanel() {
             label="QR Kod"
             active={activeTab === "qr"}
             onClick={() => setActiveTab("qr")}
-          />
-          <NavItem
-            icon={<Users className="w-5 h-5" />}
-            label="Kullanıcılar"
-            active={activeTab === "users"}
-            onClick={() => setActiveTab("users")}
           />
           <NavItem
             icon={<Key className="w-5 h-5" />}
