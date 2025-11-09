@@ -144,7 +144,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
 
   if (!tenant || categories.length === 0) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="min-h-screen bg-slate-800 flex items-center justify-center">
         <div className="text-white text-3xl font-light">Yükleniyor...</div>
       </div>
     )
@@ -154,11 +154,11 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
   const categoryProducts = products.filter((p) => p.category_id === currentCategory.id)
 
   return (
-    <div className="relative w-screen h-screen bg-black text-white overflow-hidden">
+    <div className="relative w-screen h-screen bg-slate-900 text-white overflow-hidden">
       {/* Main Grid Layout */}
       <div className="h-full grid grid-cols-12 gap-0">
         {/* Left Section - Category Showcase (40%) */}
-        <div className="col-span-5 relative bg-gradient-to-br from-slate-900 via-slate-800 to-black">
+        <div className="col-span-5 relative bg-gradient-to-br from-slate-700 via-slate-600 to-slate-700">
           {/* Restaurant Info */}
           <div className="absolute top-8 left-8 right-8 z-10 flex items-center gap-4">
             {logo && (
@@ -234,7 +234,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         </div>
 
         {/* Right Section - Products Grid (60%) */}
-        <div className="col-span-7 bg-gradient-to-br from-slate-950 via-slate-900 to-black p-8 overflow-y-auto">
+        <div className="col-span-7 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-800 p-8 overflow-y-auto">
           {/* Products Header */}
           <div className="mb-8">
             <div className="flex items-center gap-4 mb-2">
@@ -256,7 +256,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
               >
                 {/* Product Image */}
                 {product.image && (
-                  <div className="relative h-56 overflow-hidden bg-slate-800">
+                  <div className="relative h-56 overflow-hidden bg-slate-600">
                     <Image
                       src={product.image}
                       alt={product.name}
