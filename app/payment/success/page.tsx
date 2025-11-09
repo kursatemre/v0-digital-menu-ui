@@ -116,6 +116,28 @@ export default function PaymentSuccessPage() {
             })
             console.log('Transaction updated with new tenant data:', updatedTenant)
           }
+
+          // Send payment confirmation email
+          if (data.user_email) {
+            console.log('Sending payment confirmation email to:', data.user_email)
+            try {
+              await fetch('/api/send-payment-confirmation', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  to: data.user_email,
+                  business_name: updatedTenant?.business_name || 'Restoran',
+                  amount: data.payment_amount,
+                  merchant_oid: merchant_oid,
+                  plan_type: data.order_details?.plan_type || 'monthly'
+                })
+              })
+              console.log('Payment confirmation email sent')
+            } catch (emailError) {
+              console.error('Failed to send email:', emailError)
+              // Email hatası ödemeyi etkilemez
+            }
+          }
         } else {
           console.error('Premium activation failed:', result.error)
         }
