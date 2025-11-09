@@ -498,12 +498,32 @@ export default function LandingPage() {
             </div>
 
             <div className="relative">
-              <div className="aspect-square sm:aspect-video bg-gradient-to-br from-primary/20 to-secondary/20 rounded-2xl shadow-2xl flex items-center justify-center">
-                <div className="text-center p-6 sm:p-8">
-                  <QrCode className="w-20 h-20 sm:w-32 sm:h-32 mx-auto mb-4 text-primary" />
-                  <p className="text-sm sm:text-base text-muted-foreground">
-                    Demo QR Kod Önizlemesi
-                  </p>
+              <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl shadow-2xl p-6 sm:p-8">
+                <h3 className="text-lg sm:text-xl font-bold text-center mb-6">Demo QR Kod Önizlemesi</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Menu Page Preview */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-full max-w-[345px] aspect-[345/825] rounded-xl overflow-hidden shadow-lg bg-white">
+                      <img 
+                        src="https://i.ibb.co/Kp7BHVZd/qrmenusayfas-1.png" 
+                        alt="Menü Sayfası Önizlemesi"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3 text-center">Müşteri Menü Görünümü</p>
+                  </div>
+                  
+                  {/* Admin Panel Preview */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-full max-w-[640px] aspect-[640/447] rounded-xl overflow-hidden shadow-lg bg-white">
+                      <img 
+                        src="https://i.ibb.co/rR8sQhgG/qradminsayfas.png" 
+                        alt="Admin Paneli Önizlemesi"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3 text-center">Yönetim Paneli</p>
+                  </div>
                 </div>
               </div>
             </div>
