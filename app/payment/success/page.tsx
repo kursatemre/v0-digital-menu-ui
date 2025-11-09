@@ -100,13 +100,22 @@ export default function PaymentSuccessPage() {
         
         if (response.ok && result.success) {
           console.log('Premium activated successfully')
-          // Reload transaction to get updated tenant data
-          const { data: updatedData } = await supabase
-            .from('payment_transactions')
-            .select('*, tenants(name, slug, subscription_plan)')
-            .eq('merchant_oid', merchant_oid)
+          
+          // Reload tenant data to get updated subscription info
+          const { data: updatedTenant } = await supabase
+            .from('tenants')
+            .select('business_name, slug, id, subscription_plan')
+            .eq('id', data.tenant_id)
             .single()
-          setTransaction(updatedData)
+          
+          if (updatedTenant) {
+            // Update transaction with new tenant data
+            setTransaction({
+              ...data,
+              tenants: updatedTenant
+            })
+            console.log('Transaction updated with new tenant data:', updatedTenant)
+          }
         } else {
           console.error('Premium activation failed:', result.error)
         }
