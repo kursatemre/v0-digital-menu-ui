@@ -148,6 +148,7 @@ export default function PaymentPage() {
         } else {
           console.error('merchant_oid is missing from response!')
         }
+        // Direkt iframe göster - processing state devam etsin
         setPaytrToken(data.iframe_token)
       } else {
         throw new Error(data.error || 'Token alınamadı')
@@ -156,6 +157,7 @@ export default function PaymentPage() {
       console.error('Payment error:', error)
       alert(`Ödeme Hatası: ${error.message || "Ödeme oluşturulamadı. Lütfen tekrar deneyin."}`)
       setProcessing(false)
+      setPaytrToken(null)
     }
   }
 
@@ -170,43 +172,62 @@ export default function PaymentPage() {
     )
   }
 
-  // PayTR iframe view
+  // PayTR iframe view - Full screen payment page
   if (paytrToken) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 py-12 px-4">
-        <div className="max-w-4xl mx-auto">
-          <Card className="shadow-2xl border-2">
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-                <Shield className="w-6 h-6 text-green-600" />
-                Güvenli Ödeme
-              </CardTitle>
-              <CardDescription>PayTR ile 256-bit SSL şifreli güvenli ödeme</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <iframe
-                src={`https://www.paytr.com/odeme/guvenli/${paytrToken}`}
-                style={{
-                  width: "100%",
-                  height: "800px",
-                  border: "none",
-                  borderRadius: "8px"
-                }}
-                title="PayTR Güvenli Ödeme"
-              />
-            </CardContent>
-          </Card>
-          <div className="text-center mt-6">
+      <div className="fixed inset-0 bg-white z-50 flex flex-col">
+        {/* Header */}
+        <div className="bg-gradient-to-r from-primary to-purple-600 text-white px-4 py-4 shadow-lg">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="w-6 h-6" />
+              <div>
+                <h1 className="text-xl font-bold">Güvenli Ödeme</h1>
+                <p className="text-xs opacity-90">PayTR ile 256-bit SSL şifreli ödeme</p>
+              </div>
+            </div>
             <Button
               variant="ghost"
+              size="sm"
               onClick={() => {
-                setPaytrToken(null)
-                setProcessing(false)
+                if (confirm("Ödeme işlemini iptal etmek istediğinize emin misiniz?")) {
+                  setPaytrToken(null)
+                  setProcessing(false)
+                }
               }}
+              className="text-white hover:bg-white/20"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Geri Dön
+              İptal
             </Button>
+          </div>
+        </div>
+
+        {/* PayTR Iframe */}
+        <div className="flex-1 overflow-hidden">
+          <iframe
+            src={`https://www.paytr.com/odeme/guvenli/${paytrToken}`}
+            className="w-full h-full border-0"
+            title="PayTR Güvenli Ödeme"
+            allow="payment"
+          />
+        </div>
+
+        {/* Footer Info */}
+        <div className="bg-slate-50 border-t px-4 py-3">
+          <div className="max-w-7xl mx-auto flex items-center justify-center gap-6 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Shield className="w-3 h-3" />
+              <span>PCI-DSS Sertifikalı</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <CreditCard className="w-3 h-3" />
+              <span>Kart bilgileriniz saklanmaz</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              <span>256-bit SSL Şifreleme</span>
+            </div>
           </div>
         </div>
       </div>
