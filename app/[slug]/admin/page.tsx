@@ -45,6 +45,8 @@ import {
   BarChart3,
   TrendingUp,
   Calendar,
+  Tv,
+  ExternalLink,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -3494,6 +3496,17 @@ export default function AdminPanel() {
               active={activeTab === "qr"}
               onClick={() => setActiveTab("qr")}
             />
+          )}
+          {/* TV Display - admin only */}
+          {canView(["admin"]) && (
+            <button
+              onClick={() => window.open(`/${slug}/tv`, "_blank")}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-left"
+            >
+              <Tv className="w-5 h-5 text-muted-foreground" />
+              <span className="hidden md:block text-sm font-medium">TV Görünümü</span>
+              <ExternalLink className="hidden md:block w-3 h-3 ml-auto text-muted-foreground" />
+            </button>
           )}
           {/* Users - admin only */}
           {canView(["admin"]) && (
