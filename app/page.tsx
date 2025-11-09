@@ -28,6 +28,7 @@ import {
   Languages,
 } from "lucide-react"
 import Link from "next/link"
+import { ScrollToTop } from "@/components/scroll-to-top"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { SupportChatButton } from "@/components/support-chat-button"
@@ -776,6 +777,9 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
+      
+      {/* Scroll to Top Button */}
+      <ScrollToTop />
     </div>
   )
 }
