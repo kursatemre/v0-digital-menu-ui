@@ -401,15 +401,37 @@ export default function AdminPanel() {
         if (tenant) {
           setIsAuthenticated(true)
           // Load user from admin_users table for role info
-          const { data: adminUser } = await supabase
+          const { data: adminUser, error: adminUserError } = await supabase
             .from("admin_users")
             .select("*")
             .eq("tenant_id", tenantId)
             .eq("auth_user_id", session.user.id)
-            .single()
+            .maybeSingle()
+
+          if (adminUserError) {
+            console.error("Error loading admin user:", adminUserError)
+          }
 
           if (adminUser) {
             setCurrentUser(adminUser)
+          } else {
+            // Create admin_users record if it doesn't exist
+            const { data: newAdminUser } = await supabase
+              .from("admin_users")
+              .insert([{
+                tenant_id: tenantId,
+                auth_user_id: session.user.id,
+                username: session.user.email?.split('@')[0] || 'admin',
+                display_name: session.user.user_metadata?.owner_name || session.user.email,
+                role: 'admin',
+                password_hash: ''
+              }])
+              .select()
+              .single()
+            
+            if (newAdminUser) {
+              setCurrentUser(newAdminUser)
+            }
           }
         }
       }
@@ -464,12 +486,16 @@ export default function AdminPanel() {
       }
 
       // Load or create admin_users record for role info
-      let { data: adminUser } = await supabase
+      let { data: adminUser, error: adminUserError } = await supabase
         .from("admin_users")
         .select("*")
         .eq("tenant_id", tenantId)
         .eq("auth_user_id", authData.user.id)
-        .single()
+        .maybeSingle()
+
+      if (adminUserError) {
+        console.warn("Error loading admin user:", adminUserError)
+      }
 
       // If no admin_users record, create one (owner role)
       if (!adminUser) {
@@ -484,9 +510,13 @@ export default function AdminPanel() {
             password_hash: '' // Not used anymore
           }])
           .select()
-          .single()
+          .maybeSingle()
 
-        if (!createError && newAdminUser) {
+        if (createError) {
+          console.error("Error creating admin user:", createError)
+        }
+
+        if (newAdminUser) {
           adminUser = newAdminUser
         }
       }
