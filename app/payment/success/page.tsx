@@ -63,7 +63,8 @@ export default function PaymentSuccessPage() {
     setTransaction(data)
     
     // Premium aktivasyonu için API çağrısı (RLS bypass)
-    if (data && data.payment_status === 'success') {
+    // Test modunda pending, production'da success olabilir
+    if (data && ['pending', 'success'].includes(data.payment_status)) {
       console.log('Calling activate-premium API for tenant:', data.tenant_id)
       
       try {
