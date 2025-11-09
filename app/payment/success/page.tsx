@@ -39,12 +39,27 @@ export default function PaymentSuccessPage() {
 
   const loadTransaction = async () => {
     const supabase = createClient()
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('payment_transactions')
-      .select('*, tenants(name, slug, id, subscription_plan)')
+      .select(`
+        *,
+        tenants (
+          name,
+          slug,
+          id,
+          subscription_plan
+        )
+      `)
       .eq('merchant_oid', merchant_oid)
       .single()
 
+    if (error) {
+      console.error('Error loading transaction:', error)
+      setLoading(false)
+      return
+    }
+
+    console.log('Transaction loaded:', data)
     setTransaction(data)
     
     // Premium aktivasyonu için API çağrısı (RLS bypass)

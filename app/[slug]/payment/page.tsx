@@ -127,6 +127,7 @@ export default function PaymentPage() {
       console.log('Response status:', response.status)
       const data = await response.json()
       console.log('Response data:', data)
+      console.log('merchant_oid from response:', data.merchant_oid)
 
       if (!response.ok) {
         throw new Error(data.error || `HTTP ${response.status}`)
@@ -134,10 +135,18 @@ export default function PaymentPage() {
 
       if (data.success && data.iframe_token) {
         // merchant_oid'yi sessionStorage'a kaydet
+        console.log('Saving to sessionStorage:', {
+          merchant_oid: data.merchant_oid,
+          tenant_id: tenant.id
+        })
+        
         if (data.merchant_oid) {
           sessionStorage.setItem('last_payment_merchant_oid', data.merchant_oid)
           sessionStorage.setItem('last_payment_tenant_id', tenant.id)
           console.log('Saved merchant_oid to session:', data.merchant_oid)
+          console.log('Verify saved:', sessionStorage.getItem('last_payment_merchant_oid'))
+        } else {
+          console.error('merchant_oid is missing from response!')
         }
         setPaytrToken(data.iframe_token)
       } else {
