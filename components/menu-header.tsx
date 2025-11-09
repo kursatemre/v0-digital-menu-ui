@@ -46,7 +46,7 @@ export function MenuHeader({ title = "Menümüz", theme }: MenuHeaderProps) {
           .select("*")
           .eq("key", "header")
           .eq("tenant_id", tenantData.id)
-          .single()
+          .maybeSingle()
 
         if (headerData?.value) {
           setHeaderConfig(headerData.value)
