@@ -259,6 +259,7 @@ export default function AdminPanel() {
   const [showProductForm, setShowProductForm] = useState(false)
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [showOrderForm, setShowOrderForm] = useState(false)
+  const [productSearch, setProductSearch] = useState("")
   const [newOrderForm, setNewOrderForm] = useState({
     tableNumber: "",
     customerName: "",
@@ -1781,7 +1782,19 @@ export default function AdminPanel() {
     </div>
   )
 
-  const renderProductsTab = () => (
+  const renderProductsTab = () => {
+    // Filter products based on search
+    const filteredProducts = products.filter((product) => {
+      const searchLower = productSearch.toLowerCase()
+      return (
+        product.name.toLowerCase().includes(searchLower) ||
+        product.description.toLowerCase().includes(searchLower) ||
+        product.name_en?.toLowerCase().includes(searchLower) ||
+        product.description_en?.toLowerCase().includes(searchLower)
+      )
+    })
+
+    return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -1795,6 +1808,22 @@ export default function AdminPanel() {
           <Plus className="w-4 h-4" />
           Yeni Ürün Ekle
         </Button>
+      </div>
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <Input
+          type="text"
+          placeholder="Ürün ara... (ad, açıklama)"
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+          className="max-w-md"
+        />
+        {productSearch && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {filteredProducts.length} ürün bulundu
+          </p>
+        )}
       </div>
 
       {showProductForm && (
@@ -1953,16 +1982,18 @@ export default function AdminPanel() {
         </Card>
       )}
 
-      {products.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Layers className="w-12 h-12 text-muted-foreground mb-2" />
-            <p className="text-lg font-semibold text-muted-foreground">Ürün yok</p>
+            <p className="text-lg font-semibold text-muted-foreground">
+              {productSearch ? "Arama sonucu bulunamadı" : "Ürün yok"}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {products.map((product, index) => (
+          {filteredProducts.map((product, index) => (
             <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               {product.image && (
                 <img
@@ -2025,7 +2056,8 @@ export default function AdminPanel() {
         </div>
       )}
     </div>
-  )
+    )
+  }
 
   const renderCategoriesTab = () => (
     <div>
