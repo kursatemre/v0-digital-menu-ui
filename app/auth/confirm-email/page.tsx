@@ -11,17 +11,6 @@ export default function ConfirmEmailPage() {
   const searchParams = useSearchParams()
   const email = searchParams.get("email")
   const autoConfirmed = searchParams.get("auto_confirmed") === "true"
-  const [resending, setResending] = useState(false)
-  const [resent, setResent] = useState(false)
-
-  const handleResend = async () => {
-    setResending(true)
-    // TODO: Implement resend email logic
-    setTimeout(() => {
-      setResending(false)
-      setResent(true)
-    }, 1000)
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
@@ -77,17 +66,17 @@ export default function ConfirmEmailPage() {
             <p className="text-sm text-muted-foreground text-center">
               E-posta gelmedi mi?
             </p>
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={handleResend}
-              disabled={resending || resent}
-            >
-              {resending ? "Gönderiliyor..." : resent ? "✓ Gönderildi" : "Tekrar Gönder"}
-            </Button>
+            <div className="text-sm text-center space-y-2">
+              <p className="text-muted-foreground">
+                Spam klasörünü kontrol edin veya{" "}
+                <Link href="/auth/resend-confirmation" className="text-primary hover:underline font-medium">
+                  yeni bir aktivasyon e-postası isteyin
+                </Link>
+              </p>
+            </div>
           </div>
 
-          <div className="text-center pt-4">
+          <div className="text-center pt-4 space-y-2">
             <Link href="/" className="inline-flex items-center gap-2 text-sm text-primary hover:underline">
               Ana Sayfaya Dön
               <ArrowRight className="w-4 h-4" />

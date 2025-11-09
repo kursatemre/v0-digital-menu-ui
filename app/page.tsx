@@ -652,6 +652,25 @@ export default function LandingPage() {
               Giriş Yap
             </Button>
           </div>
+          <div className="border-t pt-4 space-y-2 text-center text-sm">
+            <Link
+              href="/auth/forgot-password"
+              className="text-primary hover:underline inline-block"
+              onClick={() => setRestaurantLoginOpen(false)}
+            >
+              Şifremi unuttum
+            </Link>
+            <div className="text-muted-foreground">
+              E-posta onayı alamadınız mı?{" "}
+              <Link
+                href="/auth/resend-confirmation"
+                className="text-primary hover:underline"
+                onClick={() => setRestaurantLoginOpen(false)}
+              >
+                Tekrar gönder
+              </Link>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
