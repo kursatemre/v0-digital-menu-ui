@@ -48,57 +48,82 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
 
   useEffect(() => {
     if (!slug) return
-    
+
     const fetchData = async () => {
-      // Get tenant
-      const { data: tenant } = await supabase
-        .from("tenants")
-        .select("id")
-        .eq("slug", slug)
-        .single()
+      try {
+        // Get tenant
+        const { data: tenant, error: tenantError } = await supabase
+          .from("tenants")
+          .select("id")
+          .eq("slug", slug)
+          .single()
 
-      if (!tenant) return
-      setTenantId(tenant.id)
+        if (tenantError) {
+          console.error("Tenant error:", tenantError)
+          return
+        }
 
-      // Get settings
-      const { data: settingsData } = await supabase
-        .from("settings")
-        .select("restaurant_name, logo_url, currency")
-        .eq("tenant_id", tenant.id)
-        .maybeSingle()
+        if (!tenant) {
+          console.error("Tenant not found")
+          return
+        }
 
-      if (settingsData) setSettings(settingsData)
+        setTenantId(tenant.id)
 
-      // Get categories
-      const { data: categoriesData } = await supabase
-        .from("categories")
-        .select("id, name, display_order")
-        .eq("tenant_id", tenant.id)
-        .order("display_order")
+        // Get settings
+        const { data: settingsData, error: settingsError } = await supabase
+          .from("settings")
+          .select("restaurant_name, logo_url, currency")
+          .eq("tenant_id", tenant.id)
+          .maybeSingle()
 
-      if (categoriesData) setCategories(categoriesData)
+        if (settingsError) {
+          console.error("Settings error:", settingsError)
+        } else if (settingsData) {
+          setSettings(settingsData)
+        }
 
-      // Get products
-      const { data: productsData } = await supabase
-        .from("products")
-        .select("id, name, description, price, image_url, category_id")
-        .eq("tenant_id", tenant.id)
-        .eq("is_available", true)
-        .order("display_order")
+        // Get categories
+        const { data: categoriesData, error: categoriesError } = await supabase
+          .from("categories")
+          .select("id, name, display_order")
+          .eq("tenant_id", tenant.id)
+          .order("display_order")
 
-      if (productsData) setProducts(productsData)
+        if (categoriesError) {
+          console.error("Categories error:", categoriesError)
+        } else if (categoriesData) {
+          setCategories(categoriesData)
+        }
 
-      // Generate QR code
-      const menuUrl = `${window.location.origin}/${slug}`
-      const qrCode = await QRCodeLib.toDataURL(menuUrl, {
-        width: 200,
-        margin: 2,
-        color: {
-          dark: "#1e293b",
-          light: "#ffffff",
-        },
-      })
-      setQrCodeUrl(qrCode)
+        // Get products
+        const { data: productsData, error: productsError } = await supabase
+          .from("products")
+          .select("id, name, description, price, image_url, category_id")
+          .eq("tenant_id", tenant.id)
+          .eq("is_available", true)
+          .order("display_order")
+
+        if (productsError) {
+          console.error("Products error:", productsError)
+        } else if (productsData) {
+          setProducts(productsData)
+        }
+
+        // Generate QR code
+        const menuUrl = `${window.location.origin}/${slug}`
+        const qrCode = await QRCodeLib.toDataURL(menuUrl, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: "#1e293b",
+            light: "#ffffff",
+          },
+        })
+        setQrCodeUrl(qrCode)
+      } catch (error) {
+        console.error("Data fetch error:", error)
+      }
     }
 
     fetchData()
