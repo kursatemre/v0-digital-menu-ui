@@ -17,25 +17,25 @@ interface Product {
   name: string
   description: string | null
   price: number
-  image_url: string | null
+  image: string | null
   category_id: string
 }
 
-interface Settings {
-  restaurant_name: string
-  logo_url: string | null
-  currency: string
+interface Tenant {
+  id: string
+  business_name: string
 }
 
 export default function TVMenuPage({ params }: { params: Promise<{ slug: string }> }) {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
-  const [settings, setSettings] = useState<Settings | null>(null)
+  const [tenant, setTenant] = useState<Tenant | null>(null)
+  const [logo, setLogo] = useState<string>("")
+  const [currency, setCurrency] = useState<string>("₺")
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0)
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
-  const [tenantId, setTenantId] = useState<string | null>(null)
   const [slug, setSlug] = useState<string>("")
-  
+
   const supabase = createClient()
 
   useEffect(() => {
@@ -52,9 +52,9 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
     const fetchData = async () => {
       try {
         // Get tenant
-        const { data: tenant, error: tenantError } = await supabase
+        const { data: tenantData, error: tenantError } = await supabase
           .from("tenants")
-          .select("id")
+          .select("id, business_name")
           .eq("slug", slug)
           .single()
 
@@ -63,31 +63,42 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
           return
         }
 
-        if (!tenant) {
+        if (!tenantData) {
           console.error("Tenant not found")
           return
         }
 
-        setTenantId(tenant.id)
+        setTenant(tenantData)
 
-        // Get settings
-        const { data: settingsData, error: settingsError } = await supabase
+        // Get header settings (contains logo)
+        const { data: headerSettings } = await supabase
           .from("settings")
-          .select("restaurant_name, logo_url, currency")
-          .eq("tenant_id", tenant.id)
+          .select("value")
+          .eq("key", "header")
+          .eq("tenant_id", tenantData.id)
           .maybeSingle()
 
-        if (settingsError) {
-          console.error("Settings error:", settingsError)
-        } else if (settingsData) {
-          setSettings(settingsData)
+        if (headerSettings?.value?.logo) {
+          setLogo(headerSettings.value.logo)
+        }
+
+        // Get theme settings (contains currency)
+        const { data: themeSettings } = await supabase
+          .from("settings")
+          .select("value")
+          .eq("key", "theme")
+          .eq("tenant_id", tenantData.id)
+          .maybeSingle()
+
+        if (themeSettings?.value?.currency) {
+          setCurrency(themeSettings.value.currency)
         }
 
         // Get categories
         const { data: categoriesData, error: categoriesError } = await supabase
           .from("categories")
           .select("id, name, display_order")
-          .eq("tenant_id", tenant.id)
+          .eq("tenant_id", tenantData.id)
           .order("display_order")
 
         if (categoriesError) {
@@ -99,8 +110,8 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         // Get products
         const { data: productsData, error: productsError } = await supabase
           .from("products")
-          .select("id, name, description, price, image_url, category_id")
-          .eq("tenant_id", tenant.id)
+          .select("id, name, description, price, image, category_id")
+          .eq("tenant_id", tenantData.id)
           .eq("is_available", true)
           .order("display_order")
 
@@ -140,7 +151,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
     return () => clearInterval(interval)
   }, [categories.length])
 
-  if (!settings || categories.length === 0) {
+  if (!tenant || categories.length === 0) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-white text-2xl">Yükleniyor...</div>
@@ -152,7 +163,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
   const categoryProducts = products.filter((p) => p.category_id === currentCategory.id)
 
   // Get category image (first product with image in category)
-  const categoryImage = categoryProducts.find((p) => p.image_url)?.image_url
+  const categoryImage = categoryProducts.find((p) => p.image)?.image
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white overflow-hidden">
@@ -160,10 +171,10 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
       <header className="absolute top-0 left-0 right-0 z-10 bg-black/30 backdrop-blur-md border-b border-white/10">
         <div className="container mx-auto px-8 py-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            {settings.logo_url && (
+            {logo && (
               <Image
-                src={settings.logo_url}
-                alt={settings.restaurant_name}
+                src={logo}
+                alt={tenant.business_name}
                 width={60}
                 height={60}
                 className="rounded-lg"
@@ -171,7 +182,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
             )}
             <div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-slate-300 bg-clip-text text-transparent">
-                {settings.restaurant_name}
+                {tenant.business_name}
               </h1>
               <p className="text-slate-400 text-sm">Dijital Menü</p>
             </div>
@@ -220,7 +231,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
                 <h2 className="text-6xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-blue-500 bg-clip-text text-transparent animate-gradient-x">
                   {currentCategory.name}
                 </h2>
-                
+
                 {/* Category Indicators */}
                 <div className="flex justify-center gap-2 mt-6">
                   {categories.map((_, index) => (
@@ -256,10 +267,10 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
                     }}
                   >
                     {/* Product Image */}
-                    {product.image_url && (
+                    {product.image && (
                       <div className="relative h-48 rounded-xl overflow-hidden mb-4 shadow-lg">
                         <Image
-                          src={product.image_url}
+                          src={product.image}
                           alt={product.name}
                           fill
                           className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -272,7 +283,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
                       <h4 className="text-xl font-bold text-white mb-2 group-hover:text-blue-400 transition-colors">
                         {product.name}
                       </h4>
-                      
+
                       {product.description && (
                         <p className="text-sm text-slate-400 mb-3 line-clamp-2">
                           {product.description}
@@ -282,7 +293,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
                       {/* Price */}
                       <div className="flex items-center justify-between pt-3 border-t border-white/10">
                         <span className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                          {product.price} {settings.currency}
+                          {product.price} {currency}
                         </span>
                       </div>
                     </div>
