@@ -4,26 +4,32 @@
 -- 2. No sensitive information (payments, admin data) is accessible
 -- 3. RLS still protects write operations
 
+-- Drop existing policies if they exist
+DROP POLICY IF EXISTS "Allow anonymous read access to tenants" ON tenants;
+DROP POLICY IF EXISTS "Allow anonymous read access to settings" ON settings;
+DROP POLICY IF EXISTS "Allow anonymous read access to categories" ON categories;
+DROP POLICY IF EXISTS "Allow anonymous read access to products" ON products;
+
 -- Allow anonymous users to read tenants (needed to find restaurant by slug)
-CREATE POLICY IF NOT EXISTS "Allow anonymous read access to tenants"
+CREATE POLICY "Allow anonymous read access to tenants"
 ON tenants FOR SELECT
 TO anon
 USING (true);
 
 -- Allow anonymous users to read settings (restaurant name, logo, currency)
-CREATE POLICY IF NOT EXISTS "Allow anonymous read access to settings"
+CREATE POLICY "Allow anonymous read access to settings"
 ON settings FOR SELECT
 TO anon
 USING (true);
 
 -- Allow anonymous users to read categories
-CREATE POLICY IF NOT EXISTS "Allow anonymous read access to categories"
+CREATE POLICY "Allow anonymous read access to categories"
 ON categories FOR SELECT
 TO anon
 USING (true);
 
 -- Allow anonymous users to read available products
-CREATE POLICY IF NOT EXISTS "Allow anonymous read access to products"
+CREATE POLICY "Allow anonymous read access to products"
 ON products FOR SELECT
 TO anon
 USING (is_available = true);
