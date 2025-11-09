@@ -34,10 +34,27 @@ export default function ResetPasswordPage() {
       const error_code = hashParams.get("error_code") || queryParams.get("error_code")
       const error_description = hashParams.get("error_description") || queryParams.get("error_description")
 
+      console.log("Reset password debug:", {
+        accessToken: !!accessToken,
+        type,
+        error_code,
+        error_description,
+        fullUrl: window.location.href
+      })
+
       // Check for errors first
       if (error_code || error_description) {
         setIsValidToken(false)
-        setErrorMessage(error_description || "Bir hata oluştu")
+
+        // Provide user-friendly error messages
+        if (error_code === "otp_expired" || error_description?.includes("expired")) {
+          setErrorMessage("Şifre sıfırlama bağlantısının süresi dolmuş. Lütfen yeni bir şifre sıfırlama talebi oluşturun.")
+        } else if (error_code === "access_denied") {
+          setErrorMessage("Şifre sıfırlama bağlantısı geçersiz veya zaten kullanılmış. Lütfen yeni bir talep oluşturun.")
+        } else {
+          setErrorMessage(error_description || "Bir hata oluştu. Lütfen yeni bir şifre sıfırlama talebi oluşturun.")
+        }
+
         setCheckingToken(false)
         return
       }
@@ -52,6 +69,7 @@ export default function ResetPasswordPage() {
       const { data: { user }, error } = await supabase.auth.getUser(accessToken)
 
       if (error || !user) {
+        console.error("Token verification error:", error)
         setIsValidToken(false)
         setErrorMessage("Geçersiz veya süresi dolmuş şifre sıfırlama bağlantısı")
       } else {
@@ -145,18 +163,28 @@ export default function ResetPasswordPage() {
           <CardContent className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="space-y-2 text-sm text-red-800">
-                <p>Aşağıdaki adımları deneyebilirsiniz:</p>
-                <ul className="list-disc list-inside space-y-1 ml-2">
-                  <li>Yeni bir şifre sıfırlama bağlantısı isteyin</li>
-                  <li>E-postanızdaki en son gelen linki kullanın</li>
-                  <li>Destek ekibi ile iletişime geçin</li>
-                </ul>
+                <p className="font-medium">⏰ Bu bağlantının süresi dolmuş veya zaten kullanılmış</p>
+                <p className="mt-2">Şifre sıfırlama bağlantıları güvenlik nedeniyle 1 saat geçerlidir ve tek kullanımlıktır.</p>
               </div>
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="space-y-2 text-sm text-blue-800">
+                <p className="font-medium">✨ Çözüm:</p>
+                <ol className="list-decimal list-inside space-y-1 ml-2">
+                  <li>Aşağıdaki butona tıklayın</li>
+                  <li>E-posta adresinizi tekrar girin</li>
+                  <li>Gelen kutunuzu kontrol edin</li>
+                  <li>Yeni gelen linke hemen tıklayın (1 saat geçerli)</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 pt-2">
               <Link href="/auth/forgot-password">
-                <Button className="w-full">Yeni Bağlantı İste</Button>
+                <Button className="w-full" size="lg">
+                  🔑 Yeni Şifre Sıfırlama Bağlantısı İste
+                </Button>
               </Link>
               <Link href="/">
                 <Button variant="outline" className="w-full">
