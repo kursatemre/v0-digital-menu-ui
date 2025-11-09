@@ -33,6 +33,7 @@ export default function PaymentPage() {
   const [processing, setProcessing] = useState(false)
   const [paytrToken, setPaytrToken] = useState<string | null>(null)
   const [selectedPlan, setSelectedPlan] = useState<PlanType>("monthly")
+  const [isFormValid, setIsFormValid] = useState(false)
 
   // Billing information
   const [billingInfo, setBillingInfo] = useState({
@@ -47,6 +48,71 @@ export default function PaymentPage() {
   })
 
   const supabase = createClient()
+  
+  // Form validation check
+  useEffect(() => {
+    const isValid = billingInfo.fullName.trim() !== "" &&
+                    billingInfo.email.trim() !== "" &&
+                    billingInfo.phone.trim() !== "" &&
+                    billingInfo.address.trim() !== ""
+    setIsFormValid(isValid)
+  }, [billingInfo])
+  
+  // Auto-load PayTR iframe when form is valid
+  useEffect(() => {
+    if (isFormValid && !paytrToken && !processing && tenant) {
+      loadPaytrIframe()
+    }
+  }, [isFormValid, tenant])
+  
+  const loadPaytrIframe = async () => {
+    setProcessing(true)
+    
+    try {
+      const amount = selectedPlan === "monthly" ? discountedFirstMonth : yearlyPrice
+      const planName = selectedPlan === "monthly"
+        ? "Premium Abonelik - Aylık (İlk Ay %50 İndirim)"
+        : "Premium Abonelik - Yıllık (2 Ay Bedava)"
+
+      console.log('Auto-loading PayTR iframe:', {
+        tenant_id: tenant.id,
+        amount,
+        plan_type: selectedPlan,
+      })
+
+      const response = await fetch('/api/paytr/create-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tenant_id: tenant.id,
+          user_name: billingInfo.fullName,
+          user_email: billingInfo.email,
+          user_phone: billingInfo.phone,
+          user_address: `${billingInfo.address}, ${billingInfo.city} ${billingInfo.zipCode}`,
+          amount,
+          plan_type: selectedPlan,
+          plan_name: planName,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success && data.iframe_token) {
+        if (data.merchant_oid) {
+          sessionStorage.setItem('last_payment_merchant_oid', data.merchant_oid)
+          sessionStorage.setItem('last_payment_tenant_id', tenant.id)
+        }
+        setPaytrToken(data.iframe_token)
+      } else {
+        throw new Error(data.error || 'Token alınamadı')
+      }
+    } catch (error: any) {
+      console.error('PayTR iframe load error:', error)
+      setPaytrToken(null)
+    } finally {
+      setProcessing(false)
+    }
+  }
 
   // Calculate prices
   const monthlyPrice = pricing?.premium_price_try || 299
@@ -82,153 +148,12 @@ export default function PaymentPage() {
     loadData()
   }, [slug, router, supabase])
 
-  const handlePayment = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    // Validation
-    if (!billingInfo.fullName || !billingInfo.email || !billingInfo.phone || !billingInfo.address) {
-      alert("Lütfen tüm zorunlu alanları doldurun")
-      return
-    }
-
-    setProcessing(true)
-
-    try {
-      const amount = selectedPlan === "monthly" ? discountedFirstMonth : yearlyPrice
-      const planName = selectedPlan === "monthly"
-        ? "Premium Abonelik - Aylık (İlk Ay %50 İndirim)"
-        : "Premium Abonelik - Yıllık (2 Ay Bedava)"
-
-      console.log('Payment request data:', {
-        tenant_id: tenant.id,
-        user_name: billingInfo.fullName,
-        user_email: billingInfo.email,
-        user_phone: billingInfo.phone,
-        user_address: `${billingInfo.address}, ${billingInfo.city} ${billingInfo.zipCode}`,
-        amount,
-        plan_type: selectedPlan,
-      })
-
-      const response = await fetch('/api/paytr/create-payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenant_id: tenant.id,
-          user_name: billingInfo.fullName,
-          user_email: billingInfo.email,
-          user_phone: billingInfo.phone,
-          user_address: `${billingInfo.address}, ${billingInfo.city} ${billingInfo.zipCode}`,
-          amount,
-          plan_type: selectedPlan,
-          plan_name: planName,
-        }),
-      })
-
-      console.log('Response status:', response.status)
-      const data = await response.json()
-      console.log('Response data:', data)
-      console.log('merchant_oid from response:', data.merchant_oid)
-
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}`)
-      }
-
-      if (data.success && data.iframe_token) {
-        // merchant_oid'yi sessionStorage'a kaydet
-        console.log('Saving to sessionStorage:', {
-          merchant_oid: data.merchant_oid,
-          tenant_id: tenant.id
-        })
-        
-        if (data.merchant_oid) {
-          sessionStorage.setItem('last_payment_merchant_oid', data.merchant_oid)
-          sessionStorage.setItem('last_payment_tenant_id', tenant.id)
-          console.log('Saved merchant_oid to session:', data.merchant_oid)
-          console.log('Verify saved:', sessionStorage.getItem('last_payment_merchant_oid'))
-        } else {
-          console.error('merchant_oid is missing from response!')
-        }
-        // Direkt iframe göster - processing state devam etsin
-        setPaytrToken(data.iframe_token)
-      } else {
-        throw new Error(data.error || 'Token alınamadı')
-      }
-    } catch (error: any) {
-      console.error('Payment error:', error)
-      alert(`Ödeme Hatası: ${error.message || "Ödeme oluşturulamadı. Lütfen tekrar deneyin."}`)
-      setProcessing(false)
-      setPaytrToken(null)
-    }
-  }
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-slate-100">
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-muted-foreground">Yükleniyor...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // PayTR iframe view - Full screen payment page
-  if (paytrToken) {
-    return (
-      <div className="fixed inset-0 bg-white z-50 flex flex-col">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-primary to-purple-600 text-white px-4 py-4 shadow-lg">
-          <div className="max-w-7xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="w-6 h-6" />
-              <div>
-                <h1 className="text-xl font-bold">Güvenli Ödeme</h1>
-                <p className="text-xs opacity-90">PayTR ile 256-bit SSL şifreli ödeme</p>
-              </div>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                if (confirm("Ödeme işlemini iptal etmek istediğinize emin misiniz?")) {
-                  setPaytrToken(null)
-                  setProcessing(false)
-                }
-              }}
-              className="text-white hover:bg-white/20"
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              İptal
-            </Button>
-          </div>
-        </div>
-
-        {/* PayTR Iframe */}
-        <div className="flex-1 overflow-hidden">
-          <iframe
-            src={`https://www.paytr.com/odeme/guvenli/${paytrToken}`}
-            className="w-full h-full border-0"
-            title="PayTR Güvenli Ödeme"
-            allow="payment"
-          />
-        </div>
-
-        {/* Footer Info */}
-        <div className="bg-slate-50 border-t px-4 py-3">
-          <div className="max-w-7xl mx-auto flex items-center justify-center gap-6 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Shield className="w-3 h-3" />
-              <span>PCI-DSS Sertifikalı</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <CreditCard className="w-3 h-3" />
-              <span>Kart bilgileriniz saklanmaz</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3" />
-              <span>256-bit SSL Şifreleme</span>
-            </div>
-          </div>
         </div>
       </div>
     )
@@ -385,7 +310,7 @@ export default function PaymentPage() {
                 <CardDescription>Güvenli ödeme ile hemen başlayın</CardDescription>
               </CardHeader>
               <CardContent>
-                <form onSubmit={handlePayment} className="space-y-6">
+                <div className="space-y-6">
                   {/* Personal Information */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">Kişisel Bilgiler</h3>
@@ -539,36 +464,69 @@ export default function PaymentPage() {
                     </div>
                   </div>
 
-                  {/* Submit Button */}
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="w-full text-lg py-6"
-                    disabled={processing}
-                  >
-                    {processing ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        İşleniyor...
-                      </>
-                    ) : (
-                      <>
-                        <Shield className="w-5 h-5 mr-2" />
-                        Güvenli Ödeme Sayfasına Geç
-                      </>
-                    )}
-                  </Button>
+                  {/* PayTR Iframe - Shows when form is valid */}
+                  {isFormValid && paytrToken && (
+                    <div className="space-y-4 pt-6 border-t">
+                      <div className="flex items-center justify-center gap-2 text-primary mb-4">
+                        <Shield className="w-5 h-5" />
+                        <h3 className="text-lg font-semibold">Güvenli Ödeme</h3>
+                      </div>
+                      <div className="border-2 border-primary/20 rounded-lg overflow-hidden shadow-lg">
+                        <iframe
+                          src={`https://www.paytr.com/odeme/guvenli/${paytrToken}`}
+                          className="w-full border-0"
+                          style={{ minHeight: "600px" }}
+                          title="PayTR Güvenli Ödeme"
+                          allow="payment"
+                        />
+                      </div>
+                      <div className="flex items-center justify-center gap-6 text-xs text-muted-foreground bg-slate-50 p-3 rounded-lg">
+                        <div className="flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          <span>PCI-DSS Sertifikalı</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <CreditCard className="w-3 h-3" />
+                          <span>Kart bilgileriniz saklanmaz</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3" />
+                          <span>256-bit SSL</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
-                  <div className="space-y-2">
-                    <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      PayTR ile 256-bit SSL şifreli güvenli ödeme
-                    </p>
-                    <p className="text-xs text-center text-muted-foreground">
-                      Kart bilgileriniz saklanmaz. PCI-DSS sertifikalı ödeme altyapısı.
-                    </p>
-                  </div>
-                </form>
+                  {/* Loading state when form is valid but iframe not loaded yet */}
+                  {isFormValid && !paytrToken && processing && (
+                    <div className="space-y-4 pt-6 border-t">
+                      <div className="flex flex-col items-center justify-center py-12 gap-4">
+                        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+                        <p className="text-muted-foreground">Ödeme sayfası hazırlanıyor...</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Info message when form is incomplete */}
+                  {!isFormValid && (
+                    <div className="space-y-2 pt-6 border-t">
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+                        <p className="text-sm text-blue-800">
+                          <strong>ℹ️ Bilgi:</strong> Formu doldurun, ödeme ekranı otomatik olarak aşağıda görünecek
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs text-center text-muted-foreground flex items-center justify-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          PayTR ile 256-bit SSL şifreli güvenli ödeme
+                        </p>
+                        <p className="text-xs text-center text-muted-foreground">
+                          Kart bilgileriniz saklanmaz. PCI-DSS sertifikalı ödeme altyapısı.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </CardContent>
             </Card>
 
