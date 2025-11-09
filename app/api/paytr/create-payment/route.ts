@@ -61,37 +61,46 @@ export async function POST(request: Request) {
     const merchant_ok_url = `${baseUrl}/payment/success`
     const merchant_fail_url = `${baseUrl}/payment/failed`
 
+    // PayTR API parametreleri
+    const user_ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
+    const payment_amount = (body.amount * 100).toFixed(0) // Kuruş cinsinden
+    const no_installment = '0'
+    const max_installment = '0'
+    const currency = 'TRY'
+    const test_mode = '1'
+
     // Hash oluştur (PayTR güvenlik)
-    const hashStr = `${MERCHANT_ID}${body.user_email}${merchant_oid}${(body.amount * 100).toFixed(0)}${user_basket}no_installment0${body.amount.toFixed(2)}TRY`
-    const paytr_token = hashStr + MERCHANT_SALT
-    const token = crypto.createHmac('sha256', MERCHANT_KEY).update(paytr_token).digest('base64')
+    // Format: merchant_id + user_ip + merchant_oid + email + payment_amount + user_basket + no_installment + max_installment + currency + test_mode + merchant_salt
+    const hashStr = `${MERCHANT_ID}${user_ip}${merchant_oid}${body.user_email}${payment_amount}${user_basket}${no_installment}${max_installment}${currency}${test_mode}${MERCHANT_SALT}`
+    const token = crypto.createHmac('sha256', MERCHANT_KEY).update(hashStr).digest('base64')
 
     console.log('Hash created:', {
       merchant_oid,
-      amount_in_kurus: (body.amount * 100).toFixed(0),
+      user_ip,
+      payment_amount,
       token_preview: token.substring(0, 20) + '...'
     })
 
     // PayTR API isteği
     const paytrParams = new URLSearchParams({
       merchant_id: MERCHANT_ID,
-      user_ip: request.headers.get('x-forwarded-for') || '127.0.0.1',
+      user_ip: user_ip,
       merchant_oid: merchant_oid,
       email: body.user_email,
-      payment_amount: (body.amount * 100).toFixed(0), // Kuruş cinsinden
+      payment_amount: payment_amount,
       paytr_token: token,
       user_basket: user_basket,
-      debug_on: '1', // Test modu
-      no_installment: '0',
-      max_installment: '0',
+      debug_on: '1',
+      no_installment: no_installment,
+      max_installment: max_installment,
       user_name: body.user_name,
       user_address: body.user_address,
       user_phone: body.user_phone,
       merchant_ok_url: merchant_ok_url,
       merchant_fail_url: merchant_fail_url,
       timeout_limit: '30',
-      currency: 'TRY',
-      test_mode: '1', // Test modu: 1 (canlıda 0 olacak)
+      currency: currency,
+      test_mode: test_mode,
       lang: 'tr'
     })
 
