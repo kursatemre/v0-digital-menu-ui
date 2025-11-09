@@ -9,14 +9,29 @@ import Link from 'next/link'
 
 export default function PaymentSuccessPage() {
   const searchParams = useSearchParams()
-  const merchant_oid = searchParams.get('merchant_oid')
+  const merchant_oid_param = searchParams.get('merchant_oid')
   const [transaction, setTransaction] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  
+  // merchant_oid'yi URL'den veya sessionStorage'dan al
+  const merchant_oid = merchant_oid_param || (typeof window !== 'undefined' ? sessionStorage.getItem('last_payment_merchant_oid') : null)
+  const tenant_id = typeof window !== 'undefined' ? sessionStorage.getItem('last_payment_tenant_id') : null
 
   useEffect(() => {
-    console.log('Payment success page loaded', { merchant_oid, searchParams: Object.fromEntries(searchParams.entries()) })
+    console.log('Payment success page loaded', { 
+      merchant_oid_param, 
+      merchant_oid_from_session: typeof window !== 'undefined' ? sessionStorage.getItem('last_payment_merchant_oid') : null,
+      final_merchant_oid: merchant_oid,
+      searchParams: Object.fromEntries(searchParams.entries()) 
+    })
+    
     if (merchant_oid) {
       loadTransaction()
+      // Temizle
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('last_payment_merchant_oid')
+        sessionStorage.removeItem('last_payment_tenant_id')
+      }
     } else {
       setLoading(false)
     }

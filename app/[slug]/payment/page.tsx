@@ -133,6 +133,12 @@ export default function PaymentPage() {
       }
 
       if (data.success && data.iframe_token) {
+        // merchant_oid'yi sessionStorage'a kaydet
+        if (data.merchant_oid) {
+          sessionStorage.setItem('last_payment_merchant_oid', data.merchant_oid)
+          sessionStorage.setItem('last_payment_tenant_id', tenant.id)
+          console.log('Saved merchant_oid to session:', data.merchant_oid)
+        }
         setPaytrToken(data.iframe_token)
       } else {
         throw new Error(data.error || 'Token alınamadı')
