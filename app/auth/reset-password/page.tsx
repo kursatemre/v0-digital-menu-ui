@@ -25,21 +25,27 @@ export default function ResetPasswordPage() {
   // Check if there's a valid access token in the URL
   useEffect(() => {
     const checkToken = async () => {
-      // Try both hash and query params (Supabase can use either)
+      // Get all URL parameters
       const hashParams = new URLSearchParams(window.location.hash.substring(1))
       const queryParams = new URLSearchParams(window.location.search)
 
-      const accessToken = hashParams.get("access_token") || queryParams.get("access_token")
-      const type = hashParams.get("type") || queryParams.get("type")
+      const token = queryParams.get("token")
+      const type = queryParams.get("type")
+      const access_token = hashParams.get("access_token") || queryParams.get("access_token")
+      const refresh_token = hashParams.get("refresh_token") || queryParams.get("refresh_token")
       const error_code = hashParams.get("error_code") || queryParams.get("error_code")
       const error_description = hashParams.get("error_description") || queryParams.get("error_description")
 
       console.log("Reset password debug:", {
-        accessToken: !!accessToken,
+        hasToken: !!token,
+        hasAccessToken: !!access_token,
+        hasRefreshToken: !!refresh_token,
         type,
         error_code,
         error_description,
-        fullUrl: window.location.href
+        fullUrl: window.location.href,
+        hash: window.location.hash,
+        search: window.location.search
       })
 
       // Check for errors first
@@ -59,22 +65,74 @@ export default function ResetPasswordPage() {
         return
       }
 
-      if (!accessToken || type !== "recovery") {
-        setIsValidToken(false)
-        setCheckingToken(false)
-        return
-      }
+      let user = null
 
-      // Verify the token is valid
-      const { data: { user }, error } = await supabase.auth.getUser(accessToken)
+      // Method 1: If we have access_token (old flow)
+      if (access_token && refresh_token && type === "recovery") {
+        console.log("Using access_token flow for password reset...")
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token,
+          refresh_token
+        })
 
-      if (error || !user) {
-        console.error("Token verification error:", error)
-        setIsValidToken(false)
-        setErrorMessage("Geçersiz veya süresi dolmuş şifre sıfırlama bağlantısı")
-      } else {
+        if (sessionError || !sessionData.user) {
+          console.error("Session error:", sessionError)
+          setIsValidToken(false)
+          setErrorMessage("Geçersiz veya süresi dolmuş şifre sıfırlama bağlantısı")
+          setCheckingToken(false)
+          return
+        }
+
+        user = sessionData.user
         setIsValidToken(true)
       }
+      // Method 2: If we have token (PKCE flow)
+      else if (token && type === "recovery") {
+        console.log("Using PKCE token flow for password reset...")
+        const { data, error } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'recovery'
+        })
+
+        if (error) {
+          console.error("OTP verification error:", error)
+          setIsValidToken(false)
+          setErrorMessage(`Şifre sıfırlama başarısız: ${error.message}`)
+          setCheckingToken(false)
+          return
+        }
+
+        if (!data.user) {
+          setIsValidToken(false)
+          setErrorMessage("Kullanıcı bilgisi alınamadı.")
+          setCheckingToken(false)
+          return
+        }
+
+        user = data.user
+        setIsValidToken(true)
+      }
+      // Method 3: Check if there's already a session
+      else {
+        console.log("Checking existing session for password reset...")
+        const { data: { session }, error: sessionCheckError } = await supabase.auth.getSession()
+        
+        if (sessionCheckError || !session?.user) {
+          console.error("No valid recovery method found")
+          setIsValidToken(false)
+          setErrorMessage("Geçersiz şifre sıfırlama bağlantısı. Lütfen yeni bir talep oluşturun.")
+          setCheckingToken(false)
+          return
+        }
+
+        user = session.user
+        setIsValidToken(true)
+      }
+
+      if (user) {
+        console.log("Password reset session established for user:", user.id)
+      }
+
       setCheckingToken(false)
     }
 
