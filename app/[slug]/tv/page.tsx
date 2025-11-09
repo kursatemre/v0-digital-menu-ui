@@ -15,12 +15,12 @@ interface Product {
   name: string
   description: string | null
   price: number
-  image_url: string | null
+  image: string | null
   category_id: string
 }
 
 interface Settings {
-  restaurant_name: string
+  business_name: string
   logo_url: string | null
   currency: string
 }
@@ -30,9 +30,9 @@ const MenuItem = ({ item, currency }: { item: Product; currency: string }) => (
   <div className="flex flex-col items-center justify-start text-white p-2">
     {/* Product Image */}
     <div className="w-full h-24 relative mb-2 rounded-lg overflow-hidden bg-gray-800/50">
-      {item.image_url ? (
+      {item.image ? (
         <Image 
-          src={item.image_url} 
+          src={item.image} 
           alt={item.name} 
           fill
           className="object-cover"
@@ -85,20 +85,37 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         // Get tenant
         const { data: tenantData } = await supabase
           .from("tenants")
-          .select("id")
+          .select("id, business_name")
           .eq("slug", slug)
           .single()
 
         if (!tenantData) return
 
-        // Get settings
-        const { data: settingsData } = await supabase
+        // Get logo from settings
+        const { data: headerSettings } = await supabase
           .from("settings")
-          .select("restaurant_name, logo_url, currency")
+          .select("value")
           .eq("tenant_id", tenantData.id)
+          .eq("key", "header")
           .maybeSingle()
 
-        if (settingsData) setSettings(settingsData)
+        const logoUrl = headerSettings?.value?.logo || null
+
+        // Get currency from settings
+        const { data: themeSettings } = await supabase
+          .from("settings")
+          .select("value")
+          .eq("tenant_id", tenantData.id)
+          .eq("key", "theme")
+          .maybeSingle()
+
+        const currency = themeSettings?.value?.currency || "TL"
+
+        setSettings({
+          business_name: tenantData.business_name,
+          logo_url: logoUrl,
+          currency: currency
+        })
 
         // Get categories
         const { data: categoriesData } = await supabase
@@ -112,7 +129,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
         // Get products
         const { data: productsData } = await supabase
           .from("products")
-          .select("id, name, description, price, image_url, category_id")
+          .select("id, name, description, price, image, category_id")
           .eq("tenant_id", tenantData.id)
           .eq("is_available", true)
           .order("display_order")
@@ -147,7 +164,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
 
   const currentCategory = categories[currentCategoryIndex]
   const categoryProducts = products.filter((p) => p.category_id === currentCategory.id).slice(0, 8)
-  const featuredProduct = categoryProducts.find(p => p.image_url)
+  const featuredProduct = categoryProducts.find(p => p.image)
 
   return (
     // Main Container - Full screen
@@ -171,22 +188,22 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
             <div className="relative h-16 w-full">
               <Image 
                 src={settings.logo_url} 
-                alt={settings.restaurant_name}
+                alt={settings.business_name}
                 fill
                 className="object-contain"
               />
             </div>
           ) : (
-            <p className="text-black font-extrabold text-2xl">{settings.restaurant_name}</p>
+            <p className="text-black font-extrabold text-2xl">{settings.business_name}</p>
           )}
         </div>
 
         {/* Large Promotional Image */}
         <div className="flex flex-col items-center justify-center relative z-10 my-6">
-          {featuredProduct?.image_url && (
+          {featuredProduct?.image && (
             <div className="relative w-72 h-72 mb-4">
               <Image 
-                src={featuredProduct.image_url}
+                src={featuredProduct.image}
                 alt={featuredProduct.name}
                 fill
                 className="object-contain drop-shadow-2xl"
@@ -222,7 +239,7 @@ export default function TVMenuPage({ params }: { params: Promise<{ slug: string 
 
         {/* Contact Footer */}
         <div className="text-right text-white text-xs mt-6 border-t border-gray-700 pt-4">
-          <p>{settings.restaurant_name}</p>
+          <p>{settings.business_name}</p>
           <p className="mt-1 text-gray-400">Online Sipariş: menumgo.digital/{slug}</p>
           
           {/* Category Indicators */}
