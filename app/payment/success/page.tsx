@@ -118,10 +118,18 @@ export default function PaymentSuccessPage() {
           }
 
           // Send payment confirmation email
+          console.log('Checking email data:', {
+            user_email: data.user_email,
+            has_email: !!data.user_email,
+            business_name: updatedTenant?.business_name,
+            amount: data.payment_amount,
+            order_details: data.order_details
+          })
+          
           if (data.user_email) {
             console.log('Sending payment confirmation email to:', data.user_email)
             try {
-              await fetch('/api/send-payment-confirmation', {
+              const emailResponse = await fetch('/api/send-payment-confirmation', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -132,11 +140,14 @@ export default function PaymentSuccessPage() {
                   plan_type: data.order_details?.plan_type || 'monthly'
                 })
               })
-              console.log('Payment confirmation email sent')
+              const emailResult = await emailResponse.json()
+              console.log('Payment confirmation email sent:', emailResult)
             } catch (emailError) {
               console.error('Failed to send email:', emailError)
               // Email hatası ödemeyi etkilemez
             }
+          } else {
+            console.warn('⚠️ No user_email found in payment transaction - email not sent')
           }
         } else {
           console.error('Premium activation failed:', result.error)
