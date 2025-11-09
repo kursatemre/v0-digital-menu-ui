@@ -56,6 +56,16 @@ export default function LandingPage() {
   useEffect(() => {
     loadHeroContent()
     loadPricing()
+    
+    // Check for password reset token in URL
+    const hashParams = new URLSearchParams(window.location.hash.substring(1))
+    const type = hashParams.get("type")
+    
+    if (type === "recovery") {
+      console.log("Password recovery token detected, redirecting to reset password page")
+      // Preserve the hash and redirect to reset password page
+      router.push(`/auth/reset-password${window.location.hash}`)
+    }
   }, [])
 
   const loadPricing = async () => {
