@@ -27,18 +27,28 @@ interface Settings {
   currency: string
 }
 
-export default function TVMenuPage({ params }: { params: { slug: string } }) {
+export default function TVMenuPage({ params }: { params: Promise<{ slug: string }> }) {
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [settings, setSettings] = useState<Settings | null>(null)
   const [currentCategoryIndex, setCurrentCategoryIndex] = useState(0)
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("")
   const [tenantId, setTenantId] = useState<string | null>(null)
+  const [slug, setSlug] = useState<string>("")
   
   const supabase = createClient()
-  const slug = params.slug
 
   useEffect(() => {
+    const initializeSlug = async () => {
+      const resolvedParams = await params
+      setSlug(resolvedParams.slug)
+    }
+    initializeSlug()
+  }, [params])
+
+  useEffect(() => {
+    if (!slug) return
+    
     const fetchData = async () => {
       // Get tenant
       const { data: tenant } = await supabase
