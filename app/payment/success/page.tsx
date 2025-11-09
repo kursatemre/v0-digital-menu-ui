@@ -44,7 +44,7 @@ export default function PaymentSuccessPage() {
       .select(`
         *,
         tenants (
-          name,
+          business_name,
           slug,
           id,
           subscription_plan
@@ -156,7 +156,7 @@ export default function PaymentSuccessPage() {
         {transaction && (
           <>
             <p className="text-gray-600 mb-6">
-              <strong>{transaction.tenants?.name || 'Restoranınız'}</strong> için <strong>Premium Üyelik</strong> aktif edildi.
+              <strong>{transaction.tenants?.business_name || 'Restoranınız'}</strong> için <strong>Premium Üyelik</strong> aktif edildi.
             </p>
 
             <div className="bg-gray-50 rounded-lg p-6 mb-6 text-left">

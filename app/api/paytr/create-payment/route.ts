@@ -58,8 +58,8 @@ export async function POST(request: Request) {
 
     // PayTR callback URLs
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://menumgo.digital'
-    const merchant_ok_url = `${baseUrl}/payment/success`
-    const merchant_fail_url = `${baseUrl}/payment/failed`
+    const merchant_ok_url = `${baseUrl}/payment/success?merchant_oid=${merchant_oid}`
+    const merchant_fail_url = `${baseUrl}/payment/failed?merchant_oid=${merchant_oid}`
 
     // PayTR API parametreleri
     const user_ip = request.headers.get('x-forwarded-for') || '127.0.0.1'
