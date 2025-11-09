@@ -17,21 +17,28 @@ export default function ConfirmPage() {
   useEffect(() => {
     const confirmEmail = async () => {
       try {
-        // Try both hash and query params (Supabase can use either)
+        // Get all URL parameters
         const hashParams = new URLSearchParams(window.location.hash.substring(1))
         const queryParams = new URLSearchParams(window.location.search)
 
+        // Extract parameters
         const token = queryParams.get("token")
         const type = queryParams.get("type")
+        const access_token = hashParams.get("access_token") || queryParams.get("access_token")
+        const refresh_token = hashParams.get("refresh_token") || queryParams.get("refresh_token")
         const error_code = hashParams.get("error_code") || queryParams.get("error_code")
         const error_description = hashParams.get("error_description") || queryParams.get("error_description")
 
         console.log("Confirm email debug:", { 
-          token: !!token, 
+          hasToken: !!token,
+          hasAccessToken: !!access_token,
+          hasRefreshToken: !!refresh_token,
           type, 
           error_code, 
           error_description,
-          fullUrl: window.location.href 
+          fullUrl: window.location.href,
+          hash: window.location.hash,
+          search: window.location.search
         })
 
         // Check for errors first
@@ -42,9 +49,28 @@ export default function ConfirmPage() {
           return
         }
 
-        // Supabase PKCE flow - let Supabase handle the token exchange
-        if (token && type === "signup") {
-          // Verify the token with Supabase
+        let user = null
+
+        // Method 1: If we have access_token (old flow)
+        if (access_token && refresh_token) {
+          console.log("Using access_token flow...")
+          const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+            access_token,
+            refresh_token
+          })
+
+          if (sessionError || !sessionData.user) {
+            console.error("Session error:", sessionError)
+            setStatus("error")
+            setMessage("Oturum oluşturulamadı. Lütfen tekrar deneyin.")
+            return
+          }
+
+          user = sessionData.user
+        }
+        // Method 2: If we have token (PKCE flow)
+        else if (token && type === "signup") {
+          console.log("Using PKCE token flow...")
           const { data, error } = await supabase.auth.verifyOtp({
             token_hash: token,
             type: 'signup'
@@ -53,7 +79,7 @@ export default function ConfirmPage() {
           if (error) {
             console.error("OTP verification error:", error)
             setStatus("error")
-            setMessage("E-posta doğrulama başarısız. Link geçersiz veya süresi dolmuş olabilir.")
+            setMessage(`E-posta doğrulama başarısız: ${error.message}`)
             return
           }
 
@@ -63,57 +89,77 @@ export default function ConfirmPage() {
             return
           }
 
-          const user = data.user
-
-          // Find the tenant by auth_user_id
-          const { data: tenant, error: tenantError } = await supabase
-            .from("tenants")
-            .select("*")
-            .eq("auth_user_id", user.id)
-            .single()
-
-          if (tenantError || !tenant) {
-            console.error("Tenant error:", tenantError)
-            setStatus("error")
-            setMessage("Restoran kaydı bulunamadı. Lütfen destek ekibi ile iletişime geçin.")
-            return
-          }
-
-          // Calculate trial end date (3 days from now)
-          const trialEndDate = new Date()
-          trialEndDate.setDate(trialEndDate.getDate() + 3)
-
-          // Activate the tenant and set trial period
-          const { error: updateError } = await supabase
-            .from("tenants")
-            .update({
-              is_active: true,
-              trial_end_date: trialEndDate.toISOString(),
-              subscription_status: "trial",
-              subscription_plan: "trial",
-            })
-            .eq("id", tenant.id)
-
-          if (updateError) {
-            console.error("Update error:", updateError)
-            setStatus("error")
-            setMessage("Hesap aktifleştirilemedi. Lütfen destek ekibi ile iletişime geçin.")
-            return
-          }
-
-          // Success!
-          setRestaurantSlug(tenant.slug)
-          setStatus("success")
-          setMessage("E-posta adresiniz başarıyla doğrulandı! 3 günlük ücretsiz deneme süreniz başladı.")
-
-          // Redirect to admin panel after 3 seconds
-          setTimeout(() => {
-            router.push(`/${tenant.slug}/admin`)
-          }, 3000)
-        } else {
-          setStatus("error")
-          setMessage("Geçersiz doğrulama linki. Lütfen e-postanızdaki linki kullanın.")
+          user = data.user
         }
+        // Method 3: Check if there's already a session (auto-confirmed)
+        else {
+          console.log("Checking existing session...")
+          const { data: { session }, error: sessionCheckError } = await supabase.auth.getSession()
+          
+          if (sessionCheckError || !session?.user) {
+            console.error("No valid confirmation method found")
+            setStatus("error")
+            setMessage("Geçersiz doğrulama linki. Lütfen e-postanızdaki linki tam olarak kopyalayın.")
+            return
+          }
+
+          user = session.user
+        }
+
+        if (!user) {
+          setStatus("error")
+          setMessage("Kullanıcı doğrulanamadı.")
+          return
+        }
+
+        console.log("User confirmed:", user.id)
+
+        // Find the tenant by auth_user_id
+        const { data: tenant, error: tenantError } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("auth_user_id", user.id)
+          .single()
+
+        if (tenantError || !tenant) {
+          console.error("Tenant error:", tenantError)
+          setStatus("error")
+          setMessage("Restoran kaydı bulunamadı. Lütfen destek ekibi ile iletişime geçin.")
+          return
+        }
+
+        // Calculate trial end date (3 days from now)
+        const trialEndDate = new Date()
+        trialEndDate.setDate(trialEndDate.getDate() + 3)
+
+        // Activate the tenant and set trial period
+        const { error: updateError } = await supabase
+          .from("tenants")
+          .update({
+            is_active: true,
+            trial_end_date: trialEndDate.toISOString(),
+            subscription_status: "trial",
+            subscription_plan: "trial",
+          })
+          .eq("id", tenant.id)
+
+        if (updateError) {
+          console.error("Update error:", updateError)
+          setStatus("error")
+          setMessage("Hesap aktifleştirilemedi. Lütfen destek ekibi ile iletişime geçin.")
+          return
+        }
+
+        // Success!
+        setRestaurantSlug(tenant.slug)
+        setStatus("success")
+        setMessage("E-posta adresiniz başarıyla doğrulandı! 3 günlük ücretsiz deneme süreniz başladı.")
+
+        // Redirect to admin panel after 3 seconds
+        setTimeout(() => {
+          router.push(`/${tenant.slug}/admin`)
+        }, 3000)
+
       } catch (error) {
         console.error("Confirmation error:", error)
         setStatus("error")
