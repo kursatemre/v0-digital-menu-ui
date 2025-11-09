@@ -12,14 +12,24 @@ interface PaymentRequest {
   user_phone: string
   user_address: string
   amount: number
+  plan_type?: string
+  plan_name?: string
 }
 
 export async function POST(request: Request) {
   try {
     const body: PaymentRequest = await request.json()
 
+    console.log('Payment request received:', {
+      tenant_id: body.tenant_id,
+      amount: body.amount,
+      plan_type: body.plan_type,
+      plan_name: body.plan_name
+    })
+
     // Validation
     if (!body.tenant_id || !body.user_name || !body.user_email || !body.user_phone || !body.amount) {
+      console.error('Validation failed:', body)
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -31,12 +41,19 @@ export async function POST(request: Request) {
     const MERCHANT_KEY = process.env.PAYTR_MERCHANT_KEY || 'xxxxxxxxxxxxxx'
     const MERCHANT_SALT = process.env.PAYTR_MERCHANT_SALT || 'xxxxxxxxxxxxxx'
 
+    console.log('PayTR credentials:', {
+      MERCHANT_ID,
+      hasKey: !!MERCHANT_KEY,
+      hasSalt: !!MERCHANT_SALT
+    })
+
     // Benzersiz sipariş ID oluştur
     const merchant_oid = `MENU-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 
     // Sipariş detayları
+    const productName = body.plan_name || 'Premium Abonelik - 1 Aylık'
     const user_basket = JSON.stringify([
-      ['Premium Abonelik - 1 Aylık', body.amount.toFixed(2), 1]
+      [productName, body.amount.toFixed(2), 1]
     ])
 
     // PayTR callback URLs
@@ -48,6 +65,12 @@ export async function POST(request: Request) {
     const hashStr = `${MERCHANT_ID}${body.user_email}${merchant_oid}${(body.amount * 100).toFixed(0)}${user_basket}no_installment0${body.amount.toFixed(2)}TRY`
     const paytr_token = hashStr + MERCHANT_SALT
     const token = crypto.createHmac('sha256', MERCHANT_KEY).update(paytr_token).digest('base64')
+
+    console.log('Hash created:', {
+      merchant_oid,
+      amount_in_kurus: (body.amount * 100).toFixed(0),
+      token_preview: token.substring(0, 20) + '...'
+    })
 
     // PayTR API isteği
     const paytrParams = new URLSearchParams({
@@ -82,6 +105,12 @@ export async function POST(request: Request) {
 
     const paytrData = await paytrResponse.json()
 
+    console.log('PayTR Response:', {
+      status: paytrData.status,
+      reason: paytrData.reason,
+      hasToken: !!paytrData.token
+    })
+
     if (paytrData.status !== 'success') {
       console.error('PayTR Error:', paytrData)
       return NextResponse.json(
@@ -109,8 +138,8 @@ export async function POST(request: Request) {
         user_phone: body.user_phone,
         user_address: body.user_address,
         order_details: {
-          product: 'Premium Abonelik',
-          duration: '1 ay',
+          product: body.plan_name || 'Premium Abonelik',
+          plan_type: body.plan_type || 'monthly',
           amount: body.amount
         }
       })
