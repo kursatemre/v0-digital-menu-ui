@@ -29,7 +29,7 @@ interface Settings {
 const MenuItem = ({ item, currency }: { item: Product; currency: string }) => (
   <div className="flex flex-col items-center justify-start text-white p-2">
     {/* Product Image */}
-    <div className="w-full h-24 relative mb-2 rounded-lg overflow-hidden bg-gray-800/50">
+    <div className="w-full aspect-square relative mb-2 rounded-lg overflow-hidden bg-gray-800/50">
       {item.image ? (
         <Image 
           src={item.image} 
