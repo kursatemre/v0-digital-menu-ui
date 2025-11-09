@@ -170,29 +170,36 @@ export default function ResetPasswordPage() {
     setStatus("loading")
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      console.log("Attempting to update password...")
+      
+      const { data, error } = await supabase.auth.updateUser({
         password: password,
       })
 
+      console.log("Update user response:", { data, error })
+
       if (error) {
         console.error("Password update error:", error)
-        setErrorMessage("Şifre güncellenemedi. Lütfen tekrar deneyin.")
+        setErrorMessage(`Şifre güncellenemedi: ${error.message}`)
         setStatus("error")
       } else {
-        console.log("Password updated successfully")
+        console.log("Password updated successfully, user:", data.user?.email)
         setStatus("success")
         
         // Sign out to ensure fresh login with new password
+        console.log("Signing out...")
         await supabase.auth.signOut()
+        console.log("Sign out complete")
         
         // Redirect to login page after 2 seconds
         setTimeout(() => {
+          console.log("Redirecting to home...")
           router.push("/")
         }, 2000)
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Unexpected error:", error)
-      setErrorMessage("Bir hata oluştu. Lütfen tekrar deneyin.")
+      setErrorMessage(`Bir hata oluştu: ${error.message || 'Bilinmeyen hata'}`)
       setStatus("error")
     }
   }

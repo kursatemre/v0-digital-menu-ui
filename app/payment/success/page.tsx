@@ -32,29 +32,36 @@ export default function PaymentSuccessPage() {
 
     setTransaction(data)
     
-    // Test modunda otomatik premium aktivasyonu (callback gelmiyorsa)
-    if (data && data.payment_status === 'success' && data.tenants?.subscription_plan !== 'premium') {
-      console.log('Activating premium for tenant:', data.tenant_id)
+    // Premium aktivasyonu için API çağrısı (RLS bypass)
+    if (data && data.payment_status === 'success') {
+      console.log('Calling activate-premium API for tenant:', data.tenant_id)
       
-      // Manuel premium aktivasyonu
-      const { error: updateError } = await supabase
-        .from('tenants')
-        .update({
-          subscription_plan: 'premium',
-          subscription_status: 'active',
-          subscription_end_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      try {
+        const response = await fetch('/api/activate-premium', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tenant_id: data.tenant_id,
+            merchant_oid: merchant_oid
+          })
         })
-        .eq('id', data.tenant_id)
-      
-      if (!updateError) {
-        console.log('Premium activated successfully')
-        // Reload transaction to get updated tenant data
-        const { data: updatedData } = await supabase
-          .from('payment_transactions')
-          .select('*, tenants(name, slug, subscription_plan)')
-          .eq('merchant_oid', merchant_oid)
-          .single()
-        setTransaction(updatedData)
+
+        const result = await response.json()
+        
+        if (response.ok && result.success) {
+          console.log('Premium activated successfully')
+          // Reload transaction to get updated tenant data
+          const { data: updatedData } = await supabase
+            .from('payment_transactions')
+            .select('*, tenants(name, slug, subscription_plan)')
+            .eq('merchant_oid', merchant_oid)
+            .single()
+          setTransaction(updatedData)
+        } else {
+          console.error('Premium activation failed:', result.error)
+        }
+      } catch (error) {
+        console.error('Premium activation request failed:', error)
       }
     }
     
