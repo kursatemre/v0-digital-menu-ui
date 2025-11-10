@@ -143,7 +143,7 @@ type Category = {
 }
 
 type Theme = {
-  type?: "modern" | "classic_elegance"
+  type?: "modern" | "classic_elegance" | "modern_takeaway"
   primaryColor: string
   primaryTextColor: string
   secondaryColor: string
@@ -2299,15 +2299,18 @@ export default function AdminPanel() {
             <label className="text-sm font-medium mb-2 block">Aktif Tema</label>
             <select
               value={theme.type || "modern"}
-              onChange={(e) => setTheme({ ...theme, type: e.target.value as "modern" | "classic_elegance" })}
+              onChange={(e) => setTheme({ ...theme, type: e.target.value as "modern" | "classic_elegance" | "modern_takeaway" })}
               className="w-full border rounded px-3 py-2 bg-background"
             >
               <option value="modern">Modern (Kartlı Görünüm)</option>
               <option value="classic_elegance">Klasik Zarafet (Fine Dining)</option>
+              <option value="modern_takeaway">Modern Takeaway (Kahve Dükkanı)</option>
             </select>
             <p className="text-xs text-muted-foreground mt-2">
               {theme.type === "classic_elegance"
                 ? "Tek sayfa, kaydırmalı, zarif menü tasarımı. Elite restoranlara özel."
+                : theme.type === "modern_takeaway"
+                ? "Varyant seçimli, özelleştirilebilir menü. Kahve dükkanları için ideal."
                 : "Kategorilere ayrılmış, kart görünümlü modern menü."}
             </p>
           </div>
@@ -2320,6 +2323,20 @@ export default function AdminPanel() {
                 <li>Tek sayfa, yukarıdan aşağıya kaydırmalı düzen</li>
                 <li>Kategori başlıkları dekoratif çizgilerle ayrılır</li>
                 <li>İlk ürün görseli varsa öne çıkan olarak gösterilir</li>
+                <li>Renk ayarları bu temada kullanılmaz</li>
+              </ul>
+            </div>
+          )}
+
+          {theme.type === "modern_takeaway" && (
+            <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-orange-900 mb-2">☕ Modern Takeaway Teması Hakkında</h4>
+              <ul className="text-xs text-orange-800 space-y-1 list-disc list-inside">
+                <li>Beyaz/krem arka plan üzerine turuncu vurgu rengi (#FF6B35)</li>
+                <li>Varyant sistemi: Küçük/Orta/Büyük beden seçimi</li>
+                <li>Özelleştirme: Süt tipi, şurup, ekstra shot seçenekleri</li>
+                <li>Hızlı ekleme (+) ve detaylı özelleştirme (⚙️) butonları</li>
+                <li>Günün Fırsatları bölümü ile öne çıkan ürünler</li>
                 <li>Renk ayarları bu temada kullanılmaz</li>
               </ul>
             </div>
