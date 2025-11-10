@@ -3,6 +3,8 @@
 import { useEffect } from "react"
 import { X } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useLanguage } from "@/contexts/language-context"
+import { LanguageAwareText } from "./language-aware-text"
 
 interface CartItem {
   id: string
@@ -20,6 +22,7 @@ interface CartDetailViewProps {
 }
 
 export function CartDetailView({ items, onClose, onRemoveItem, onUpdateQuantity, onPlaceOrder }: CartDetailViewProps) {
+  const { language } = useLanguage()
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const subtotal = total
 
@@ -37,8 +40,12 @@ export function CartDetailView({ items, onClose, onRemoveItem, onUpdateQuantity,
         {/* Header */}
         <div className="border-b border-primary/20 bg-gradient-to-r from-primary/10 to-secondary/10 p-4 sm:p-5 flex items-center justify-between rounded-t-2xl">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-primary">Sepetim</h2>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">{items.length} ürün</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-primary">
+              <LanguageAwareText tr="Sepetim" en="My Cart" />
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+              {items.length} <LanguageAwareText tr="ürün" en="items" />
+            </p>
           </div>
           <button
             onClick={onClose}
@@ -54,8 +61,12 @@ export function CartDetailView({ items, onClose, onRemoveItem, onUpdateQuantity,
           {items.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🛒</div>
-              <p className="text-muted-foreground text-lg">Sepetiniz boş</p>
-              <p className="text-sm text-muted-foreground mt-2">Menüden ürün ekleyerek başlayın</p>
+              <p className="text-muted-foreground text-lg">
+                <LanguageAwareText tr="Sepetiniz boş" en="Your cart is empty" />
+              </p>
+              <p className="text-sm text-muted-foreground mt-2">
+                <LanguageAwareText tr="Menüden ürün ekleyerek başlayın" en="Add items from the menu to get started" />
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -111,18 +122,18 @@ export function CartDetailView({ items, onClose, onRemoveItem, onUpdateQuantity,
         {items.length > 0 && (
           <div className="sticky bottom-0 border-t border-primary/20 bg-white shadow-xl p-4 sm:p-5 space-y-3 rounded-b-2xl">
             <div className="flex justify-between text-muted-foreground text-sm sm:text-base">
-              <span>Ara Toplam:</span>
+              <span><LanguageAwareText tr="Ara Toplam:" en="Subtotal:" /></span>
               <span className="font-semibold">₺{subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-xl sm:text-2xl font-bold text-primary">
-              <span>Toplam:</span>
+              <span><LanguageAwareText tr="Toplam:" en="Total:" /></span>
               <span>₺{total.toFixed(2)}</span>
             </div>
             <Button
               onClick={onPlaceOrder}
               className="w-full bg-gradient-to-r from-primary to-primary/90 text-white hover:from-primary/90 hover:to-primary/80 py-5 sm:py-7 text-lg sm:text-xl font-bold shadow-2xl hover:shadow-xl transition-all active:scale-98 rounded-xl min-h-[60px] sm:min-h-[70px]"
             >
-              Sipariş Ver 🎉
+              <LanguageAwareText tr="Sipariş Ver 🎉" en="Place Order 🎉" />
             </Button>
           </div>
         )}

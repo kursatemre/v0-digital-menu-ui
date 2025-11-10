@@ -1,0 +1,26 @@
+{
+  "name": "MenuMGO",
+  "short_name": "MenuMGO",
+  "description": "MenuMGO ile dijital menünüzü oluşturun, QR kodla müşterilerinize ulaşın.",
+  "icons": [
+    {
+      "src": "/placeholder-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/placeholder-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "theme_color": "#8B5A3C",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "start_url": "/",
+  "orientation": "portrait",
+  "scope": "/",
+  "lang": "tr-TR"
+}

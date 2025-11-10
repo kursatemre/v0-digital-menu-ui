@@ -1,8 +1,9 @@
 "use client"
 
-import type React from "react"
+/* @jsxRuntime automatic */
+/* @jsxImportSource react */
 
-import { useState, useEffect, useRef } from "react"
+import { type FormEvent, type ReactNode, type ChangeEvent, useState, useEffect, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -44,6 +45,8 @@ import {
   BarChart3,
   TrendingUp,
   Calendar,
+  Tv,
+  ExternalLink,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -51,6 +54,37 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { QRCodeSVG } from "qrcode.react"
 import { createClient } from "@/lib/supabase/client"
+import { useToast } from "@/components/ui/use-toast"
+
+interface HeaderSettings {
+  title: string
+  subtitle: string
+  backgroundImage?: string
+  logo?: string
+}
+
+interface BaseCategory {
+  id: string
+  name: string
+  image: string
+}
+
+interface BaseProduct {
+  id: string
+  name: string
+  price: number
+}
+
+interface OrderItem {
+  id: string
+  price: number
+  quantity: number
+}
+
+interface OrderForm {
+  items: OrderItem[]
+  isDelivery?: boolean
+}
 
 type Order = {
   id: string
@@ -84,6 +118,8 @@ type Product = {
   display_order?: number
   badge?: string | null
   is_available?: boolean
+  name_en?: string
+  description_en?: string
 }
 
 type AdminUser = {
@@ -100,10 +136,13 @@ type Category = {
   name: string
   image: string
   display_order?: number
+  name_en?: string
+  description_en?: string
 }
 
 type Theme = {
   primaryColor: string
+  primaryTextColor: string
   secondaryColor: string
   backgroundColor: string
   textColor: string
@@ -192,13 +231,9 @@ export default function AdminPanel() {
 
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [currentUser, setCurrentUser] = useState<AdminUser | null>(null)
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loginError, setLoginError] = useState("")
-  const [showForgotPassword, setShowForgotPassword] = useState(false)
-  const [resetEmail, setResetEmail] = useState("")
-  const [resetMessage, setResetMessage] = useState("")
-  const [resetError, setResetError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
     "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings"
@@ -209,11 +244,13 @@ export default function AdminPanel() {
   const [categories, setCategories] = useState<Category[]>([])
   const [theme, setTheme] = useState<Theme>({
     primaryColor: "#8B5A3C",
+    primaryTextColor: "#FFFFFF",
     secondaryColor: "#C9A961",
     backgroundColor: "#FFFFFF",
     textColor: "#1A1A1A",
   })
   const [isLoading, setIsLoading] = useState(true)
+  const [premiumPriceTry, setPremiumPriceTry] = useState<number>(299)
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "pending" | "preparing" | "ready" | "completed">("all")
@@ -222,6 +259,7 @@ export default function AdminPanel() {
   const [showProductForm, setShowProductForm] = useState(false)
   const [showCategoryForm, setShowCategoryForm] = useState(false)
   const [showOrderForm, setShowOrderForm] = useState(false)
+  const [productSearch, setProductSearch] = useState("")
   const [newOrderForm, setNewOrderForm] = useState({
     tableNumber: "",
     customerName: "",
@@ -242,17 +280,23 @@ export default function AdminPanel() {
     image: "",
     badge: null,
     is_available: true,
+    name_en: "",
+    description_en: "",
   })
 
   const [categoryForm, setCategoryForm] = useState<Omit<Category, "id">>({
     name: "",
     image: "",
+    name_en: "",
+    description_en: "",
   })
 
   const [headerSettings, setHeaderSettings] = useState({
     title: "Menümüz",
     subtitle: "Lezzetli yemeklerimizi keşfedin!",
     logo: "",
+    backgroundImage: "",
+    backgroundOpacity: 0.3,
   })
 
   const [qrSettings, setQrSettings] = useState({
@@ -321,36 +365,87 @@ export default function AdminPanel() {
     loadTenant()
   }, [slug, router, supabase])
 
-  // Check if user is already logged in
+  // Load dynamic pricing
   useEffect(() => {
-    const loadCurrentUser = async () => {
-      const loggedIn = localStorage.getItem(`admin_logged_in_${slug}`)
-      const userId = localStorage.getItem(`admin_user_id_${slug}`)
+    const loadPricing = async () => {
+      try {
+        const { data } = await supabase
+          .from("pricing_view")
+          .select("premium_price_try")
+          .single()
 
-      if (loggedIn === "true" && userId) {
-        setIsAuthenticated(true)
+        if (data?.premium_price_try) {
+          setPremiumPriceTry(Math.round(data.premium_price_try))
+        }
+      } catch (error) {
+        console.error("Pricing load error:", error)
+      }
+    }
 
-        // Load current user data
-        try {
-          const { data, error } = await supabase
+    loadPricing()
+  }, [supabase])
+
+  // Check if user is already logged in with Supabase Auth
+  useEffect(() => {
+    const checkSession = async () => {
+      if (!tenantId) return
+
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (session?.user) {
+        // Verify user belongs to this tenant
+        const { data: tenant } = await supabase
+          .from("tenants")
+          .select("*")
+          .eq("auth_user_id", session.user.id)
+          .eq("id", tenantId)
+          .single()
+
+        if (tenant) {
+          setIsAuthenticated(true)
+          // Load user from admin_users table for role info
+          const { data: adminUser, error: adminUserError } = await supabase
             .from("admin_users")
             .select("*")
-            .eq("id", userId)
-            .single()
+            .eq("tenant_id", tenantId)
+            .eq("auth_user_id", session.user.id)
+            .maybeSingle()
 
-          if (!error && data) {
-            setCurrentUser(data)
+          if (adminUserError) {
+            console.error("Error loading admin user:", adminUserError)
           }
-        } catch (error) {
-          console.error("Error loading current user:", error)
+
+          if (adminUser) {
+            setCurrentUser(adminUser)
+          } else {
+            // Create admin_users record if it doesn't exist
+            const { data: newAdminUser } = await supabase
+              .from("admin_users")
+              .insert([{
+                tenant_id: tenantId,
+                auth_user_id: session.user.id,
+                username: session.user.email?.split('@')[0] || 'admin',
+                display_name: session.user.user_metadata?.owner_name || session.user.email,
+                role: 'admin',
+                password_hash: ''
+              }])
+              .select()
+              .single()
+            
+            if (newAdminUser) {
+              setCurrentUser(newAdminUser)
+            }
+          }
         }
       }
     }
 
-    loadCurrentUser()
-  }, [slug, supabase])
+    if (tenantId) {
+      checkSession()
+    }
+  }, [slug, tenantId, supabase])
 
-  // Login handler
+  // Login handler with Supabase Auth
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoginError("")
@@ -361,24 +456,78 @@ export default function AdminPanel() {
     }
 
     try {
-      // Check Supabase for user with tenant_id filter
-      const { data, error } = await supabase
-        .from("admin_users")
-        .select("*")
-        .eq("username", username)
-        .eq("password_hash", password)
-        .eq("tenant_id", tenantId)
-        .single()
+      // Sign in with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
 
-      if (error || !data) {
-        setLoginError("Kullanıcı adı veya şifre hatalı!")
+      if (authError) {
+        console.error("Auth error:", authError)
+        setLoginError("E-posta veya şifre hatalı!")
         return
       }
 
+      if (!authData.user) {
+        setLoginError("Kullanıcı bulunamadı!")
+        return
+      }
+
+      // Verify user belongs to this tenant
+      const { data: tenant, error: tenantError } = await supabase
+        .from("tenants")
+        .select("*")
+        .eq("auth_user_id", authData.user.id)
+        .eq("id", tenantId)
+        .single()
+
+      if (tenantError || !tenant) {
+        console.error("Tenant error:", tenantError)
+        setLoginError("Bu restoran için yetkiniz yok!")
+        await supabase.auth.signOut()
+        return
+      }
+
+      // Load or create admin_users record for role info
+      let { data: adminUser, error: adminUserError } = await supabase
+        .from("admin_users")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .eq("auth_user_id", authData.user.id)
+        .maybeSingle()
+
+      if (adminUserError) {
+        console.warn("Error loading admin user:", adminUserError)
+      }
+
+      // If no admin_users record, create one (owner role)
+      if (!adminUser) {
+        const { data: newAdminUser, error: createError } = await supabase
+          .from("admin_users")
+          .insert([{
+            tenant_id: tenantId,
+            auth_user_id: authData.user.id,
+            username: authData.user.email?.split('@')[0] || 'owner',
+            display_name: authData.user.user_metadata?.owner_name || authData.user.email,
+            role: 'admin',
+            password_hash: '' // Not used anymore
+          }])
+          .select()
+          .maybeSingle()
+
+        if (createError) {
+          console.error("Error creating admin user:", createError)
+        }
+
+        if (newAdminUser) {
+          adminUser = newAdminUser
+        }
+      }
+
+      console.log("Login successful:", { user: authData.user.email, tenant: tenant.slug })
+      
       setIsAuthenticated(true)
-      setCurrentUser(data)
-      localStorage.setItem(`admin_logged_in_${slug}`, "true")
-      localStorage.setItem(`admin_user_id_${slug}`, data.id)
+      setCurrentUser(adminUser)
       setLoginError("")
     } catch (err) {
       console.error("Login error:", err)
@@ -387,66 +536,14 @@ export default function AdminPanel() {
   }
 
   // Logout handler
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
     setIsAuthenticated(false)
     setCurrentUser(null)
-    localStorage.removeItem(`admin_logged_in_${slug}`)
-    localStorage.removeItem(`admin_user_id_${slug}`)
-    setUsername("")
+    setEmail("")
     setPassword("")
   }
 
-  // Forgot password handler
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setResetError("")
-    setResetMessage("")
-
-    if (!resetEmail) {
-      setResetError("Lütfen e-posta adresinizi girin")
-      return
-    }
-
-    if (!tenantId) {
-      setResetError("Restoran bilgisi yükleniyor, lütfen bekleyin...")
-      return
-    }
-
-    try {
-      // Check if user exists
-      const { data: userData, error: userError } = await supabase
-        .from("admin_users")
-        .select("id, username, display_name")
-        .eq("username", resetEmail)
-        .eq("tenant_id", tenantId)
-        .single()
-
-      if (userError || !userData) {
-        setResetError("Bu e-posta adresi ile kayıtlı kullanıcı bulunamadı.")
-        return
-      }
-
-      // In a real application, you would send a password reset email here
-      // For now, we'll show a success message with contact information
-      setResetMessage(
-        "Şifre sıfırlama talebi alındı. Lütfen destek ekibimizle iletişime geçin:\n\n" +
-        "E-posta: info@menumgo.digital\n" +
-        "WhatsApp: 0545 715 43 05\n\n" +
-        "Talebiniz en kısa sürede işleme alınacaktır."
-      )
-
-      // Reset form after 5 seconds
-      setTimeout(() => {
-        setShowForgotPassword(false)
-        setResetEmail("")
-        setResetMessage("")
-        setResetError("")
-      }, 10000)
-    } catch (err) {
-      console.error("Password reset error:", err)
-      setResetError("Şifre sıfırlama talebi gönderilirken bir hata oluştu.")
-    }
-  }
 
   // Load admin users
   useEffect(() => {
@@ -615,28 +712,62 @@ export default function AdminPanel() {
     try {
       setIsSaving(true)
 
-      // Save theme
-      await supabase.from("settings").upsert({ key: "theme", value: theme, tenant_id: tenantId }, { onConflict: "key" })
+      // Önce mevcut ayarları kontrol et
+      const { data: existingSettings } = await supabase
+        .from("settings")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .in("key", ["header", "theme"])
 
-      // Save header settings
-      await supabase.from("settings").upsert({ key: "header", value: headerSettings, tenant_id: tenantId }, { onConflict: "key" })
+      // Header ayarlarını güncelle veya ekle
+      const existingHeader = existingSettings?.find(s => s.key === "header")
+      const { error: headerError } = await supabase
+        .from("settings")
+        .upsert({
+          id: existingHeader?.id, // Eğer varsa mevcut kaydın ID'sini kullan
+          key: "header",
+          value: headerSettings, // State'teki güncel headerSettings değerini kullan
+          tenant_id: tenantId,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: "id"
+        })
 
-      // Save QR settings
-      await supabase.from("settings").upsert({ key: "qr", value: qrSettings, tenant_id: tenantId }, { onConflict: "key" })
+      if (headerError) {
+        console.error("Header ayarları kaydedilirken hata:", headerError)
+        throw headerError
+      }
 
-      // Update localStorage
-      localStorage.setItem("restaurant_theme", JSON.stringify(theme))
+      // LocalStorage'a header ayarlarını yaz
       localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
-      localStorage.setItem("restaurant_qr", JSON.stringify(qrSettings))
 
-      // Apply theme to CSS variables
-      document.documentElement.style.setProperty("--primary", theme.primaryColor)
-      document.documentElement.style.setProperty("--secondary", theme.secondaryColor)
+      // Tema ayarlarını güncelle veya ekle
+      const existingTheme = existingSettings?.find(s => s.key === "theme")
+      const { error: themeError } = await supabase
+        .from("settings")
+        .upsert({
+          id: existingTheme?.id, // Eğer varsa mevcut kaydın ID'sini kullan
+          key: "theme",
+          value: theme, // State'teki güncel theme değerini kullan
+          tenant_id: tenantId,
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: "id"
+        })
 
+      if (themeError) {
+        console.error("Tema ayarları kaydedilirken hata:", themeError)
+        throw themeError
+      }
+
+      // Tema ayarlarını localStorage'a kaydet
+      localStorage.setItem("restaurant_theme", JSON.stringify(theme))
+
+      // Başarılı mesajı göster
       alert("Ayarlar başarıyla kaydedildi!")
     } catch (error) {
-      console.error("Error saving settings:", error)
-      alert("Ayarlar kaydedilirken hata oluştu")
+      console.error("Görünüm ayarları kaydedilemedi:", error)
+      alert("Ayarlar kaydedilirken hata oluştu!")
     } finally {
       setIsSaving(false)
     }
@@ -677,7 +808,7 @@ export default function AdminPanel() {
         }
       } else {
         const newOrders = data || []
-        const pendingCount = newOrders.filter((o) => o.status === "pending").length
+        const pendingCount = newOrders.filter((o: Order) => o.status === "pending").length
 
         // Play sound if new orders arrived (after initial load)
         if (ordersInitializedRef.current && pendingCount > previousOrderCountRef.current) {
@@ -709,7 +840,7 @@ export default function AdminPanel() {
         console.error("Error loading waiter calls:", error)
       } else {
         const newCalls = data || []
-        const pendingCount = newCalls.filter((c) => c.status === "pending").length
+        const pendingCount = newCalls.filter((c: { status: string }) => c.status === "pending").length
 
         // Play sound if new waiter calls arrived (after initial load)
         if (waiterCallsInitializedRef.current && pendingCount > previousWaiterCallCountRef.current) {
@@ -747,6 +878,8 @@ export default function AdminPanel() {
           display_order: prod.display_order,
           badge: prod.badge || null,
           is_available: prod.is_available,
+          name_en: prod.name_en || "",
+          description_en: prod.description_en || "",
         }))
         setProducts(formattedProducts)
       }
@@ -772,6 +905,8 @@ export default function AdminPanel() {
           name: cat.name,
           image: cat.image || "",
           display_order: cat.display_order,
+          name_en: cat.name_en || "",
+          description_en: cat.description_en || "",
         }))
         setCategories(formattedCategories)
       }
@@ -838,8 +973,6 @@ export default function AdminPanel() {
 
     loadSettings()
   }, [tenantId, supabase])
-
-  // Removed auto-save useEffects - now using manual save button
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("restaurant_theme")
@@ -937,6 +1070,8 @@ export default function AdminPanel() {
             image: productForm.image,
             badge: productForm.badge || null,
             is_available: productForm.is_available !== false,
+            name_en: productForm.name_en || null,
+            description_en: productForm.description_en || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingProduct.id)
@@ -960,6 +1095,8 @@ export default function AdminPanel() {
             image: productForm.image,
             badge: productForm.badge || null,
             is_available: productForm.is_available !== false,
+            name_en: productForm.name_en || null,
+            description_en: productForm.description_en || null,
             display_order: products.length,
             tenant_id: tenantId,
           },
@@ -971,7 +1108,7 @@ export default function AdminPanel() {
         console.error("Error adding product:", error)
       }
     }
-    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true })
+    setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true, name_en: "", description_en: "" })
     setShowProductForm(false)
   }
 
@@ -995,7 +1132,7 @@ export default function AdminPanel() {
       if (error) throw error
 
       // Update local state
-      setProducts(products.map(p =>
+      setProducts(products.map((p: Product) =>
         p.id === productId ? { ...p, is_available: !currentStatus } : p
       ))
     } catch (error) {
@@ -1006,11 +1143,11 @@ export default function AdminPanel() {
   const handleAddProductToOrder = () => {
     if (!selectedProduct) return
 
-    const product = products.find((p) => p.id === selectedProduct)
+    const product = products.find((p: Product) => p.id === selectedProduct)
     if (!product) return
 
     // Check if product already in items
-    const existingItemIndex = newOrderForm.items.findIndex((item) => item.id === product.id)
+    const existingItemIndex = newOrderForm.items.findIndex((item: OrderItem) => item.id === product.id)
 
     if (existingItemIndex >= 0) {
       // Update quantity
@@ -1040,7 +1177,7 @@ export default function AdminPanel() {
   const handleRemoveProductFromOrder = (productId: string) => {
     setNewOrderForm({
       ...newOrderForm,
-      items: newOrderForm.items.filter((item) => item.id !== productId),
+      items: newOrderForm.items.filter((item: OrderItem) => item.id !== productId),
     })
   }
 
@@ -1063,7 +1200,7 @@ export default function AdminPanel() {
       return
     }
 
-    const total = newOrderForm.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+    const total = newOrderForm.items.reduce((sum: number, item: OrderItem) => sum + item.price * item.quantity, 0)
 
     try {
       const { error } = await supabase.from("orders").insert([
@@ -1107,6 +1244,8 @@ export default function AdminPanel() {
           .update({
             name: categoryForm.name,
             image: categoryForm.image,
+            name_en: categoryForm.name_en || null,
+            description_en: categoryForm.description_en || null,
             updated_at: new Date().toISOString(),
           })
           .eq("id", editingCategory.id)
@@ -1125,6 +1264,8 @@ export default function AdminPanel() {
           {
             name: categoryForm.name,
             image: categoryForm.image,
+            name_en: categoryForm.name_en || null,
+            description_en: categoryForm.description_en || null,
             display_order: categories.length,
             tenant_id: tenantId,
           },
@@ -1136,7 +1277,7 @@ export default function AdminPanel() {
         console.error("Error adding category:", error)
       }
     }
-    setCategoryForm({ name: "", image: "" })
+    setCategoryForm({ name: "", image: "", name_en: "", description_en: "" })
     setShowCategoryForm(false)
   }
 
@@ -1151,7 +1292,7 @@ export default function AdminPanel() {
   }
 
   const moveCategory = async (id: string, direction: "up" | "down") => {
-    const index = categories.findIndex((c) => c.id === id)
+    const index = categories.findIndex((c: Category) => c.id === id)
     if ((direction === "up" && index === 0) || (direction === "down" && index === categories.length - 1)) {
       return
     }
@@ -1173,7 +1314,7 @@ export default function AdminPanel() {
   }
 
   const moveProduct = async (id: string, direction: "up" | "down") => {
-    const index = products.findIndex((p) => p.id === id)
+    const index = products.findIndex((p: Product) => p.id === id)
     if ((direction === "up" && index === 0) || (direction === "down" && index === products.length - 1)) {
       return
     }
@@ -1221,7 +1362,7 @@ export default function AdminPanel() {
     }
   }
 
-  const filteredOrders = filter === "all" ? orders : orders.filter((order) => order.status === filter)
+  const filteredOrders = filter === "all" ? orders : orders.filter((order: Order) => order.status === filter)
 
   const renderOrdersTab = () => (
     <div>
@@ -1641,7 +1782,19 @@ export default function AdminPanel() {
     </div>
   )
 
-  const renderProductsTab = () => (
+  const renderProductsTab = () => {
+    // Filter products based on search
+    const filteredProducts = products.filter((product) => {
+      const searchLower = productSearch.toLowerCase()
+      return (
+        product.name.toLowerCase().includes(searchLower) ||
+        product.description.toLowerCase().includes(searchLower) ||
+        product.name_en?.toLowerCase().includes(searchLower) ||
+        product.description_en?.toLowerCase().includes(searchLower)
+      )
+    })
+
+    return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
@@ -1657,28 +1810,65 @@ export default function AdminPanel() {
         </Button>
       </div>
 
+      {/* Search Bar */}
+      <div className="mb-6">
+        <Input
+          type="text"
+          placeholder="Ürün ara... (ad, açıklama)"
+          value={productSearch}
+          onChange={(e) => setProductSearch(e.target.value)}
+          className="max-w-md"
+        />
+        {productSearch && (
+          <p className="text-sm text-muted-foreground mt-2">
+            {filteredProducts.length} ürün bulundu
+          </p>
+        )}
+      </div>
+
       {showProductForm && (
         <Card className="mb-6 bg-muted/50">
           <CardHeader>
             <CardTitle>{editingProduct ? "Ürünü Düzenle" : "Yeni Ürün Ekle"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Ürün Adı</label>
-              <Input
-                value={productForm.name}
-                onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                placeholder="Örn: Kuzu Şiş"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Ürün Adı (Türkçe)</label>
+                <Input
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  placeholder="Örn: Kuzu Şiş"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Product Name (English)</label>
+                <Input
+                  value={productForm.name_en}
+                  onChange={(e) => setProductForm({ ...productForm, name_en: e.target.value })}
+                  placeholder="e.g., Lamb Skewer"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium">Açıklama</label>
-              <Textarea
-                value={productForm.description}
-                onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
-                placeholder="Ürün açıklaması"
-                rows={3}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Açıklama (Türkçe)</label>
+                <Textarea
+                  value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                  placeholder="Ürün açıklaması"
+                  rows={3}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Description (English)</label>
+                <Textarea
+                  value={productForm.description_en}
+                  onChange={(e) => setProductForm({ ...productForm, description_en: e.target.value })}
+                  placeholder="Product description"
+                  rows={3}
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -1782,7 +1972,7 @@ export default function AdminPanel() {
                 onClick={() => {
                   setShowProductForm(false)
                   setEditingProduct(null)
-                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true })
+                  setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true, name_en: "", description_en: "" })
                 }}
               >
                 İptal
@@ -1792,16 +1982,18 @@ export default function AdminPanel() {
         </Card>
       )}
 
-      {products.length === 0 ? (
+      {filteredProducts.length === 0 ? (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Layers className="w-12 h-12 text-muted-foreground mb-2" />
-            <p className="text-lg font-semibold text-muted-foreground">Ürün yok</p>
+            <p className="text-lg font-semibold text-muted-foreground">
+              {productSearch ? "Arama sonucu bulunamadı" : "Ürün yok"}
+            </p>
           </CardContent>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {products.map((product, index) => (
+          {filteredProducts.map((product, index) => (
             <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
               {product.image && (
                 <img
@@ -1864,7 +2056,8 @@ export default function AdminPanel() {
         </div>
       )}
     </div>
-  )
+    )
+  }
 
   const renderCategoriesTab = () => (
     <div>
@@ -1888,13 +2081,23 @@ export default function AdminPanel() {
             <CardTitle>{editingCategory ? "Kategoriyi Düzenle" : "Yeni Kategori Ekle"}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="text-sm font-medium">Kategori Adı</label>
-              <Input
-                value={categoryForm.name}
-                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                placeholder="Örn: Ara Sıcaklar"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium">Kategori Adı (Türkçe)</label>
+                <Input
+                  value={categoryForm.name}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+                  placeholder="Örn: Ara Sıcaklar"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Category Name (English)</label>
+                <Input
+                  value={categoryForm.name_en}
+                  onChange={(e) => setCategoryForm({ ...categoryForm, name_en: e.target.value })}
+                  placeholder="e.g., Appetizers"
+                />
+              </div>
             </div>
             <div>
               <label className="text-sm font-medium">Resim</label>
@@ -1942,7 +2145,7 @@ export default function AdminPanel() {
                 onClick={() => {
                   setShowCategoryForm(false)
                   setEditingCategory(null)
-                  setCategoryForm({ name: "", image: "" })
+                  setCategoryForm({ name: "", image: "", name_en: "", description_en: "" })
                 }}
               >
                 İptal
@@ -2021,6 +2224,8 @@ export default function AdminPanel() {
     </div>
   )
 
+
+
   const renderAppearanceTab = () => (
     <div>
       <div className="flex items-center gap-3 mb-6">
@@ -2041,7 +2246,7 @@ export default function AdminPanel() {
             <label className="text-sm font-medium mb-2 block">Header Başlık</label>
             <Input
               value={headerSettings.title}
-              onChange={(e) => setHeaderSettings({ ...headerSettings, title: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderSettings({ ...headerSettings, title: e.target.value })}
               placeholder="Menümüz"
               className="mb-2"
             />
@@ -2050,11 +2255,70 @@ export default function AdminPanel() {
             <label className="text-sm font-medium mb-2 block">Header Alt Başlık</label>
             <Input
               value={headerSettings.subtitle}
-              onChange={(e) => setHeaderSettings({ ...headerSettings, subtitle: e.target.value })}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setHeaderSettings({ ...headerSettings, subtitle: e.target.value })}
               placeholder="Lezzetli yemeklerimizi keşfedin!"
               className="mb-2"
             />
           </div>
+          <div>
+            <label className="text-sm font-medium mb-2 block">Header Arkaplan Görseli</label>
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Dosya Yükle</label>
+                <Input
+                  type="file"
+                  accept="image/*"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      const url = await uploadImage(file)
+                      if (url) {
+                        setHeaderSettings({ ...headerSettings, backgroundImage: url })
+                      }
+                    }
+                  }}
+                  disabled={uploadingImage}
+                  className="cursor-pointer"
+                />
+                {uploadingImage && <p className="text-xs text-muted-foreground mt-1">Yükleniyor...</p>}
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">veya URL Gir</label>
+                <Input
+                  value={headerSettings.backgroundImage || ""}
+                  onChange={(e) => setHeaderSettings({ ...headerSettings, backgroundImage: e.target.value })}
+                  placeholder="https://..."
+                />
+              </div>
+              {headerSettings.backgroundImage && (
+                <>
+                  <img
+                    src={headerSettings.backgroundImage}
+                    alt="Header arkaplan önizleme"
+                    className="mt-2 h-32 object-cover rounded"
+                  />
+                  <div className="mt-4">
+                    <label className="text-sm font-medium mb-2 block">
+                      Arkaplan Opaklığı: {Math.round((headerSettings.backgroundOpacity || 0.3) * 100)}%
+                    </label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={headerSettings.backgroundOpacity || 0.3}
+                      onChange={(e) => setHeaderSettings({ ...headerSettings, backgroundOpacity: parseFloat(e.target.value) })}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Arkaplan görselinin şeffaflık derecesini ayarlayın (0% = tamamen şeffaf, 100% = tamamen opak)
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
           <div>
             <label className="text-sm font-medium mb-2 block">Header Logo</label>
             <div className="space-y-2">
@@ -2106,7 +2370,7 @@ export default function AdminPanel() {
         <CardContent className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <label className="text-sm font-medium mb-2 block">Ana Renk</label>
+              <label className="text-sm font-medium mb-2 block">Ana Düğme Rengi</label>
               <div className="flex gap-3 items-center">
                 <input
                   type="color"
@@ -2118,6 +2382,23 @@ export default function AdminPanel() {
                   value={theme.primaryColor}
                   onChange={(e) => setTheme({ ...theme, primaryColor: e.target.value })}
                   placeholder="#8B5A3C"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-2 block">Ana Düğme Metin Rengi</label>
+              <div className="flex gap-3 items-center">
+                <input
+                  type="color"
+                  value={theme.primaryTextColor}
+                  onChange={(e) => setTheme({ ...theme, primaryTextColor: e.target.value })}
+                  className="w-12 h-12 rounded cursor-pointer border"
+                />
+                <Input
+                  value={theme.primaryTextColor}
+                  onChange={(e) => setTheme({ ...theme, primaryTextColor: e.target.value })}
+                  placeholder="#FFFFFF"
                 />
               </div>
             </div>
@@ -2182,7 +2463,7 @@ export default function AdminPanel() {
               Önizleme
             </h3>
             <div className="flex gap-4 flex-wrap">
-              <Button style={{ backgroundColor: theme.primaryColor, color: "#fff" }}>Ana Düğme</Button>
+              <Button style={{ backgroundColor: theme.primaryColor, color: theme.primaryTextColor }}>Ana Düğme</Button>
               <Button style={{ backgroundColor: theme.secondaryColor, color: theme.textColor }}>Vurgu Düğmesi</Button>
             </div>
             <p style={{ color: theme.textColor }} className="mt-4 text-sm">
@@ -2895,11 +3176,10 @@ export default function AdminPanel() {
                 </div>
                 <div className="pt-4 border-t space-y-2">
                   <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-primary">₺149</span>
-                    <span className="text-lg text-muted-foreground line-through">₺299</span>
-                    <span className="text-sm text-green-600 font-semibold">İlk ay %50 İndirim</span>
+                    <span className="text-3xl font-bold text-primary">₺{premiumPriceTry}</span>
+                    <span className="text-sm text-muted-foreground">/ay</span>
                   </div>
-                  <p className="text-xs text-muted-foreground">Sonraki aylar ₺299/ay</p>
+                  <p className="text-xs text-muted-foreground">30 günlük premium üyelik</p>
                 </div>
                 <Button
                   size="lg"
@@ -3138,8 +3418,8 @@ export default function AdminPanel() {
                 </li>
               </ul>
               <div className="text-center">
-                <p className="text-3xl font-bold text-primary mb-2">₺299/ay</p>
-                <p className="text-sm text-muted-foreground">İlk ay %50 indirimli - Sadece ₺149</p>
+                <p className="text-3xl font-bold text-primary mb-2">₺{premiumPriceTry}/ay</p>
+                <p className="text-sm text-muted-foreground">30 günlük premium üyelik</p>
               </div>
             </div>
 
@@ -3195,8 +3475,8 @@ export default function AdminPanel() {
                 <label className="text-sm font-medium mb-2 block">E-posta</label>
                 <Input
                   type="email"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="ornek@email.com"
                   required
                   autoComplete="email"
@@ -3221,72 +3501,9 @@ export default function AdminPanel() {
               <Button type="submit" className="w-full">
                 Giriş Yap
               </Button>
-              <div className="text-center">
-                <Button
-                  type="button"
-                  variant="link"
-                  className="text-sm text-muted-foreground hover:text-primary"
-                  onClick={() => setShowForgotPassword(true)}
-                >
-                  Şifremi Unuttum
-                </Button>
-              </div>
             </form>
           </CardContent>
         </Card>
-
-        {/* Forgot Password Dialog */}
-        <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle>Şifre Sıfırlama</DialogTitle>
-              <DialogDescription>
-                E-posta adresinizi girin, size yardımcı olalım.
-              </DialogDescription>
-            </DialogHeader>
-            <form onSubmit={handleForgotPassword} className="space-y-4">
-              <div>
-                <Label htmlFor="reset-email">E-posta Adresi</Label>
-                <Input
-                  id="reset-email"
-                  type="email"
-                  value={resetEmail}
-                  onChange={(e) => setResetEmail(e.target.value)}
-                  placeholder="ornek@email.com"
-                  required
-                />
-              </div>
-              {resetError && (
-                <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg text-sm">
-                  {resetError}
-                </div>
-              )}
-              {resetMessage && (
-                <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm whitespace-pre-line">
-                  {resetMessage}
-                </div>
-              )}
-              <div className="flex gap-3">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setShowForgotPassword(false)
-                    setResetEmail("")
-                    setResetError("")
-                    setResetMessage("")
-                  }}
-                  className="flex-1"
-                >
-                  İptal
-                </Button>
-                <Button type="submit" className="flex-1" disabled={!!resetMessage}>
-                  Gönder
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
       </div>
     )
   }
@@ -3361,6 +3578,17 @@ export default function AdminPanel() {
               active={activeTab === "qr"}
               onClick={() => setActiveTab("qr")}
             />
+          )}
+          {/* TV Display - admin only */}
+          {canView(["admin"]) && (
+            <button
+              onClick={() => window.open(`/${slug}/tv`, "_blank")}
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-accent transition-colors text-left"
+            >
+              <Tv className="w-5 h-5 text-muted-foreground" />
+              <span className="hidden md:block text-sm font-medium">TV Görünümü</span>
+              <ExternalLink className="hidden md:block w-3 h-3 ml-auto text-muted-foreground" />
+            </button>
           )}
           {/* Users - admin only */}
           {canView(["admin"]) && (

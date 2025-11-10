@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect, useCallback, ChangeEvent, KeyboardEvent } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { createClient } from "@/lib/supabase/client"
 import {
   Dialog,
   DialogContent,
@@ -20,7 +21,6 @@ import {
   Building2,
   Users,
   TrendingUp,
-  Settings,
   FileEdit,
   LogOut,
   Search,
@@ -29,11 +29,12 @@ import {
   Clock,
   Check,
   X,
-  Calendar
+  Calendar,
+  Trash2
 } from "lucide-react"
-import { createClient } from "@/lib/supabase/client"
 
-type Tenant = {
+// Types
+interface Tenant {
   id: string
   slug: string
   business_name: string
@@ -45,20 +46,48 @@ type Tenant = {
   created_at: string
 }
 
+interface Hero {
+  title: string
+  subtitle: string
+  logoUrl?: string
+  faviconUrl?: string
+  backgroundImage?: string
+  buttonText?: string
+  buttonLink?: string
+  badgeText?: string
+}
+
+interface LandingContent {
+  id: string
+  section_key: string
+  title: string
+  content: Hero | Record<string, any>
+  created_at: string
+}
+
+interface Stats {
+  totalTenants: number
+  activeTenants: number
+  premiumTenants: number
+  trialTenants: number
+}
+
+// React 18 ve sonrası için JSX namespace tanımlaması gerekmez
+
 export default function SuperAdminPanel() {
   const router = useRouter()
   const supabase = createClient()
 
+  // States
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [loginForm, setLoginForm] = useState({ username: "", password: "" })
   const [loginError, setLoginError] = useState("")
 
-  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing">("dashboard")
+  const [activeTab, setActiveTab] = useState<"dashboard" | "tenants" | "landing" | "pricing">("dashboard")
   const [tenants, setTenants] = useState<Tenant[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState<"all" | "trial" | "active" | "cancelled">("all")
-
   const [stats, setStats] = useState({
     totalTenants: 0,
     activeTenants: 0,
@@ -66,9 +95,30 @@ export default function SuperAdminPanel() {
     trialTenants: 0
   })
 
-  const [landingContent, setLandingContent] = useState({
-    hero: { title: "", subtitle: "" },
-    pricing: { plans: [] as any[] }
+  // Pricing settings state
+  const [pricingSettings, setPricingSettings] = useState({
+    usdToTryRate: 34.50,
+    premiumPriceUsd: 9.99,
+    lastRateUpdate: null as string | null,
+    settingsId: null as string | null
+  })
+  const [loadingPricing, setLoadingPricing] = useState(false)
+  const [savingPricing, setSavingPricing] = useState(false)
+
+  const [landingContent, setLandingContent] = useState<{
+    hero: Hero,
+    pricing: { plans: any[] }
+  }>({
+    hero: { 
+      title: "", 
+      subtitle: "",
+      logoUrl: "",
+      backgroundImage: "",
+      buttonText: "",
+      buttonLink: "",
+      badgeText: ""
+    },
+    pricing: { plans: [] }
   })
   const [loadingLanding, setLoadingLanding] = useState(false)
 
@@ -81,29 +131,187 @@ export default function SuperAdminPanel() {
     months: "1"
   })
 
+  // Actions
+
+  const loadTenants = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("*")
+        .order("created_at", { ascending: false })
+
+      if (error) throw error
+      if (data) {
+        setTenants(data)
+      }
+    } catch (error) {
+      console.error("Error loading tenants:", error)
+    }
+  }, [supabase])
+
+  const loadStats = useCallback(async () => {
+    try {
+      const { data, error } = await supabase
+        .from("tenants")
+        .select("subscription_status, subscription_plan, is_active")
+
+      if (error) throw error
+      if (data) {
+        const tenants = data as Tenant[]
+        setStats({
+          totalTenants: tenants.length,
+          activeTenants: tenants.filter(t => t.is_active).length,
+          premiumTenants: tenants.filter(t => t.subscription_plan === "premium").length,
+          trialTenants: tenants.filter(t => t.subscription_plan === "trial").length
+        })
+      }
+    } catch (error) {
+      console.error("Error loading stats:", error)
+    }
+  }, [supabase])
+
+  const loadLandingContent = useCallback(async () => {
+    setLoadingLanding(true)
+    try {
+      const { data, error } = await supabase
+        .from("landing_page_content")
+        .select("*")
+
+      if (error) throw error
+      if (data) {
+        const heroData = data.find((d: LandingContent) => d.section_key === "hero")
+        const pricingData = data.find((d: LandingContent) => d.section_key === "pricing")
+
+        setLandingContent({
+          hero: heroData?.content || {
+            title: "",
+            subtitle: "",
+            logoUrl: "",
+            backgroundImage: "",
+            buttonText: "",
+            buttonLink: "",
+            badgeText: ""
+          },
+          pricing: pricingData?.content || { plans: [] }
+        })
+      }
+    } catch (error) {
+      console.error("Error loading landing content:", error)
+    } finally {
+      setLoadingLanding(false)
+    }
+  }, [supabase])
+
+  const loadPricingSettings = useCallback(async () => {
+    setLoadingPricing(true)
+    try {
+      const { data, error } = await supabase
+        .from("platform_settings")
+        .select("id, usd_to_try_rate, premium_price_usd, last_rate_update")
+        .single()
+
+      if (error) throw error
+      if (data) {
+        setPricingSettings({
+          usdToTryRate: data.usd_to_try_rate || 34.50,
+          premiumPriceUsd: data.premium_price_usd || 9.99,
+          lastRateUpdate: data.last_rate_update,
+          settingsId: data.id
+        })
+      }
+    } catch (error) {
+      console.error("Error loading pricing settings:", error)
+    } finally {
+      setLoadingPricing(false)
+    }
+  }, [supabase])
+
+  const savePricingSettings = async () => {
+    if (!pricingSettings.settingsId) {
+      alert("Platform ayarları bulunamadı")
+      return
+    }
+
+    setSavingPricing(true)
+    try {
+      const { error } = await supabase
+        .from("platform_settings")
+        .update({
+          usd_to_try_rate: pricingSettings.usdToTryRate,
+          premium_price_usd: pricingSettings.premiumPriceUsd
+        })
+        .eq("id", pricingSettings.settingsId)
+
+      if (error) throw error
+      
+      alert("Fiyatlandırma ayarları başarıyla güncellendi!")
+      await loadPricingSettings() // Reload to get updated timestamp
+    } catch (error) {
+      console.error("Error saving pricing settings:", error)
+      alert("Fiyatlandırma ayarları güncellenirken hata oluştu")
+    } finally {
+      setSavingPricing(false)
+    }
+  }
+
+  const updateExchangeRateFromAPI = async () => {
+    setSavingPricing(true)
+    try {
+      const response = await fetch('/api/cron/update-exchange-rate', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || 'ran22dom_se2cure_s2k1m1y3tri22ng'}`
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'API güncellemesi başarısız')
+      }
+
+      alert(`✅ Kur başarıyla güncellendi!\n\nYeni kur: $1 = ₺${data.rate}\nZaman: ${new Date(data.timestamp).toLocaleString('tr-TR')}`)
+      await loadPricingSettings() // Reload to get updated rate
+    } catch (error: any) {
+      console.error("Error fetching exchange rate:", error)
+      alert(`❌ Kur güncellenirken hata oluştu:\n${error.message}`)
+    } finally {
+      setSavingPricing(false)
+    }
+  }
+
+  // Auth check effect
   useEffect(() => {
+    const checkAuth = () => {
+      const loggedIn = localStorage.getItem("super_admin_logged_in")
+      const username = localStorage.getItem("super_admin_username")
+
+      if (loggedIn === "true" && username) {
+        setIsAuthenticated(true)
+      }
+      setIsLoading(false)
+    }
+
     checkAuth()
   }, [])
 
+  // Data loading effect
   useEffect(() => {
-    if (isAuthenticated) {
-      loadTenants()
-      loadStats()
-      if (activeTab === "landing") {
-        loadLandingContent()
-      }
-    }
-  }, [isAuthenticated, activeTab])
+    const loadData = async () => {
+      if (!isAuthenticated) return
 
-  const checkAuth = () => {
-    const loggedIn = localStorage.getItem("super_admin_logged_in")
-    const username = localStorage.getItem("super_admin_username")
-
-    if (loggedIn === "true" && username) {
-      setIsAuthenticated(true)
+      await Promise.all([
+        loadTenants(),
+        loadStats(),
+        activeTab === "landing" ? loadLandingContent() : Promise.resolve(),
+        activeTab === "pricing" ? loadPricingSettings() : Promise.resolve()
+      ])
     }
-    setIsLoading(false)
-  }
+
+    loadData()
+  }, [isAuthenticated, activeTab, loadTenants, loadStats, loadLandingContent, loadPricingSettings])
+
+
 
   const handleLogin = async () => {
     setLoginError("")
@@ -125,43 +333,7 @@ export default function SuperAdminPanel() {
     setIsAuthenticated(false)
   }
 
-  const loadTenants = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("*")
-        .order("created_at", { ascending: false })
-
-      if (error) throw error
-      if (data) {
-        setTenants(data)
-      }
-    } catch (error) {
-      console.error("Error loading tenants:", error)
-    }
-  }
-
-  const loadStats = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("tenants")
-        .select("subscription_status, subscription_plan, is_active")
-
-      if (error) throw error
-      if (data) {
-        setStats({
-          totalTenants: data.length,
-          activeTenants: data.filter(t => t.is_active).length,
-          premiumTenants: data.filter(t => t.subscription_plan === "premium").length,
-          trialTenants: data.filter(t => t.subscription_plan === "trial").length
-        })
-      }
-    } catch (error) {
-      console.error("Error loading stats:", error)
-    }
-  }
-
-  const updateTenantSubscription = async (
+  const updateTenantSubscription = useCallback(async (
     tenantId: string,
     plan: "trial" | "premium",
     status: "trial" | "active" | "cancelled",
@@ -200,9 +372,9 @@ export default function SuperAdminPanel() {
       console.error("Error updating subscription:", error)
       alert(`Hata oluştu: ${error?.message || "Bilinmeyen hata"}`)
     }
-  }
+  }, [supabase, loadTenants, loadStats])
 
-  const toggleTenantStatus = async (tenantId: string, currentStatus: boolean) => {
+  const toggleTenantStatus = useCallback(async (tenantId: string, currentStatus: boolean) => {
     try {
       const { error } = await supabase
         .from("tenants")
@@ -215,39 +387,7 @@ export default function SuperAdminPanel() {
     } catch (error) {
       console.error("Error toggling tenant status:", error)
     }
-  }
-
-  const loadLandingContent = async () => {
-    setLoadingLanding(true)
-    try {
-      const { data, error } = await supabase
-        .from("landing_page_content")
-        .select("*")
-
-      if (error) throw error
-      if (data) {
-        const heroData = data.find(d => d.section_key === "hero")
-        const pricingData = data.find(d => d.section_key === "pricing")
-
-        setLandingContent({
-          hero: heroData?.content || {
-            title: "",
-            subtitle: "",
-            logoUrl: "",
-            backgroundImage: "",
-            buttonText: "",
-            buttonLink: "",
-            badgeText: ""
-          },
-          pricing: pricingData?.content || { plans: [] }
-        })
-      }
-    } catch (error) {
-      console.error("Error loading landing content:", error)
-    } finally {
-      setLoadingLanding(false)
-    }
-  }
+  }, [supabase, loadTenants, loadStats])
 
   const saveLandingContent = async (sectionKey: string, content: any) => {
     try {
@@ -305,7 +445,7 @@ export default function SuperAdminPanel() {
     }
   }
 
-  const filteredTenants = tenants.filter(tenant => {
+  const filteredTenants = tenants.filter((tenant: Tenant) => {
     const matchesSearch = tenant.business_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          tenant.slug.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesFilter = filterStatus === "all" || tenant.subscription_status === filterStatus
@@ -344,8 +484,8 @@ export default function SuperAdminPanel() {
               <Input
                 type="password"
                 value={loginForm.password}
-                onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
-                onKeyPress={(e) => e.key === "Enter" && handleLogin()}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setLoginForm({ ...loginForm, password: e.target.value })}
+                onKeyPress={(e: KeyboardEvent<HTMLInputElement>) => e.key === "Enter" && handleLogin()}
                 placeholder="••••••••"
               />
             </div>
@@ -360,6 +500,8 @@ export default function SuperAdminPanel() {
       </div>
     )
   }
+
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -407,6 +549,15 @@ export default function SuperAdminPanel() {
             <FileEdit className="w-4 h-4" />
             Landing Page
           </Button>
+          <Button
+            variant={activeTab === "pricing" ? "default" : "outline"}
+            onClick={() => setActiveTab("pricing")}
+            className="gap-2"
+          >
+            <Crown className="w-4 h-4" />
+            Fiyatlandırma
+          </Button>
+
         </div>
 
         {/* Dashboard Tab */}
@@ -478,7 +629,7 @@ export default function SuperAdminPanel() {
                       <Input
                         placeholder="Restoran ara..."
                         value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
+                        onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                         className="pl-10"
                       />
                     </div>
@@ -519,7 +670,7 @@ export default function SuperAdminPanel() {
 
             {/* Tenants List */}
             <div className="grid gap-4">
-              {filteredTenants.map((tenant) => (
+              {filteredTenants.map((tenant: Tenant) => (
                 <Card key={tenant.id}>
                   <CardContent className="pt-6">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -621,6 +772,8 @@ export default function SuperAdminPanel() {
           </div>
         )}
 
+
+
         {/* Landing Page Tab */}
         {activeTab === "landing" && (
           <div className="space-y-6">
@@ -642,20 +795,37 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Logo URL</label>
                         <Input
                           value={landingContent.hero.logoUrl || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, logoUrl: e.target.value }
                           })}
                           placeholder="https://example.com/logo.png"
                         />
-                        <p className="text-xs text-muted-foreground mt-1">Logo görselinin URL'sini girin</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Ana sayfadaki logo için tam URL (önerilen: PNG/SVG, max genişlik 200-300px, yükseklik 60-80px)
+                        </p>
+                      </div>
+
+                      <div className="col-span-2">
+                        <label className="text-sm font-medium">Favicon URL</label>
+                        <Input
+                          value={landingContent.hero.faviconUrl || ""}
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
+                            ...landingContent,
+                            hero: { ...landingContent.hero, faviconUrl: e.target.value }
+                          })}
+                          placeholder="https://example.com/favicon.png"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Tarayıcı sekmesinde görünecek favicon URL'si (önerilen: 32x32 veya 192x192 PNG)
+                        </p>
                       </div>
 
                       <div className="col-span-2">
                         <label className="text-sm font-medium">Arka Plan Görseli URL</label>
                         <Input
                           value={landingContent.hero.backgroundImage || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, backgroundImage: e.target.value }
                           })}
@@ -668,7 +838,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Başlık</label>
                         <Input
                           value={landingContent.hero.title || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, title: e.target.value }
                           })}
@@ -680,7 +850,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Alt Başlık</label>
                         <Input
                           value={landingContent.hero.subtitle || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, subtitle: e.target.value }
                           })}
@@ -692,7 +862,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Rozet Metni</label>
                         <Input
                           value={landingContent.hero.badgeText || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, badgeText: e.target.value }
                           })}
@@ -704,7 +874,7 @@ export default function SuperAdminPanel() {
                         <label className="text-sm font-medium">Buton Metni</label>
                         <Input
                           value={landingContent.hero.buttonText || ""}
-                          onChange={(e) => setLandingContent({
+                          onChange={(e: ChangeEvent<HTMLInputElement>) => setLandingContent({
                             ...landingContent,
                             hero: { ...landingContent.hero, buttonText: e.target.value }
                           })}
@@ -718,29 +888,6 @@ export default function SuperAdminPanel() {
                     </Button>
                   </>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* Pricing Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Fiyatlandırma</CardTitle>
-                <CardDescription>
-                  Paket bilgileri ve fiyatlandırma (şu an database'de kayıtlı)
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <p className="text-sm text-gray-600">
-                    Trial Plan: 7 gün ücretsiz
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    Premium Plan: 499₺/ay
-                  </p>
-                  <p className="text-xs text-gray-500 mt-4">
-                    Not: Detaylı düzenleme için database'deki landing_page_content tablosunu güncelleyin.
-                  </p>
-                </div>
               </CardContent>
             </Card>
 
@@ -771,10 +918,177 @@ export default function SuperAdminPanel() {
             </Card>
           </div>
         )}
+
+        {/* Pricing Tab */}
+        {activeTab === "pricing" && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Crown className="w-5 h-5" />
+                  Fiyatlandırma Ayarları
+                </CardTitle>
+                <CardDescription>
+                  Premium abonelik fiyatını USD cinsinden belirleyin. TL karşılığı otomatik hesaplanır.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {loadingPricing ? (
+                  <div className="text-center py-8 text-gray-500">Yükleniyor...</div>
+                ) : (
+                  <>
+                    {/* Exchange Rate Section */}
+                    <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between mb-2">
+                        <Label htmlFor="exchangeRate" className="text-sm font-medium">
+                          USD/TRY Kuru
+                        </Label>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={updateExchangeRateFromAPI}
+                          disabled={savingPricing}
+                          className="text-xs"
+                        >
+                          {savingPricing ? "Güncelleniyor..." : "🔄 API'den Güncelle"}
+                        </Button>
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-2xl font-bold text-gray-700">$1 =</span>
+                          <Input
+                            id="exchangeRate"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={pricingSettings.usdToTryRate}
+                            onChange={(e) => setPricingSettings({
+                              ...pricingSettings,
+                              usdToTryRate: parseFloat(e.target.value) || 0
+                            })}
+                            className="max-w-[150px] text-lg font-semibold"
+                          />
+                          <span className="text-2xl font-bold text-gray-700">₺</span>
+                        </div>
+                        {pricingSettings.lastRateUpdate && (
+                          <p className="text-xs text-gray-500 mt-2">
+                            Son güncelleme: {new Date(pricingSettings.lastRateUpdate).toLocaleString('tr-TR')}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Pricing Section */}
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="premiumPrice" className="text-sm font-medium">
+                          Premium Aylık Fiyat (USD)
+                        </Label>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xl font-bold text-gray-700">$</span>
+                          <Input
+                            id="premiumPrice"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={pricingSettings.premiumPriceUsd}
+                            onChange={(e) => setPricingSettings({
+                              ...pricingSettings,
+                              premiumPriceUsd: parseFloat(e.target.value) || 0
+                            })}
+                            className="max-w-[150px] text-lg font-semibold"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Calculated TL Price Display */}
+                      <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-sm font-medium text-green-900">TL Karşılığı (Otomatik)</p>
+                            <p className="text-xs text-green-700 mt-1">
+                              Müşterilere gösterilecek aylık ücret
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-3xl font-bold text-green-900">
+                              ₺{(pricingSettings.premiumPriceUsd * pricingSettings.usdToTryRate).toFixed(2)}
+                            </p>
+                            <p className="text-xs text-green-700 mt-1">
+                              / ay
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Calculation Details */}
+                      <div className="text-xs text-gray-500 p-3 bg-blue-50 border border-blue-200 rounded">
+                        <p className="font-semibold text-blue-900 mb-1">ℹ️ Hesaplama Detayı:</p>
+                        <p>
+                          ${pricingSettings.premiumPriceUsd} × ₺{pricingSettings.usdToTryRate} = 
+                          <span className="font-bold text-blue-900">
+                            {' '}₺{(pricingSettings.premiumPriceUsd * pricingSettings.usdToTryRate).toFixed(2)}
+                          </span>
+                        </p>
+                        <p className="mt-2 text-blue-800">
+                          Kur değiştiğinde tüm fiyatlar otomatik olarak güncellenir.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Save Button */}
+                    <div className="pt-4">
+                      <Button 
+                        onClick={savePricingSettings}
+                        disabled={savingPricing}
+                        className="w-full"
+                        size="lg"
+                      >
+                        {savingPricing ? "Kaydediliyor..." : "Fiyatlandırma Ayarlarını Kaydet"}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Info Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">💡 Neden USD?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-gray-600">
+                  <ul className="space-y-2 list-disc list-inside">
+                    <li>Sabit değer, enflasyondan korunma</li>
+                    <li>Uluslararası müşteriler için şeffaflık</li>
+                    <li>Kur değişikliklerinde esnek fiyatlandırma</li>
+                  </ul>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">🔄 Otomatik Güncelleme</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-gray-600">
+                  <ul className="space-y-2 list-disc list-inside">
+                    <li>Her gün saat 09:00'da otomatik güncellenir</li>
+                    <li>exchangerate-api.com API kullanılır</li>
+                    <li>Manuel "API'den Güncelle" butonu ile anında güncelleme</li>
+                    <li>Kur güncellemesi tüm fiyatları etkiler</li>
+                    <li>Mevcut abonelikler etkilenmez</li>
+                    <li>Yeni aboneliklerde güncel kur kullanılır</li>
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Extension Dialog */}
-      <Dialog open={extensionDialog.open} onOpenChange={(open) => setExtensionDialog({ ...extensionDialog, open })}>
+      <Dialog open={extensionDialog.open} onOpenChange={(open: boolean) => setExtensionDialog({ ...extensionDialog, open })}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Abonelik Süresini Uzat</DialogTitle>
@@ -790,7 +1104,7 @@ export default function SuperAdminPanel() {
                 type="number"
                 min="1"
                 value={extensionDialog.months}
-                onChange={(e) => setExtensionDialog({ ...extensionDialog, months: e.target.value })}
+                onChange={(e: ChangeEvent<HTMLInputElement>) => setExtensionDialog({ ...extensionDialog, months: e.target.value })}
                 placeholder="1"
               />
             </div>

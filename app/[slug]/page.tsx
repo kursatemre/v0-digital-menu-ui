@@ -11,6 +11,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useParams, useRouter } from "next/navigation"
 import Link from "next/link"
+import { LanguageProvider, useLanguage } from "@/contexts/language-context"
+import { LanguageSwitch } from "@/components/language-switch"
+import { LanguageAwareText } from "@/components/language-aware-text"
 
 type CartItem = {
   id: string
@@ -22,7 +25,9 @@ type CartItem = {
 type Product = {
   id: string
   name: string
+  name_en?: string
   description: string
+  description_en?: string
   price: number
   categoryId: string
   image: string
@@ -33,6 +38,7 @@ type Product = {
 type Category = {
   id: string
   name: string
+  name_en?: string
   image: string
 }
 
@@ -45,7 +51,8 @@ type Tenant = {
   is_active: boolean
 }
 
-export default function MenuPage() {
+function MenuPageContent() {
+  const { language } = useLanguage()
   const params = useParams()
   const router = useRouter()
   const slug = params.slug as string
@@ -74,6 +81,8 @@ export default function MenuPage() {
 
   const supabase = createClient()
 
+
+  
   // Load cart from localStorage on mount
   useEffect(() => {
     const savedCart = localStorage.getItem("restaurant_cart")
@@ -138,7 +147,7 @@ export default function MenuPage() {
         // 4. Load categories (with tenant_id filter)
         const { data: categoriesData, error: catError } = await supabase
           .from("categories")
-          .select("*")
+          .select("id, name, name_en, image")
           .eq("tenant_id", tenantData.id)
           .order("display_order", { ascending: true })
 
@@ -147,6 +156,7 @@ export default function MenuPage() {
           const formattedCategories = categoriesData.map((cat: any) => ({
             id: cat.id,
             name: cat.name,
+            name_en: cat.name_en,
             image: cat.image || "",
           }))
           setCategories(formattedCategories)
@@ -158,7 +168,7 @@ export default function MenuPage() {
         // 5. Load products (with tenant_id filter)
         const { data: productsData, error: prodError } = await supabase
           .from("products")
-          .select("*")
+          .select("id, name, name_en, description, description_en, price, category_id, image, badge, is_available")
           .eq("tenant_id", tenantData.id)
           .order("display_order", { ascending: true })
 
@@ -167,7 +177,9 @@ export default function MenuPage() {
           const formattedProducts = productsData.map((prod: any) => ({
             id: prod.id,
             name: prod.name,
+            name_en: prod.name_en,
             description: prod.description || "",
+            description_en: prod.description_en,
             price: prod.price,
             categoryId: prod.category_id,
             image: prod.image || "",
@@ -356,21 +368,35 @@ export default function MenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <MenuHeader />
+      <div className="min-h-screen bg-background">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-screen">
+            <div className="text-center">
+              <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+              <LanguageAwareText tr="Yükleniyor..." en="Loading..." />
+            </div>
+          </div>
+        ) : tenant ? (
+          <>
+            <MenuHeader title={tenant.business_name} theme={theme} />
 
-      {/* Waiter Call Button */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <button
-            onClick={() => setWaiterCallOpen(true)}
-            className="w-full bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
-          >
-            <Bell className="w-5 h-5" />
-            <span>Garson Çağır</span>
-          </button>
-        </div>
-      </div>
+            {/* Waiter Call Button & Language Switcher */}
+            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
+              <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setWaiterCallOpen(true)}
+                    className="flex-1 bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
+                  >
+                    <Bell className="w-5 h-5" />
+                    <span>
+                      <LanguageAwareText tr="Garson Çağır" en="Call Waiter" />
+                    </span>
+                  </button>
+                  <LanguageSwitch />
+                </div>
+              </div>
+            </div>
 
       {showToast && (
         <div className="fixed top-4 right-4 z-40 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -392,6 +418,7 @@ export default function MenuPage() {
             {categories.map((category) => {
               const categoryProducts = getCategoryProducts(category.id)
               const isExpanded = expandedCategories.has(category.id)
+              const displayName = language === "tr" ? category.name : (category.name_en || category.name)
 
               return (
                 <div
@@ -408,7 +435,7 @@ export default function MenuPage() {
                       {category.image ? (
                         <img
                           src={category.image}
-                          alt={category.name}
+                          alt={displayName}
                           className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg flex-shrink-0"
                         />
                       ) : (
@@ -417,7 +444,7 @@ export default function MenuPage() {
                         </div>
                       )}
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <h2 className="text-lg sm:text-xl font-bold text-foreground">{category.name}</h2>
+                        <h2 className="text-lg sm:text-xl font-bold text-foreground">{displayName}</h2>
                         <span className="text-xs sm:text-sm text-muted-foreground bg-primary/10 px-2 sm:px-3 py-1 rounded-full font-medium">
                           {categoryProducts.length}
                         </span>
@@ -458,17 +485,25 @@ export default function MenuPage() {
                               {/* Sold Out Badge */}
                               {!isAvailable && (
                                 <div className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md">
-                                  TÜKENDİ
+                                  <LanguageAwareText tr="TÜKENDİ" en="SOLD OUT" />
                                 </div>
                               )}
 
                               {/* Product Badge */}
                               {product.badge && isAvailable && (
                                 <div className="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-semibold shadow-md">
-                                  {product.badge === "gunun_urunu" && "Günün Ürünü"}
-                                  {product.badge === "sefin_onerisi" && "Şefin Önerisi"}
-                                  {product.badge === "yeni" && "Yeni"}
-                                  {product.badge === "populer" && "Popüler"}
+                                  {product.badge === "gunun_urunu" && (
+                                    <LanguageAwareText tr="Günün Ürünü" en="Today's Special" />
+                                  )}
+                                  {product.badge === "sefin_onerisi" && (
+                                    <LanguageAwareText tr="Şefin Önerisi" en="Chef's Choice" />
+                                  )}
+                                  {product.badge === "yeni" && (
+                                    <LanguageAwareText tr="Yeni" en="New" />
+                                  )}
+                                  {product.badge === "populer" && (
+                                    <LanguageAwareText tr="Popüler" en="Popular" />
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -477,18 +512,20 @@ export default function MenuPage() {
                             <div className="flex-1 p-3 sm:p-4 flex flex-col">
                               {/* Product Name */}
                               <h3 className="text-base sm:text-lg font-bold text-foreground mb-1.5 line-clamp-2">
-                                {product.name}
+                                {language === "tr" ? product.name : (product.name_en || product.name)}
                               </h3>
 
                               {/* Product Description */}
                               <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2 flex-1">
-                                {product.description}
+                                {language === "tr" ? product.description : (product.description_en || product.description)}
                               </p>
 
                               {/* Price and Add to Cart Button */}
                               <div className="flex items-center gap-2 sm:gap-3 mt-auto">
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">Fiyat</p>
+                                  <p className="text-xs text-muted-foreground mb-0.5">
+                                    <LanguageAwareText tr="Fiyat" en="Price" />
+                                  </p>
                                   <p className="text-xl sm:text-2xl font-bold text-primary">
                                     ₺{product.price.toFixed(2)}
                                   </p>
@@ -502,7 +539,17 @@ export default function MenuPage() {
                                       : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                   }`}
                                 >
-                                  {isAvailable ? 'Sepete Ekle' : 'Tükendi'}
+                                  {isAvailable ? (
+                                    <LanguageAwareText 
+                                      tr="Sepete Ekle" 
+                                      en="Add to Cart" 
+                                    />
+                                  ) : (
+                                    <LanguageAwareText 
+                                      tr="Tükendi" 
+                                      en="Sold Out" 
+                                    />
+                                  )}
                                 </button>
                               </div>
                             </div>
@@ -510,7 +557,10 @@ export default function MenuPage() {
                         )})
                       ) : (
                         <div className="col-span-full px-6 py-8 text-center text-muted-foreground">
-                          Bu kategoride ürün bulunmamaktadır.
+                          <LanguageAwareText 
+                            tr="Bu kategoride ürün bulunmamaktadır." 
+                            en="No products found in this category." 
+                          />
                         </div>
                       )}
                     </div>
@@ -521,8 +571,16 @@ export default function MenuPage() {
           </div>
         ) : (
           <div className="text-center py-20">
-            <p className="text-muted-foreground text-lg mb-6">Henüz kategori eklenmemiştir.</p>
-            <p className="text-sm text-muted-foreground">/admin sayfasından kategoriler ve ürünler ekleyebilirsiniz.</p>
+            <LanguageAwareText 
+              tr="Henüz kategori eklenmemiştir." 
+              en="No categories have been added yet." 
+            />
+            <p className="text-sm text-muted-foreground">
+              <LanguageAwareText 
+                tr="/admin sayfasından kategoriler ve ürünler ekleyebilirsiniz." 
+                en="You can add categories and products from the /admin page." 
+              />
+            </p>
           </div>
         )}
       </main>
@@ -560,8 +618,12 @@ export default function MenuPage() {
             {/* Header */}
             <div className="border-b border-primary/20 bg-gradient-to-r from-secondary/10 to-primary/10 p-4 sm:p-5 flex items-center justify-between rounded-t-2xl">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-primary">Garson Çağır</h2>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">Masa numaranızı girin</p>
+                <h2 className="text-2xl sm:text-3xl font-bold text-primary">
+                  <LanguageAwareText tr="Garson Çağır" en="Call Waiter" />
+                </h2>
+                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                  <LanguageAwareText tr="Masa numaranızı girin" en="Enter your table number" />
+                </p>
               </div>
               <button
                 onClick={() => setWaiterCallOpen(false)}
@@ -576,11 +638,11 @@ export default function MenuPage() {
             <div className="p-5 sm:p-6 space-y-4">
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2">
-                  🪑 Masa Numarası <span className="text-red-500">*</span>
+                  🪑 <LanguageAwareText tr="Masa Numarası" en="Table Number" /> <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
-                  placeholder="A5, 12, Bahçe-3..."
+                  placeholder={language === 'tr' ? 'A5, 12, Bahçe-3...' : 'A5, 12, Garden-3...'}
                   value={waiterTableNumber}
                   onChange={(e) => setWaiterTableNumber(e.target.value)}
                   className="w-full text-lg"
@@ -589,11 +651,11 @@ export default function MenuPage() {
 
               <div>
                 <label className="block text-sm font-bold text-foreground mb-2">
-                  👤 İsim (İsteğe bağlı)
+                  👤 <LanguageAwareText tr="İsim (İsteğe bağlı)" en="Name (Optional)" />
                 </label>
                 <Input
                   type="text"
-                  placeholder="Adınız"
+                  placeholder={language === 'tr' ? 'Adınız' : 'Your name'}
                   value={waiterName}
                   onChange={(e) => setWaiterName(e.target.value)}
                   className="w-full"
@@ -608,12 +670,12 @@ export default function MenuPage() {
                 {waiterCallLoading ? (
                   <>
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Gönderiliyor...
+                    <LanguageAwareText tr="Gönderiliyor..." en="Sending..." />
                   </>
                 ) : (
                   <>
                     <Bell className="w-5 h-5 mr-2" />
-                    Garson Çağır
+                    <LanguageAwareText tr="Garson Çağır" en="Call Waiter" />
                   </>
                 )}
               </Button>
@@ -621,6 +683,16 @@ export default function MenuPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
+  ) : null}
+      </div>
   )
+}
+
+export default function MenuPage() {
+  return (
+    <LanguageProvider>
+      <MenuPageContent />
+    </LanguageProvider>
+  );
 }

@@ -3,12 +3,16 @@
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import Image from "next/image"
+import { useLanguage } from "@/contexts/language-context"
+import { LanguageAwareText } from "@/components/language-aware-text"
 
 interface ProductCardProps {
   product: {
     id: string
     name: string
+    name_en: string
     description: string
+    description_en: string
     price: number
     badge?: string | null
   }
@@ -26,13 +30,18 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
   const incrementQuantity = () => setQuantity((q) => q + 1)
   const decrementQuantity = () => setQuantity((q) => (q > 1 ? q - 1 : 1))
 
+  const { language } = useLanguage()
+
+  const displayName = language === "tr" ? product.name : product.name_en
+  const displayDescription = language === "tr" ? product.description : product.description_en
+
   return (
     <div className="bg-white rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow">
       {/* Product Image */}
       <div className="relative w-full h-48 bg-muted flex items-center justify-center overflow-hidden">
         <Image
-          src={`/.jpg?height=192&width=300&query=${encodeURIComponent(product.name)}`}
-          alt={product.name}
+          src={`/.jpg?height=192&width=300&query=${encodeURIComponent(displayName)}`}
+          alt={displayName}
           width={300}
           height={192}
           className="w-full h-full object-cover"
@@ -46,8 +55,8 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
       {/* Product Info */}
       <div className="p-4">
-        <h3 className="text-xl font-bold text-foreground mb-1">{product.name}</h3>
-        <p className="text-muted-foreground text-sm mb-4">{product.description}</p>
+        <h3 className="text-xl font-bold text-foreground mb-1">{displayName}</h3>
+        <p className="text-muted-foreground text-sm mb-4">{displayDescription}</p>
 
         {/* Price and Quantity */}
         <div className="flex items-center justify-between mb-4">
@@ -73,7 +82,7 @@ export function ProductCard({ product, onAddToCart }: ProductCardProps) {
 
         {/* Add to Cart Button */}
         <Button onClick={handleAddToCart} className="w-full bg-primary text-primary-foreground hover:bg-primary/90">
-          Sepete Ekle
+          <LanguageAwareText tr="Sepete Ekle" en="Add to Cart" />
         </Button>
       </div>
     </div>
