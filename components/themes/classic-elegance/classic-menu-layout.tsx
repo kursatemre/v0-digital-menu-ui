@@ -224,17 +224,8 @@ export function ClassicMenuLayout({
 
       {/* Header */}
       <header className="relative py-20 px-4 text-center border-b border-[#D4AF37]/30">
-        {/* Top Buttons: Language Toggle and Waiter Call */}
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-8 flex items-center gap-2">
-          <button
-            onClick={() => setWaiterCallOpen(true)}
-            className="group relative px-4 py-2 bg-[#1a1a1a] border border-[#D4AF37]/40 rounded-sm transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#2a2210]/30 flex items-center gap-2"
-          >
-            <Bell className="w-4 h-4 text-[#D4AF37]" />
-            <span className="hidden sm:inline relative text-sm font-['Playfair_Display',serif] font-medium tracking-wider text-[#D4AF37]">
-              {language === "tr" ? "Garson Çağır" : "Call Waiter"}
-            </span>
-          </button>
+        {/* Top Button: Language Toggle */}
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-8">
           <button
             onClick={() => setLanguage(language === "tr" ? "en" : "tr")}
             className="group relative px-4 py-2 bg-[#1a1a1a] border border-[#D4AF37]/40 rounded-sm transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#2a2210]/30"
@@ -378,30 +369,44 @@ export function ClassicMenuLayout({
         })}
       </main>
 
-      {/* Cart Button - Floating */}
-      {totalItems > 0 && (
+      {/* Floating Action Buttons */}
+      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* Waiter Call Button */}
         <button
-          onClick={() => setShowCart(true)}
-          className="fixed bottom-6 right-6 z-50 bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm p-4 hover:bg-[#2a2210]/50 transition-all duration-300 shadow-2xl group"
+          onClick={() => setWaiterCallOpen(true)}
+          className="bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm p-4 hover:bg-[#2a2210]/50 transition-all duration-300 shadow-2xl group"
         >
-          <div className="relative flex items-center gap-3">
-            <ShoppingBag className="w-6 h-6 text-[#D4AF37]" />
-            <div className="flex flex-col items-start">
-              <span className="text-[#D4AF37] font-['Playfair_Display',serif] font-semibold text-sm">
-                {totalItems} {language === "tr" ? "Ürün" : "Items"}
-              </span>
-              <span className="text-[#D4AF37] font-bold text-lg">
-                ₺{totalPrice.toFixed(2)}
-              </span>
-            </div>
-            {totalItems > 0 && (
+          <div className="flex items-center gap-3">
+            <Bell className="w-6 h-6 text-[#D4AF37] group-hover:animate-pulse" />
+            <span className="text-[#D4AF37] font-['Playfair_Display',serif] font-semibold text-sm">
+              {language === "tr" ? "Garson Çağır" : "Call Waiter"}
+            </span>
+          </div>
+        </button>
+
+        {/* Cart Button */}
+        {totalItems > 0 && (
+          <button
+            onClick={() => setShowCart(true)}
+            className="bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm p-4 hover:bg-[#2a2210]/50 transition-all duration-300 shadow-2xl group"
+          >
+            <div className="relative flex items-center gap-3">
+              <ShoppingBag className="w-6 h-6 text-[#D4AF37]" />
+              <div className="flex flex-col items-start">
+                <span className="text-[#D4AF37] font-['Playfair_Display',serif] font-semibold text-sm">
+                  {totalItems} {language === "tr" ? "Ürün" : "Items"}
+                </span>
+                <span className="text-[#D4AF37] font-bold text-lg">
+                  ₺{totalPrice.toFixed(2)}
+                </span>
+              </div>
               <div className="absolute -top-2 -right-2 bg-[#D4AF37] text-[#1a1a1a] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
                 {totalItems}
               </div>
-            )}
-          </div>
-        </button>
-      )}
+            </div>
+          </button>
+        )}
+      </div>
 
       {/* Cart & Checkout Modal */}
       {showCart && (
