@@ -2492,22 +2492,95 @@ export default function AdminPanel() {
   )
 
   const renderQRTab = () => {
-    const downloadQRCode = () => {
+    const downloadQRCode = async () => {
       const svg = document.getElementById("qr-code-svg")
       if (!svg) return
 
-      // SVG'yi string'e çevir
-      const svgData = new XMLSerializer().serializeToString(svg)
-      const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" })
-      const svgUrl = URL.createObjectURL(svgBlob)
+      try {
+        // Clone the SVG to avoid modifying the original
+        const clonedSvg = svg.cloneNode(true) as SVGElement
 
-      const link = document.createElement("a")
-      link.href = svgUrl
-      link.download = "menu-qr-code.svg"
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      URL.revokeObjectURL(svgUrl)
+        // Find all image elements in the SVG
+        const images = clonedSvg.querySelectorAll('image')
+
+        // Wait for all images to load
+        const imagePromises = Array.from(images).map((img) => {
+          return new Promise<void>((resolve, reject) => {
+            const href = img.getAttribute('href') || img.getAttribute('xlink:href')
+            if (!href) {
+              resolve()
+              return
+            }
+
+            // If it's already a data URL, it's loaded
+            if (href.startsWith('data:')) {
+              resolve()
+              return
+            }
+
+            // Load the image and convert to data URL
+            const image = new Image()
+            image.crossOrigin = 'anonymous'
+            image.onload = () => {
+              try {
+                const canvas = document.createElement('canvas')
+                canvas.width = image.width
+                canvas.height = image.height
+                const ctx = canvas.getContext('2d')
+                if (ctx) {
+                  ctx.drawImage(image, 0, 0)
+                  const dataURL = canvas.toDataURL('image/png')
+                  img.setAttribute('href', dataURL)
+                }
+                resolve()
+              } catch (error) {
+                console.error('Error converting image to data URL:', error)
+                resolve() // Continue even if one image fails
+              }
+            }
+            image.onerror = () => {
+              console.error('Error loading image:', href)
+              resolve() // Continue even if one image fails
+            }
+            image.src = href
+          })
+        })
+
+        await Promise.all(imagePromises)
+
+        // Now convert the SVG to PNG
+        const canvas = document.createElement("canvas")
+        const ctx = canvas.getContext("2d")
+        if (!ctx) return
+
+        const svgData = new XMLSerializer().serializeToString(clonedSvg)
+        const img = new Image()
+
+        img.onload = () => {
+          canvas.width = qrSettings.size
+          canvas.height = qrSettings.size
+          ctx.drawImage(img, 0, 0)
+          const link = document.createElement("a")
+          link.download = "menu-qr-code.png"
+          link.href = canvas.toDataURL("image/png")
+          link.click()
+        }
+
+        img.onerror = () => {
+          console.error('Error loading SVG image')
+          alert('QR kodu indirilemedi. Lütfen tekrar deneyin.')
+        }
+
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
+        const url = URL.createObjectURL(svgBlob)
+        img.src = url
+
+        // Clean up
+        setTimeout(() => URL.revokeObjectURL(url), 100)
+      } catch (error) {
+        console.error('Error downloading QR code:', error)
+        alert('QR kodu indirilemedi. Lütfen tekrar deneyin.')
+      }
     }
 
     return (
