@@ -14,6 +14,7 @@ import {
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
@@ -256,6 +257,7 @@ export default function AdminPanel() {
   const [premiumPriceTry, setPremiumPriceTry] = useState<number>(299)
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [deleteWaiterCallId, setDeleteWaiterCallId] = useState<string | null>(null)
   const [filter, setFilter] = useState<"all" | "pending" | "preparing" | "ready" | "completed">("all")
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null)
@@ -1071,7 +1073,7 @@ export default function AdminPanel() {
       } else {
         console.log("Delete successful, reloading calls...")
         loadWaiterCalls()
-        setDeleteId(null)
+        setDeleteWaiterCallId(null)
       }
     } catch (err) {
       console.error("Supabase error:", err)
@@ -1771,7 +1773,10 @@ export default function AdminPanel() {
                       <Button
                         size="sm"
                         variant="destructive"
-                        onClick={() => setDeleteId(call.id)}
+                        onClick={() => {
+                          console.log("Delete button clicked for call:", call.id)
+                          setDeleteWaiterCallId(call.id)
+                        }}
                       >
                         <Trash2 className="w-4 h-4 mr-1" />
                         Sil
@@ -1785,22 +1790,48 @@ export default function AdminPanel() {
         </div>
       )}
 
-      <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Garson Çağrısını Sil</AlertDialogTitle>
-            <AlertDialogDescription>
+      {deleteWaiterCallId && (
+        <div
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            // Close modal if clicking outside
+            if (e.target === e.currentTarget) {
+              setDeleteWaiterCallId(null)
+            }
+          }}
+        >
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-xl font-semibold mb-2">Garson Çağrısını Sil</h2>
+            <p className="text-gray-600 mb-6">
               Bu garson çağrısını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="flex gap-2 justify-end">
-            <AlertDialogCancel>İptal</AlertDialogCancel>
-            <AlertDialogAction onClick={() => deleteId && deleteWaiterCall(deleteId)} className="bg-red-600">
-              Sil
-            </AlertDialogAction>
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  console.log("Cancel button clicked")
+                  setDeleteWaiterCallId(null)
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
+              >
+                İptal
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  console.log("Modal delete button clicked, deleteWaiterCallId:", deleteWaiterCallId)
+                  deleteWaiterCall(deleteWaiterCallId)
+                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Sil
+              </button>
+            </div>
           </div>
-        </AlertDialogContent>
-      </AlertDialog>
+        </div>
+      )}
     </div>
   )
 
