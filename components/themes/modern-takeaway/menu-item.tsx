@@ -211,29 +211,30 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow">
-        <div className="flex items-center gap-3">
-          {/* Product Image - Small and compact */}
+      <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow w-full">
+        <div className="flex items-center gap-4">
+          {/* Product Image - Smaller with badge overlay */}
           {product.image && (
-            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
+            <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
               <img
                 src={product.image}
                 alt={name}
                 className="w-full h-full object-cover"
               />
+              {/* Badge on image */}
+              {product.badge && (
+                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-orange-500 to-orange-600 px-1.5 py-0.5">
+                  <span className="text-[10px] font-bold text-white uppercase tracking-wide block text-center leading-tight">
+                    {product.badge}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Product Info - Single line */}
+          {/* Product Info - More space for name */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
-              <h3 className="font-semibold text-gray-900 text-sm truncate">{name}</h3>
-              {product.badge && (
-                <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium whitespace-nowrap flex-shrink-0">
-                  {product.badge}
-                </span>
-              )}
-            </div>
+            <h3 className="font-semibold text-gray-900 text-base truncate mb-0.5">{name}</h3>
             
             {description && (
               <p className="text-xs text-gray-500 line-clamp-1 mb-1">{description}</p>
@@ -256,14 +257,14 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
           {/* Price & Add Button */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Price */}
-            <span className="text-base font-bold text-gray-900">
+            <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
               {getCurrentPrice().toFixed(2)}₺
             </span>
 
             {/* Add Button - Opens modal if has customizations */}
             <button
               onClick={handleAddClick}
-              className="w-9 h-9 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center"
+              className="w-10 h-10 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center"
               aria-label={language === "en" ? "Add to Cart" : "Sepete Ekle"}
             >
               <Plus className="w-5 h-5" strokeWidth={2.5} />
