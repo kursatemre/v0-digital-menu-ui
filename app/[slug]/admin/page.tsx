@@ -678,13 +678,19 @@ export default function AdminPanel() {
     }
   }
 
-  // Upload image to Supabase Storage
+  // Upload image to Supabase Storage (tenant-specific)
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
+      if (!tenantId) {
+        alert("Tenant bilgisi bulunamadı!")
+        return null
+      }
+
       setUploadingImage(true)
       const fileExt = file.name.split(".").pop()
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`
-      const filePath = `${fileName}`
+      // Tenant-specific path: tenants/{tenant_id}/images/{filename}
+      const filePath = `tenants/${tenantId}/images/${fileName}`
 
       const { error: uploadError } = await supabase.storage.from("menu-images").upload(filePath, file)
 
