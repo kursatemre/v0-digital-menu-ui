@@ -197,16 +197,25 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
     setShowCustomization(false)
   }
 
-  // Show customize button only if there are customization options or variants
+  // Show modal only if there are customization options or variants
   const hasCustomizations = customizationGroups.length > 0 || variants.length > 0
+
+  // Handle add button click - open modal if has customizations, otherwise add directly
+  const handleAddClick = () => {
+    if (hasCustomizations) {
+      setShowCustomization(true)
+    } else {
+      handleQuickAdd()
+    }
+  }
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
-        <div className="flex flex-col sm:flex-row gap-4">
-          {/* Product Image */}
+      <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow">
+        <div className="flex items-center gap-3">
+          {/* Product Image - Small and compact */}
           {product.image && (
-            <div className="w-full sm:w-20 h-40 sm:h-20 flex-shrink-0 rounded-lg overflow-hidden">
+            <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden">
               <img
                 src={product.image}
                 alt={name}
@@ -215,88 +224,53 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
             </div>
           )}
 
-          {/* Product Info */}
-          <div className="flex-1 min-w-0 flex flex-col">
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <h3 className="font-bold text-gray-900 text-base leading-tight">{name}</h3>
+          {/* Product Info - Single line */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <h3 className="font-semibold text-gray-900 text-sm truncate">{name}</h3>
               {product.badge && (
-                <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-semibold whitespace-nowrap flex-shrink-0">
+                <span className="text-xs px-2 py-0.5 bg-orange-100 text-orange-700 rounded-full font-medium whitespace-nowrap flex-shrink-0">
                   {product.badge}
                 </span>
               )}
             </div>
             
             {description && (
-              <p className="text-sm text-gray-600 mb-3 line-clamp-2">{description}</p>
+              <p className="text-xs text-gray-500 line-clamp-1 mb-1">{description}</p>
             )}
 
-            {/* Variants - Horizontal scroll on mobile */}
-            {variants.length > 0 && (
-              <div className="mb-3">
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {variants.map((variant) => (
-                    <button
-                      key={variant.id}
-                      onClick={() => setSelectedVariant(variant)}
-                      className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all whitespace-nowrap flex-shrink-0 ${
-                        selectedVariant?.id === variant.id
-                          ? "bg-orange-500 text-white shadow-md"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                      }`}
-                    >
-                      <span className="text-xs">{language === "en" && variant.name_en ? variant.name_en : variant.name}</span>
-                      <span className="ml-1">{(product.price + variant.price_modifier).toFixed(2)}₺</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Price & Action Buttons */}
-            <div className="flex items-center justify-between gap-3 mt-auto">
-              {/* Price */}
-              <span className="text-lg font-bold text-gray-900">
-                {getCurrentPrice().toFixed(2)}₺
-              </span>
-
-              {/* Action Buttons */}
-              <div className="flex items-center gap-2">
-                {/* Customize Button - Only show if there are customizations */}
-                {hasCustomizations && (
-                  <button
-                    onClick={() => setShowCustomization(true)}
-                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm transition-all flex items-center gap-1"
-                    aria-label={language === "en" ? "Customize" : "Özelleştir"}
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span className="hidden sm:inline">{language === "en" ? "Customize" : "Özelleştir"}</span>
-                  </button>
-                )}
-
-                {/* Quick Add to Cart */}
-                <button
-                  onClick={handleQuickAdd}
-                  className="px-4 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 text-white font-semibold text-sm shadow-md hover:shadow-lg transition-all flex items-center gap-1"
-                  aria-label={language === "en" ? "Add to Cart" : "Sepete Ekle"}
-                >
-                  <Plus className="w-4 h-4" strokeWidth={2.5} />
-                  <span>{language === "en" ? "Add" : "Ekle"}</span>
-                </button>
-              </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500">
+              {variants.length > 0 && (
+                <span>
+                  {variants.length} {language === "en" ? "sizes" : "boyut"}
+                </span>
+              )}
+              {customizationGroups.length > 0 && (
+                <span>
+                  • {customizationGroups.length} {language === "en" ? "options" : "seçenek"}
+                </span>
+              )}
             </div>
+          </div>
+
+          {/* Price & Add Button */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            {/* Price */}
+            <span className="text-base font-bold text-gray-900">
+              {getCurrentPrice().toFixed(2)}₺
+            </span>
+
+            {/* Add Button - Opens modal if has customizations */}
+            <button
+              onClick={handleAddClick}
+              className="w-9 h-9 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center"
+              aria-label={language === "en" ? "Add to Cart" : "Sepete Ekle"}
+            >
+              <Plus className="w-5 h-5" strokeWidth={2.5} />
+            </button>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .scrollbar-hide::-webkit-scrollbar {
-          display: none;
-        }
-        .scrollbar-hide {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
 
       {/* Customization Modal */}
       {showCustomization && (
