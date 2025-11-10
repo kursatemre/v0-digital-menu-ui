@@ -74,10 +74,10 @@ export function MenuHeader({ title = "Menümüz", theme }: MenuHeaderProps) {
   }, [])
 
   return (
-    <div className="relative overflow-hidden border-b border-primary/10">
+    <div className="relative overflow-hidden border-b-2 border-secondary/20 elegant-gradient-bg">
       {/* Background Image */}
       {headerConfig.backgroundImage ? (
-        <div 
+        <div
           className="absolute inset-0 z-0"
           style={{
             backgroundImage: `url(${headerConfig.backgroundImage})`,
@@ -87,31 +87,43 @@ export function MenuHeader({ title = "Menümüz", theme }: MenuHeaderProps) {
           }}
         />
       ) : (
-        /* Default Background Pattern */
-        <div className="absolute inset-0 z-0 bg-white dotted-bg" />
+        /* Default Elegance Pattern */
+        <div className="absolute inset-0 z-0 elegance-pattern" />
       )}
 
+      {/* Decorative top border */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary to-transparent opacity-60"></div>
+
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-12 lg:py-16">
-        <div className="flex items-start justify-between gap-3 sm:gap-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-14 lg:py-20">
+        <div className="flex items-center justify-between gap-4 sm:gap-8">
           {/* Left side: Title and subtitle */}
           <div className="flex-1 min-w-0">
-            <h1 className="text-2xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-1 sm:mb-2">{headerConfig.title}</h1>
-            <p className="text-xs sm:text-base text-muted-foreground">{headerConfig.subtitle}</p>
+            <h1 className="text-2xl sm:text-4xl lg:text-6xl font-serif font-bold text-foreground mb-2 sm:mb-3 tracking-tight">
+              {headerConfig.title}
+            </h1>
+            <p className="text-sm sm:text-lg text-muted-foreground italic font-light">
+              {headerConfig.subtitle}
+            </p>
           </div>
 
           {/* Right side: Logo */}
           {headerConfig.logo && (
             <div className="flex-shrink-0">
-              <img
-                src={headerConfig.logo || "/placeholder.svg"}
-                alt="Logo"
-                className="h-16 w-16 sm:h-24 sm:w-24 object-contain bg-white rounded-lg p-2 shadow-lg"
-              />
+              <div className="elegant-border-thick rounded-xl p-2 sm:p-3 bg-white/90 backdrop-blur-sm elegant-shadow">
+                <img
+                  src={headerConfig.logo || "/placeholder.svg"}
+                  alt="Logo"
+                  className="h-16 w-16 sm:h-28 sm:w-28 object-contain"
+                />
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Decorative bottom border */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary to-transparent opacity-60"></div>
     </div>
   )
 }

@@ -4,43 +4,43 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Modern blue theme - Ultra tech look */
-  --background: oklch(0.98 0.005 240);
-  --foreground: oklch(0.15 0.02 240);
-  --card: oklch(0.99 0.005 240);
-  --card-foreground: oklch(0.15 0.02 240);
-  --popover: oklch(0.99 0.005 240);
-  --popover-foreground: oklch(0.15 0.02 240);
-  /* Primary: Electric blue */
-  --primary: oklch(0.55 0.25 250);
-  --primary-text-color: var(--primary-foreground);
-  --primary-foreground: oklch(0.99 0.005 240);
-  /* Secondary: Cyan accent */
-  --secondary: oklch(0.65 0.2 210);
-  --secondary-foreground: oklch(0.99 0.005 240);
-  --muted: oklch(0.95 0.01 240);
-  --muted-foreground: oklch(0.45 0.02 240);
-  --accent: oklch(0.6 0.22 230);
-  --accent-foreground: oklch(0.99 0.005 240);
+  /* Classic Elegance Theme - Luxurious Restaurant Look */
+  --background: oklch(0.99 0.002 60);
+  --foreground: oklch(0.15 0.01 30);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.01 30);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 30);
+  /* Primary: Rich Brown (#8B5A3C) */
+  --primary: oklch(0.45 0.08 40);
+  --primary-text-color: oklch(0.99 0 0);
+  --primary-foreground: oklch(0.99 0 0);
+  /* Secondary: Elegant Gold (#C9A961) */
+  --secondary: oklch(0.72 0.09 75);
+  --secondary-foreground: oklch(0.15 0.01 30);
+  --muted: oklch(0.96 0.005 60);
+  --muted-foreground: oklch(0.48 0.01 30);
+  --accent: oklch(0.72 0.09 75);
+  --accent-foreground: oklch(0.15 0.01 30);
   --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.99 0.005 240);
-  --border: oklch(0.92 0.01 240);
-  --input: oklch(0.96 0.008 240);
-  --ring: oklch(0.55 0.25 250);
-  --chart-1: oklch(0.55 0.25 250);
-  --chart-2: oklch(0.65 0.2 210);
-  --chart-3: oklch(0.5 0.2 260);
-  --chart-4: oklch(0.7 0.15 220);
-  --chart-5: oklch(0.45 0.2 240);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.985 0.005 240);
-  --sidebar-foreground: oklch(0.145 0.02 240);
-  --sidebar-primary: oklch(0.55 0.25 250);
-  --sidebar-primary-foreground: oklch(0.985 0.005 240);
-  --sidebar-accent: oklch(0.97 0.008 240);
-  --sidebar-accent-foreground: oklch(0.205 0.02 240);
-  --sidebar-border: oklch(0.922 0.01 240);
-  --sidebar-ring: oklch(0.708 0.02 240);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.90 0.01 40);
+  --input: oklch(0.98 0.002 60);
+  --ring: oklch(0.45 0.08 40);
+  --chart-1: oklch(0.45 0.08 40);
+  --chart-2: oklch(0.72 0.09 75);
+  --chart-3: oklch(0.50 0.07 45);
+  --chart-4: oklch(0.65 0.08 70);
+  --chart-5: oklch(0.55 0.07 50);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.99 0.002 60);
+  --sidebar-foreground: oklch(0.15 0.01 30);
+  --sidebar-primary: oklch(0.45 0.08 40);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0.005 60);
+  --sidebar-accent-foreground: oklch(0.20 0.01 30);
+  --sidebar-border: oklch(0.90 0.01 40);
+  --sidebar-ring: oklch(0.72 0.09 75);
 }
 
 .dark {
@@ -188,5 +188,85 @@
     backdrop-filter: blur(16px) saturate(180%);
     border: 1px solid rgba(59, 130, 246, 0.2);
     box-shadow: 0 8px 32px rgba(59, 130, 246, 0.12);
+  }
+
+  /* Classic Elegance Theme Utilities */
+  .elegance-pattern {
+    background-image:
+      repeating-linear-gradient(45deg, transparent, transparent 35px, rgba(201, 169, 97, 0.03) 35px, rgba(201, 169, 97, 0.03) 70px),
+      repeating-linear-gradient(-45deg, transparent, transparent 35px, rgba(139, 90, 60, 0.02) 35px, rgba(139, 90, 60, 0.02) 70px);
+  }
+
+  .elegant-shadow {
+    box-shadow:
+      0 1px 3px rgba(139, 90, 60, 0.12),
+      0 4px 8px rgba(139, 90, 60, 0.08),
+      0 8px 16px rgba(201, 169, 97, 0.06);
+  }
+
+  .golden-glow {
+    box-shadow:
+      0 0 20px rgba(201, 169, 97, 0.15),
+      0 0 40px rgba(201, 169, 97, 0.08);
+  }
+
+  .elegant-border {
+    border: 1px solid rgba(201, 169, 97, 0.25);
+  }
+
+  .elegant-border-thick {
+    border: 2px solid rgba(201, 169, 97, 0.3);
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -200% center;
+    }
+    100% {
+      background-position: 200% center;
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-shimmer {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(201, 169, 97, 0.2),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 3s ease-in-out infinite;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.6s ease-out;
+  }
+
+  .elegant-card {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 252, 245, 0.95));
+    border: 1px solid rgba(201, 169, 97, 0.25);
+    box-shadow:
+      0 2px 8px rgba(139, 90, 60, 0.08),
+      0 8px 24px rgba(139, 90, 60, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .elegant-gradient-bg {
+    background: linear-gradient(135deg, #FFFEF9 0%, #FFF8E7 50%, #FFFEF9 100%);
+  }
+
+  .gold-accent-border {
+    border-left: 3px solid rgba(201, 169, 97, 0.6);
   }
 }

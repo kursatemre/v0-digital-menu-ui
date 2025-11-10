@@ -412,12 +412,12 @@ function MenuPageContent() {
             <MenuHeader title={tenant.business_name} theme={theme} />
 
             {/* Waiter Call Button & Language Switcher */}
-            <div className="sticky top-0 z-30 bg-white/95 backdrop-blur-sm border-b border-primary/10 shadow-sm">
+            <div className="sticky top-0 z-30 bg-white/98 backdrop-blur-sm border-b-2 border-secondary/15 elegant-shadow">
               <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setWaiterCallOpen(true)}
-                    className="flex-1 bg-gradient-to-r from-secondary to-secondary/90 hover:from-secondary/90 hover:to-secondary/80 text-white font-bold py-3 px-6 rounded-xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 active:scale-98"
+                    className="flex-1 bg-gradient-to-r from-secondary to-secondary/95 hover:from-secondary/95 hover:to-secondary text-secondary-foreground font-semibold py-3 px-6 rounded-lg elegant-shadow hover:golden-glow transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 border border-secondary/30"
                   >
                     <Bell className="w-5 h-5" />
                     <span>
@@ -454,37 +454,39 @@ function MenuPageContent() {
               return (
                 <div
                   key={category.id}
-                  className="bg-white rounded-xl border border-primary/15 overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className="elegant-card rounded-xl overflow-hidden elegant-shadow hover:golden-glow transition-all duration-300 animate-fade-in-up"
                 >
                   {/* Category Header */}
                   <button
                     onClick={() => toggleCategory(category.id)}
-                    className="w-full px-4 sm:px-6 py-4 flex items-center justify-between hover:bg-primary/5 transition-colors accent-left-border"
+                    className="w-full px-4 sm:px-6 py-5 flex items-center justify-between hover:bg-secondary/5 transition-all duration-200 gold-accent-border"
                   >
                     <div className="flex items-center gap-3 sm:gap-4">
                       {/* Category Image */}
                       {category.image ? (
-                        <img
-                          src={category.image}
-                          alt={displayName}
-                          className="w-12 h-12 sm:w-14 sm:h-14 object-cover rounded-lg flex-shrink-0"
-                        />
+                        <div className="elegant-border rounded-lg p-1 bg-white">
+                          <img
+                            src={category.image}
+                            alt={displayName}
+                            className="w-14 h-14 sm:w-16 sm:h-16 object-cover rounded-md flex-shrink-0"
+                          />
+                        </div>
                       ) : (
-                        <div className="w-12 h-12 sm:w-14 sm:h-14 bg-gradient-to-br from-primary/20 to-primary/5 rounded-lg flex items-center justify-center text-2xl flex-shrink-0">
+                        <div className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-secondary/20 to-secondary/10 rounded-lg flex items-center justify-center text-2xl flex-shrink-0 elegant-border">
                           📋
                         </div>
                       )}
                       <div className="flex items-center gap-2 sm:gap-3">
-                        <h2 className="text-lg sm:text-xl font-bold text-foreground">{displayName}</h2>
-                        <span className="text-xs sm:text-sm text-muted-foreground bg-primary/10 px-2 sm:px-3 py-1 rounded-full font-medium">
+                        <h2 className="text-lg sm:text-xl font-serif font-bold text-foreground tracking-wide">{displayName}</h2>
+                        <span className="text-xs sm:text-sm text-secondary-foreground bg-secondary/20 px-3 py-1 rounded-full font-semibold border border-secondary/30">
                           {categoryProducts.length}
                         </span>
                       </div>
                     </div>
                     {isExpanded ? (
-                      <ChevronUp className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
+                      <ChevronUp className="w-6 h-6 text-secondary flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="w-5 h-5 sm:w-6 sm:h-6 text-primary flex-shrink-0" />
+                      <ChevronDown className="w-6 h-6 text-secondary flex-shrink-0" />
                     )}
                   </button>
 
@@ -497,32 +499,35 @@ function MenuPageContent() {
                           return (
                           <div
                             key={product.id}
-                            className={`bg-white border border-primary/10 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex flex-col sm:flex-row ${!isAvailable ? 'opacity-60' : ''}`}
+                            className={`elegant-card rounded-xl overflow-hidden elegant-shadow hover:golden-glow transition-all duration-300 flex flex-col sm:flex-row ${!isAvailable ? 'opacity-60' : ''}`}
                           >
                             {/* Product Image */}
-                            <div className="relative flex-shrink-0 sm:w-44">
+                            <div className="relative flex-shrink-0 sm:w-48">
                               {product.image ? (
-                                <img
-                                  src={product.image || "/placeholder.svg"}
-                                  alt={product.name}
-                                  className={`w-full h-40 sm:h-full object-cover ${!isAvailable ? 'grayscale' : ''}`}
-                                />
+                                <div className="relative w-full h-44 sm:h-full">
+                                  <img
+                                    src={product.image || "/placeholder.svg"}
+                                    alt={product.name}
+                                    className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`}
+                                  />
+                                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-transparent"></div>
+                                </div>
                               ) : (
-                                <div className={`w-full h-40 sm:h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center text-4xl ${!isAvailable ? 'grayscale' : ''}`}>
+                                <div className={`w-full h-44 sm:h-full bg-gradient-to-br from-secondary/20 to-secondary/10 flex items-center justify-center text-4xl ${!isAvailable ? 'grayscale' : ''}`}>
                                   🍽️
                                 </div>
                               )}
 
                               {/* Sold Out Badge */}
                               {!isAvailable && (
-                                <div className="absolute top-2 left-2 bg-red-500 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-md">
+                                <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1.5 rounded-md text-xs font-bold shadow-lg">
                                   <LanguageAwareText tr="TÜKENDİ" en="SOLD OUT" />
                                 </div>
                               )}
 
                               {/* Product Badge */}
                               {product.badge && isAvailable && (
-                                <div className="absolute top-2 left-2 bg-primary text-white px-2 py-1 rounded-md text-xs font-semibold shadow-md">
+                                <div className="absolute top-3 left-3 bg-secondary text-secondary-foreground px-3 py-1.5 rounded-md text-xs font-bold shadow-lg border border-secondary/40">
                                   {product.badge === "gunun_urunu" && (
                                     <LanguageAwareText tr="Günün Ürünü" en="Today's Special" />
                                   )}
@@ -540,45 +545,45 @@ function MenuPageContent() {
                             </div>
 
                             {/* Product Info */}
-                            <div className="flex-1 p-3 sm:p-4 flex flex-col">
+                            <div className="flex-1 p-4 sm:p-5 flex flex-col bg-gradient-to-br from-white to-secondary/5">
                               {/* Product Name */}
-                              <h3 className="text-base sm:text-lg font-bold text-foreground mb-1.5 line-clamp-2">
+                              <h3 className="text-base sm:text-lg font-serif font-bold text-foreground mb-2 line-clamp-2 tracking-wide">
                                 {language === "tr" ? product.name : (product.name_en || product.name)}
                               </h3>
 
                               {/* Product Description */}
-                              <p className="text-xs sm:text-sm text-muted-foreground mb-3 line-clamp-2 flex-1">
+                              <p className="text-xs sm:text-sm text-muted-foreground mb-4 line-clamp-2 flex-1 leading-relaxed">
                                 {language === "tr" ? product.description : (product.description_en || product.description)}
                               </p>
 
                               {/* Price and Add to Cart Button */}
-                              <div className="flex items-center gap-2 sm:gap-3 mt-auto">
+                              <div className="flex items-center gap-3 sm:gap-4 mt-auto pt-3 border-t border-secondary/20">
                                 <div className="flex-1">
-                                  <p className="text-xs text-muted-foreground mb-0.5">
+                                  <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">
                                     <LanguageAwareText tr="Fiyat" en="Price" />
                                   </p>
-                                  <p className="text-xl sm:text-2xl font-bold text-primary">
+                                  <p className="text-xl sm:text-2xl font-bold text-primary font-serif">
                                     ₺{product.price.toFixed(2)}
                                   </p>
                                 </div>
                                 <button
                                   onClick={() => isAvailable && addToCart(product, 1)}
                                   disabled={!isAvailable}
-                                  className={`px-4 py-2.5 sm:px-5 sm:py-3 rounded-lg transition-all text-sm font-semibold shadow-md whitespace-nowrap ${
+                                  className={`px-5 py-3 rounded-lg transition-all duration-300 text-sm font-semibold whitespace-nowrap border ${
                                     isAvailable
-                                      ? 'bg-primary text-white hover:bg-primary/90 active:scale-95 hover:shadow-lg'
-                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                      ? 'bg-primary text-primary-foreground hover:bg-primary/90 active:scale-95 elegant-shadow hover:golden-glow border-primary/30'
+                                      : 'bg-gray-300 text-gray-500 cursor-not-allowed border-gray-300'
                                   }`}
                                 >
                                   {isAvailable ? (
-                                    <LanguageAwareText 
-                                      tr="Sepete Ekle" 
-                                      en="Add to Cart" 
+                                    <LanguageAwareText
+                                      tr="Sepete Ekle"
+                                      en="Add to Cart"
                                     />
                                   ) : (
-                                    <LanguageAwareText 
-                                      tr="Tükendi" 
-                                      en="Sold Out" 
+                                    <LanguageAwareText
+                                      tr="Tükendi"
+                                      en="Sold Out"
                                     />
                                   )}
                                 </button>
@@ -644,31 +649,31 @@ function MenuPageContent() {
 
       {/* Waiter Call Modal */}
       {waiterCallOpen && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full border border-primary/20">
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="elegant-card rounded-2xl golden-glow max-w-md w-full">
             {/* Header */}
-            <div className="border-b border-primary/20 bg-gradient-to-r from-secondary/10 to-primary/10 p-4 sm:p-5 flex items-center justify-between rounded-t-2xl">
+            <div className="border-b-2 border-secondary/20 bg-gradient-to-r from-secondary/10 via-secondary/5 to-transparent p-5 sm:p-6 flex items-center justify-between rounded-t-2xl">
               <div>
-                <h2 className="text-2xl sm:text-3xl font-bold text-primary">
+                <h2 className="text-2xl sm:text-3xl font-serif font-bold text-primary mb-1">
                   <LanguageAwareText tr="Garson Çağır" en="Call Waiter" />
                 </h2>
-                <p className="text-xs sm:text-sm text-muted-foreground mt-0.5">
+                <p className="text-xs sm:text-sm text-muted-foreground">
                   <LanguageAwareText tr="Masa numaranızı girin" en="Enter your table number" />
                 </p>
               </div>
               <button
                 onClick={() => setWaiterCallOpen(false)}
-                className="p-2 hover:bg-white/50 rounded-full transition-all active:scale-95"
+                className="p-2 hover:bg-secondary/10 rounded-full transition-all duration-200 active:scale-95 elegant-border"
                 aria-label="Kapat"
               >
-                <X size={24} className="text-foreground" />
+                <X size={24} className="text-primary" />
               </button>
             </div>
 
             {/* Content */}
-            <div className="p-5 sm:p-6 space-y-4">
+            <div className="p-5 sm:p-6 space-y-5 bg-gradient-to-br from-white to-secondary/5">
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">
+                <label className="block text-sm font-semibold text-foreground mb-2 tracking-wide">
                   🪑 <LanguageAwareText tr="Masa Numarası" en="Table Number" /> <span className="text-red-500">*</span>
                 </label>
                 <Input
@@ -676,12 +681,12 @@ function MenuPageContent() {
                   placeholder={language === 'tr' ? 'A5, 12, Bahçe-3...' : 'A5, 12, Garden-3...'}
                   value={waiterTableNumber}
                   onChange={(e) => setWaiterTableNumber(e.target.value)}
-                  className="w-full text-lg"
+                  className="w-full text-lg elegant-border focus:border-secondary focus:ring-secondary"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-foreground mb-2">
+                <label className="block text-sm font-semibold text-foreground mb-2 tracking-wide">
                   👤 <LanguageAwareText tr="İsim (İsteğe bağlı)" en="Name (Optional)" />
                 </label>
                 <Input
@@ -689,18 +694,18 @@ function MenuPageContent() {
                   placeholder={language === 'tr' ? 'Adınız' : 'Your name'}
                   value={waiterName}
                   onChange={(e) => setWaiterName(e.target.value)}
-                  className="w-full"
+                  className="w-full elegant-border focus:border-secondary focus:ring-secondary"
                 />
               </div>
 
               <Button
                 onClick={handleWaiterCall}
                 disabled={waiterCallLoading}
-                className="w-full bg-gradient-to-r from-secondary to-secondary/90 text-white hover:from-secondary/90 hover:to-secondary/80 py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transition-all active:scale-98 rounded-xl"
+                className="w-full bg-gradient-to-r from-secondary to-secondary/95 text-secondary-foreground hover:from-secondary/95 hover:to-secondary py-4 sm:py-5 text-base sm:text-lg font-bold elegant-shadow hover:golden-glow transition-all duration-300 active:scale-95 rounded-xl border border-secondary/30"
               >
                 {waiterCallLoading ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                    <div className="w-5 h-5 border-2 border-secondary-foreground border-t-transparent rounded-full animate-spin mr-2"></div>
                     <LanguageAwareText tr="Gönderiliyor..." en="Sending..." />
                   </>
                 ) : (
