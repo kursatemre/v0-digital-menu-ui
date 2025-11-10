@@ -22,6 +22,34 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
   const name = language === "en" && product.name_en ? product.name_en : product.name
   const description = language === "en" && product.description_en ? product.description_en : product.description
 
+  // Badge translations
+  const getBadgeText = (badge: string) => {
+    const badgeKey = badge.toUpperCase().replace(/ /g, '_')
+
+    const badgeTranslations: { [key: string]: { tr: string; en: string } } = {
+      'SEFIN_ONERISI': { tr: 'Şefin Önerisi', en: 'Chef Special' },
+      'SEFİN_ONERİSİ': { tr: 'Şefin Önerisi', en: 'Chef Special' },
+      'GUNUN_ONERILERI': { tr: 'Günün Önerileri', en: 'Daily Specials' },
+      'GUNUN_ONERISI': { tr: 'Günün Önerisi', en: 'Daily Special' },
+      'POPULER': { tr: 'Popüler', en: 'Popular' },
+      'YENI': { tr: 'Yeni', en: 'New' },
+      'VEGETERYAN': { tr: 'Vejetaryen', en: 'Vegetarian' },
+      'VEGAN': { tr: 'Vegan', en: 'Vegan' },
+      'GLUTEN_FREE': { tr: 'Glütensiz', en: 'Gluten Free' },
+      'GLÜTENSIZ': { tr: 'Glütensiz', en: 'Gluten Free' },
+      'ORGANIK': { tr: 'Organik', en: 'Organic' },
+      'ORGANIC': { tr: 'Organik', en: 'Organic' },
+    }
+
+    const translation = badgeTranslations[badgeKey]
+    if (translation) {
+      return language === 'en' ? translation.en : translation.tr
+    }
+
+    // Fallback: replace underscores with spaces and capitalize
+    return badge.replace(/_/g, ' ')
+  }
+
   // Tüm ürünler görselsiz - sadece metin formatında
   return (
     <div className="mb-4 sm:mb-6 px-2 sm:px-5 py-4 sm:py-6 relative group hover:bg-[#252525]/50 transition-all duration-500 rounded-sm overflow-hidden">
@@ -42,7 +70,7 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
           {/* Optional badge */}
           {product.badge && (
             <span className="inline-block text-[9px] sm:text-[10px] px-2 py-0.5 sm:py-1 rounded-sm mb-2 font-normal tracking-wide uppercase bg-[#2a2210] text-[#D4AF37] border border-[#D4AF37]/30">
-              {product.badge.replace(/_/g, ' ')}
+              {getBadgeText(product.badge)}
             </span>
           )}
 
