@@ -4,10 +4,9 @@ import { useState } from "react"
 import { CategoryHeader } from "./category-header"
 import { MenuItem } from "./menu-item"
 import { useLanguage } from "@/contexts/language-context"
-import { ShoppingBag, Bell, X } from "lucide-react"
+import { ShoppingBag, Bell, X, Minus, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CheckoutModal } from "@/components/checkout-modal"
 import { createClient } from "@/lib/supabase/client"
 
 interface Product {
@@ -60,6 +59,13 @@ export function ClassicMenuLayout({
   const [waiterTableNumber, setWaiterTableNumber] = useState("")
   const [waiterName, setWaiterName] = useState("")
   const [waiterCallLoading, setWaiterCallLoading] = useState(false)
+
+  // Order form states
+  const [orderTableNumber, setOrderTableNumber] = useState("")
+  const [orderCustomerName, setOrderCustomerName] = useState("")
+  const [orderNotes, setOrderNotes] = useState("")
+  const [orderLoading, setOrderLoading] = useState(false)
+
   const supabase = createClient()
 
   // Cart functions
@@ -131,9 +137,53 @@ export function ClassicMenuLayout({
     }
   }
 
-  const handleOrderSuccess = () => {
-    setShowCart(false)
-    clearCart()
+  // Place order function
+  const handlePlaceOrder = async () => {
+    if (!orderTableNumber.trim()) {
+      alert(language === "tr" ? "Lütfen masa numaranızı girin!" : "Please enter your table number!")
+      return
+    }
+
+    if (!tenantId) {
+      alert(language === "tr" ? "Restoran bilgisi bulunamadı!" : "Restaurant information not found!")
+      return
+    }
+
+    try {
+      setOrderLoading(true)
+      const orderItems = cart.map(item => ({
+        product_id: item.id,
+        product_name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      }))
+
+      const { error } = await supabase.from("orders").insert({
+        tenant_id: tenantId,
+        table_number: orderTableNumber,
+        customer_name: orderCustomerName || null,
+        notes: orderNotes || null,
+        items: orderItems,
+        total_amount: totalPrice,
+        status: "pending",
+      })
+
+      if (error) throw error
+
+      alert(language === "tr" ? "Siparişiniz alındı!" : "Order placed successfully!")
+
+      // Clear form and cart
+      setShowCart(false)
+      clearCart()
+      setOrderTableNumber("")
+      setOrderCustomerName("")
+      setOrderNotes("")
+    } catch (error) {
+      console.error("Error placing order:", error)
+      alert(language === "tr" ? "Sipariş oluşturulamadı!" : "Failed to place order!")
+    } finally {
+      setOrderLoading(false)
+    }
   }
 
   return (
@@ -353,18 +403,167 @@ export function ClassicMenuLayout({
         </button>
       )}
 
-      {/* Checkout Modal */}
+      {/* Cart & Checkout Modal */}
       {showCart && (
-        <CheckoutModal
-          isOpen={showCart}
-          onClose={() => setShowCart(false)}
-          cart={cart}
-          onUpdateQuantity={updateQuantity}
-          onRemoveItem={removeFromCart}
-          onSuccess={handleOrderSuccess}
-          onClearCart={clearCart}
-          tenantId={tenantId}
-        />
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm max-w-2xl w-full max-h-[90vh] overflow-y-auto relative">
+            {/* Close Button */}
+            <button
+              onClick={() => setShowCart(false)}
+              className="sticky top-4 float-right mr-4 text-[#D4AF37] hover:text-[#FFD700] transition-colors z-10"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <div className="p-6">
+              {/* Header */}
+              <h2 className="text-3xl font-['Playfair_Display',serif] font-bold text-[#D4AF37] mb-6 text-center">
+                {language === "tr" ? "Sepetiniz" : "Your Cart"}
+              </h2>
+
+              {/* Cart Items */}
+              {cart.length === 0 ? (
+                <p className="text-center text-[#D4C5B0] py-8">
+                  {language === "tr" ? "Sepetiniz boş" : "Your cart is empty"}
+                </p>
+              ) : (
+                <>
+                  <div className="space-y-4 mb-6">
+                    {cart.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-4 p-4 bg-[#252525]/50 border border-[#D4AF37]/20 rounded-sm"
+                      >
+                        <div className="flex-1">
+                          <h3 className="text-[#D4AF37] font-['Playfair_Display',serif] font-semibold mb-1">
+                            {item.name}
+                          </h3>
+                          <p className="text-[#D4C5B0] text-sm">
+                            ₺{item.price.toFixed(2)}
+                          </p>
+                        </div>
+
+                        {/* Quantity Controls */}
+                        <div className="flex items-center gap-2 bg-[#1a1a1a] border border-[#D4AF37]/40 rounded-sm">
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                            className="p-2 hover:bg-[#2a2210]/30 transition-colors"
+                          >
+                            <Minus className="w-4 h-4 text-[#D4AF37]" />
+                          </button>
+                          <span className="text-[#D4AF37] font-semibold min-w-[2rem] text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                            className="p-2 hover:bg-[#2a2210]/30 transition-colors"
+                          >
+                            <Plus className="w-4 h-4 text-[#D4AF37]" />
+                          </button>
+                        </div>
+
+                        {/* Item Total */}
+                        <div className="text-right min-w-[5rem]">
+                          <p className="text-[#D4AF37] font-bold">
+                            ₺{(item.price * item.quantity).toFixed(2)}
+                          </p>
+                        </div>
+
+                        {/* Remove Button */}
+                        <button
+                          onClick={() => removeFromCart(item.id)}
+                          className="p-2 hover:bg-red-900/30 transition-colors rounded-sm"
+                        >
+                          <Trash2 className="w-5 h-5 text-red-400" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Total */}
+                  <div className="border-t border-[#D4AF37]/30 pt-4 mb-6">
+                    <div className="flex justify-between items-center text-xl">
+                      <span className="text-[#D4C5B0] font-['Playfair_Display',serif] font-semibold">
+                        {language === "tr" ? "Toplam" : "Total"}:
+                      </span>
+                      <span className="text-[#D4AF37] font-bold text-2xl">
+                        ₺{totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Order Form */}
+                  <div className="space-y-4 border-t border-[#D4AF37]/30 pt-6">
+                    <h3 className="text-xl font-['Playfair_Display',serif] font-bold text-[#D4AF37] mb-4">
+                      {language === "tr" ? "Sipariş Bilgileri" : "Order Information"}
+                    </h3>
+
+                    <div>
+                      <label className="block text-[#D4C5B0] text-sm mb-2 font-['Playfair_Display',serif]">
+                        {language === "tr" ? "Masa Numarası" : "Table Number"} <span className="text-red-500">*</span>
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={language === "tr" ? "Örn: A5, 12..." : "e.g. A5, 12..."}
+                        value={orderTableNumber}
+                        onChange={(e) => setOrderTableNumber(e.target.value)}
+                        className="bg-[#1a1a1a] border-[#D4AF37]/40 text-[#D4C5B0] focus:border-[#D4AF37]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[#D4C5B0] text-sm mb-2 font-['Playfair_Display',serif]">
+                        {language === "tr" ? "İsim (İsteğe bağlı)" : "Name (Optional)"}
+                      </label>
+                      <Input
+                        type="text"
+                        placeholder={language === "tr" ? "Adınız" : "Your name"}
+                        value={orderCustomerName}
+                        onChange={(e) => setOrderCustomerName(e.target.value)}
+                        className="bg-[#1a1a1a] border-[#D4AF37]/40 text-[#D4C5B0] focus:border-[#D4AF37]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[#D4C5B0] text-sm mb-2 font-['Playfair_Display',serif]">
+                        {language === "tr" ? "Not (İsteğe bağlı)" : "Notes (Optional)"}
+                      </label>
+                      <textarea
+                        placeholder={language === "tr" ? "Sipariş notunuz..." : "Order notes..."}
+                        value={orderNotes}
+                        onChange={(e) => setOrderNotes(e.target.value)}
+                        rows={3}
+                        className="w-full bg-[#1a1a1a] border border-[#D4AF37]/40 text-[#D4C5B0] focus:border-[#D4AF37] rounded-sm p-2 resize-none"
+                      />
+                    </div>
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        onClick={handlePlaceOrder}
+                        disabled={orderLoading}
+                        className="flex-1 bg-[#D4AF37] hover:bg-[#FFD700] text-[#1a1a1a] font-['Playfair_Display',serif] font-bold py-6 text-lg"
+                      >
+                        {orderLoading ? (
+                          <span>{language === "tr" ? "Gönderiliyor..." : "Sending..."}</span>
+                        ) : (
+                          <span>{language === "tr" ? "Sipariş Ver" : "Place Order"}</span>
+                        )}
+                      </Button>
+                      <Button
+                        onClick={clearCart}
+                        variant="outline"
+                        className="border-red-500/40 text-red-400 hover:bg-red-900/20 hover:border-red-500 py-6"
+                      >
+                        <Trash2 className="w-5 h-5" />
+                      </Button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Waiter Call Modal */}
