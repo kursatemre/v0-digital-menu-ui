@@ -1825,86 +1825,73 @@ export default function AdminPanel() {
       if (!svg) return
 
       try {
-        // Clone the SVG to avoid modifying the original
-        const clonedSvg = svg.cloneNode(true) as SVGElement
-
-        // Find all image elements in the SVG
-        const images = clonedSvg.querySelectorAll('image')
-
-        // Wait for all images to load
-        const imagePromises = Array.from(images).map((img) => {
-          return new Promise<void>((resolve, reject) => {
-            const href = img.getAttribute('href') || img.getAttribute('xlink:href')
-            if (!href) {
-              resolve()
-              return
-            }
-
-            // If it's already a data URL, it's loaded
-            if (href.startsWith('data:')) {
-              resolve()
-              return
-            }
-
-            // Load the image and convert to data URL
-            const image = new Image()
-            image.crossOrigin = 'anonymous'
-            image.onload = () => {
-              try {
-                const canvas = document.createElement('canvas')
-                canvas.width = image.width
-                canvas.height = image.height
-                const ctx = canvas.getContext('2d')
-                if (ctx) {
-                  ctx.drawImage(image, 0, 0)
-                  const dataURL = canvas.toDataURL('image/png')
-                  img.setAttribute('href', dataURL)
-                }
-                resolve()
-              } catch (error) {
-                console.error('Error converting image to data URL:', error)
-                resolve() // Continue even if one image fails
-              }
-            }
-            image.onerror = () => {
-              console.error('Error loading image:', href)
-              resolve() // Continue even if one image fails
-            }
-            image.src = href
-          })
-        })
-
-        await Promise.all(imagePromises)
-
-        // Now convert the SVG to PNG
         const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("2d")
         if (!ctx) return
 
-        const svgData = new XMLSerializer().serializeToString(clonedSvg)
-        const img = new Image()
+        const size = qrSettings.size
+        canvas.width = size
+        canvas.height = size
 
-        img.onload = () => {
-          canvas.width = qrSettings.size
-          canvas.height = qrSettings.size
-          ctx.drawImage(img, 0, 0)
-          const link = document.createElement("a")
-          link.download = "menu-qr-code.png"
-          link.href = canvas.toDataURL("image/png")
-          link.click()
-        }
-
-        img.onerror = () => {
-          console.error('Error loading SVG image')
-          alert('QR kodu indirilemedi. Lütfen tekrar deneyin.')
-        }
-
+        // First, draw the QR code SVG
+        const svgData = new XMLSerializer().serializeToString(svg)
         const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-        const url = URL.createObjectURL(svgBlob)
-        img.src = url
+        const svgUrl = URL.createObjectURL(svgBlob)
 
-        // Clean up
-        setTimeout(() => URL.revokeObjectURL(url), 100)
+        const qrImage = new Image()
+
+        // Wait for QR code to load
+        await new Promise<void>((resolve, reject) => {
+          qrImage.onload = () => resolve()
+          qrImage.onerror = reject
+          qrImage.src = svgUrl
+        })
+
+        // Draw QR code
+        ctx.drawImage(qrImage, 0, 0, size, size)
+        URL.revokeObjectURL(svgUrl)
+
+        // If there's a logo, draw it on top
+        if (qrSettings.logoUrl) {
+          const logoImage = new Image()
+          logoImage.crossOrigin = 'anonymous'
+
+          // Wait for logo to load
+          await new Promise<void>((resolve, reject) => {
+            logoImage.onload = () => resolve()
+            logoImage.onerror = () => {
+              console.error('Error loading logo:', qrSettings.logoUrl)
+              resolve() // Continue without logo if it fails
+            }
+            logoImage.src = qrSettings.logoUrl
+          })
+
+          // Draw logo in center with white background
+          if (logoImage.complete && logoImage.naturalWidth > 0) {
+            const logoSize = qrSettings.logoSize
+            const logoX = (size - logoSize) / 2
+            const logoY = (size - logoSize) / 2
+            const padding = 8
+
+            // Draw white background with padding
+            ctx.fillStyle = 'white'
+            ctx.fillRect(
+              logoX - padding,
+              logoY - padding,
+              logoSize + padding * 2,
+              logoSize + padding * 2
+            )
+
+            // Draw logo
+            ctx.drawImage(logoImage, logoX, logoY, logoSize, logoSize)
+          }
+        }
+
+        // Download
+        const link = document.createElement("a")
+        link.download = "menu-qr-code.png"
+        link.href = canvas.toDataURL("image/png")
+        link.click()
       } catch (error) {
         console.error('Error downloading QR code:', error)
         alert('QR kodu indirilemedi. Lütfen tekrar deneyin.')
