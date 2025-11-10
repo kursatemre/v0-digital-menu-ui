@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CategoryHeader } from "./category-header"
 import { MenuItem } from "./menu-item"
 import { useLanguage } from "@/contexts/language-context"
@@ -67,6 +67,18 @@ export function ClassicMenuLayout({
   const [orderLoading, setOrderLoading] = useState(false)
 
   const supabase = createClient()
+
+  // Prevent body scroll when modals are open
+  useEffect(() => {
+    if (showCart || waiterCallOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [showCart, waiterCallOpen])
 
   // Cart functions
   const addToCart = (product: { id: string; name: string; price: number }) => {

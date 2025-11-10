@@ -133,6 +133,18 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
     loadProductData()
   }, [product.id, tenantId, supabase])
 
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (showCustomization) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [showCustomization])
+
   const name = language === "en" && product.name_en ? product.name_en : product.name
   const description = language === "en" && product.description_en ? product.description_en : product.description
 

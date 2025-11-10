@@ -2,7 +2,7 @@
 
 import { useLanguage } from "@/contexts/language-context"
 import { X, Plus, Minus, Trash2, ShoppingBag } from "lucide-react"
-import { useState } from "react"
+import { useEffect } from "react"
 
 interface CartItem {
   id: string
@@ -45,6 +45,18 @@ export function CartModal({
   const { language } = useLanguage()
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = "hidden"
+    } else {
+      document.body.style.overflow = "unset"
+    }
+    return () => {
+      document.body.style.overflow = "unset"
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
