@@ -38,7 +38,7 @@ export function ClassicMenuLayout({
   products,
   headerSettings
 }: ClassicMenuLayoutProps) {
-  const { language } = useLanguage()
+  const { language, setLanguage } = useLanguage()
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] relative overflow-x-hidden">
@@ -78,11 +78,42 @@ export function ClassicMenuLayout({
 
       {/* Header */}
       <header className="relative py-20 px-4 text-center border-b border-[#FFD700]/30">
+        {/* Language Toggle Button */}
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-8">
+          <button
+            onClick={() => setLanguage(language === "tr" ? "en" : "tr")}
+            className="group relative px-4 py-2 bg-[#1a1a1a] border-2 rounded-sm overflow-hidden transition-all duration-300 hover:scale-105"
+            style={{
+              borderImage: 'linear-gradient(135deg, #FDB931, #FFD700, #FFED4E) 1',
+            }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-[#FFD700]/10 to-[#FDB931]/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+            <span
+              className="relative text-sm font-['Playfair_Display',serif] font-semibold tracking-wider"
+              style={{
+                background: 'linear-gradient(135deg, #FDB931, #FFD700, #FFED4E)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              {language === "tr" ? "EN" : "TR"}
+            </span>
+          </button>
+        </div>
+
         {/* Top decorative ornament */}
         <div className="flex justify-center mb-8">
           <svg width="100" height="40" viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 20 Q 30 15, 50 20 T 90 20" stroke="#FFD700" strokeWidth="1.5" fill="none" style={{ animation: 'glow 2s ease-in-out infinite' }}/>
-            <circle cx="50" cy="20" r="3" fill="#FFD700"/>
+            <defs>
+              <radialGradient id="headerGold" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FDB931" />
+                <stop offset="50%" stopColor="#FFD700" />
+                <stop offset="100%" stopColor="#FFED4E" />
+              </radialGradient>
+            </defs>
+            <path d="M10 20 Q 30 15, 50 20 T 90 20" stroke="url(#headerGold)" strokeWidth="1.5" fill="none" style={{ animation: 'glow 2s ease-in-out infinite' }}/>
+            <circle cx="50" cy="20" r="3" fill="url(#headerGold)"/>
             <circle cx="35" cy="17" r="1.5" fill="#FDB931" opacity="0.8"/>
             <circle cx="65" cy="17" r="1.5" fill="#FDB931" opacity="0.8"/>
           </svg>
@@ -100,7 +131,15 @@ export function ClassicMenuLayout({
           </div>
         )}
 
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-['Playfair_Display',serif] text-[#FFD700] tracking-[0.3em] mb-6 font-bold drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]">
+        <h1
+          className="text-4xl sm:text-5xl md:text-7xl font-['Playfair_Display',serif] tracking-[0.3em] mb-6 font-bold drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]"
+          style={{
+            background: 'radial-gradient(circle, #FDB931 0%, #FFD700 40%, #FFED4E 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
           {headerSettings?.title || "MENU"}
         </h1>
 
@@ -113,9 +152,16 @@ export function ClassicMenuLayout({
         {/* Decorative line */}
         <div className="flex justify-center mt-10">
           <svg width="250" height="20" viewBox="0 0 250 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 10 L110 10" stroke="#FFD700" strokeWidth="1" opacity="0.6"/>
-            <path d="M140 10 L230 10" stroke="#FFD700" strokeWidth="1" opacity="0.6"/>
-            <circle cx="125" cy="10" r="4" fill="#FFD700"/>
+            <defs>
+              <radialGradient id="headerLineGold" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FDB931" />
+                <stop offset="50%" stopColor="#FFD700" />
+                <stop offset="100%" stopColor="#FFED4E" />
+              </radialGradient>
+            </defs>
+            <path d="M20 10 L110 10" stroke="url(#headerLineGold)" strokeWidth="1" opacity="0.6"/>
+            <path d="M140 10 L230 10" stroke="url(#headerLineGold)" strokeWidth="1" opacity="0.6"/>
+            <circle cx="125" cy="10" r="4" fill="url(#headerLineGold)"/>
             <circle cx="115" cy="10" r="2" fill="#FDB931" opacity="0.7"/>
             <circle cx="135" cy="10" r="2" fill="#FDB931" opacity="0.7"/>
           </svg>
@@ -176,8 +222,15 @@ export function ClassicMenuLayout({
                       {/* Decorative element below image */}
                       <div className="flex justify-center mt-4">
                         <svg width="150" height="24" viewBox="0 0 150 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M15 12 Q 45 8, 75 12 T 135 12" stroke="#FFD700" strokeWidth="1.2" fill="none" opacity="0.7"/>
-                          <circle cx="75" cy="12" r="2.5" fill="#FFD700"/>
+                          <defs>
+                            <radialGradient id="categoryImageGold" cx="50%" cy="50%" r="50%">
+                              <stop offset="0%" stopColor="#FDB931" />
+                              <stop offset="50%" stopColor="#FFD700" />
+                              <stop offset="100%" stopColor="#FFED4E" />
+                            </radialGradient>
+                          </defs>
+                          <path d="M15 12 Q 45 8, 75 12 T 135 12" stroke="url(#categoryImageGold)" strokeWidth="1.2" fill="none" opacity="0.7"/>
+                          <circle cx="75" cy="12" r="2.5" fill="url(#categoryImageGold)"/>
                           <circle cx="60" cy="10" r="1.5" fill="#FDB931" opacity="0.6"/>
                           <circle cx="90" cy="10" r="1.5" fill="#FDB931" opacity="0.6"/>
                         </svg>
@@ -218,16 +271,31 @@ export function ClassicMenuLayout({
         <div className="flex justify-center mb-6">
           <svg width="220" height="50" viewBox="0 0 220 50" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Ornate footer decoration */}
-            <path d="M30 25 Q 65 18, 95 25 Q 125 32, 155 25" stroke="#FFD700" strokeWidth="1.5" fill="none" style={{ animation: 'glow 3s ease-in-out infinite' }}/>
-            <path d="M5 25 L25 25 M160 25 L215 25" stroke="#FFD700" strokeWidth="1.2"/>
-            <circle cx="95" cy="25" r="3.5" fill="#FFD700"/>
+            <defs>
+              <radialGradient id="footerGold" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stopColor="#FDB931" />
+                <stop offset="50%" stopColor="#FFD700" />
+                <stop offset="100%" stopColor="#FFED4E" />
+              </radialGradient>
+            </defs>
+            <path d="M30 25 Q 65 18, 95 25 Q 125 32, 155 25" stroke="url(#footerGold)" strokeWidth="1.5" fill="none" style={{ animation: 'glow 3s ease-in-out infinite' }}/>
+            <path d="M5 25 L25 25 M160 25 L215 25" stroke="url(#footerGold)" strokeWidth="1.2"/>
+            <circle cx="95" cy="25" r="3.5" fill="url(#footerGold)"/>
             <circle cx="110" cy="25" r="2" fill="#FDB931" opacity="0.7"/>
             <circle cx="80" cy="25" r="2" fill="#FDB931" opacity="0.7"/>
-            <circle cx="95" cy="15" r="1.5" fill="#FFD700" opacity="0.5"/>
-            <circle cx="95" cy="35" r="1.5" fill="#FFD700" opacity="0.5"/>
+            <circle cx="95" cy="15" r="1.5" fill="url(#footerGold)" opacity="0.7"/>
+            <circle cx="95" cy="35" r="1.5" fill="url(#footerGold)" opacity="0.7"/>
           </svg>
         </div>
-        <p className="text-[#FFD700] text-base sm:text-lg font-light tracking-[0.4em] font-['Playfair_Display',serif] italic mb-4 drop-shadow-[0_0_8px_rgba(255,215,0,0.4)]">
+        <p
+          className="text-base sm:text-lg font-light tracking-[0.4em] font-['Playfair_Display',serif] italic mb-4 drop-shadow-[0_0_8px_rgba(255,215,0,0.4)]"
+          style={{
+            background: 'radial-gradient(circle, #FDB931 0%, #FFD700 50%, #FFED4E 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+          }}
+        >
           BON APPÉTIT
         </p>
         <p className="text-[#B8956A] text-xs tracking-[0.3em] font-light uppercase">

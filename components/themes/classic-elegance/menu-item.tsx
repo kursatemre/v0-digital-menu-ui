@@ -35,18 +35,50 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
       />
 
       {/* Subtle left border accent with gold gradient */}
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-[#FFD700]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#FFD700]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
       <div className="flex justify-between items-start gap-6 relative z-10">
         <div className="flex-1">
           {/* Optional badge */}
           {product.badge && (
-            <span className="inline-block text-xs text-[#FFD700] border border-[#FDB931]/50 px-3 py-1 rounded-full mb-3 font-light tracking-widest uppercase shadow-sm">
-              {product.badge}
+            <span
+              className="inline-block text-xs px-4 py-1.5 rounded-full mb-3 font-medium tracking-widest uppercase shadow-lg relative overflow-hidden"
+              style={{
+                border: '2px solid transparent',
+                borderImage: 'linear-gradient(135deg, #FDB931, #FFD700, #FFED4E) 1',
+                background: 'linear-gradient(135deg, #1a1a1a 0%, #2a2210 100%)',
+              }}
+            >
+              <span
+                style={{
+                  background: 'linear-gradient(135deg, #FDB931, #FFD700, #FFED4E)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}
+              >
+                {product.badge}
+              </span>
+              {/* Shine effect on badge */}
+              <div
+                className="absolute inset-0 opacity-50"
+                style={{
+                  background: 'linear-gradient(90deg, transparent 0%, rgba(255, 237, 78, 0.2) 50%, transparent 100%)',
+                  animation: 'shine 4s infinite',
+                }}
+              />
             </span>
           )}
 
-          <h3 className="text-lg sm:text-xl font-['Playfair_Display',serif] text-[#FFD700] mb-2 font-semibold tracking-wide">
+          <h3
+            className="text-lg sm:text-xl font-['Playfair_Display',serif] mb-2 font-bold tracking-wide"
+            style={{
+              background: 'radial-gradient(circle, #FDB931 0%, #FFD700 50%, #FFED4E 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
             {name}
           </h3>
           <p className="text-xs sm:text-sm text-[#D4C5B0] font-light leading-relaxed font-sans">
@@ -57,7 +89,15 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
         {/* Dotted line ve fiyat */}
         <div className="flex items-center gap-3 flex-shrink-0">
           <div className="hidden sm:block w-16 border-b border-dotted border-[#FFD700] opacity-30" />
-          <span className="text-lg sm:text-xl text-[#FFD700] font-semibold whitespace-nowrap font-['Playfair_Display',serif]">
+          <span
+            className="text-lg sm:text-xl font-bold whitespace-nowrap font-['Playfair_Display',serif]"
+            style={{
+              background: 'linear-gradient(135deg, #FDB931, #FFD700, #FFED4E)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}
+          >
             {product.price} ₺
           </span>
         </div>
