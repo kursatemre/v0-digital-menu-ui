@@ -3004,26 +3004,6 @@ export default function AdminPanel() {
         </CardContent>
       </Card>
 
-      <Card className="mb-6 bg-blue-50 border-blue-200">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <div className="text-3xl">🚀</div>
-            <div>
-              <h3 className="font-semibold text-blue-900 mb-2">Veritabanı Migrasyonu Gerekli</h3>
-              <p className="text-sm text-blue-800 mb-3">
-                Bu özelliği kullanabilmek için önce aşağıdaki SQL script'ini Supabase SQL Editor'de çalıştırmanız gerekiyor:
-              </p>
-              <code className="block bg-white p-3 rounded text-xs overflow-x-auto">
-                scripts/028_create_product_variants_and_customizations.sql
-              </code>
-              <p className="text-xs text-blue-700 mt-2">
-                💡 Script dosyası proje kök dizininde scripts/ klasöründe bulunmaktadır.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
@@ -3420,17 +3400,6 @@ export default function AdminPanel() {
           </DialogContent>
         </Dialog>
       )}
-
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>📝 Geliştirme Notları</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>• Veritabanı migration uygulandıktan sonra bu sayfa tam fonksiyonel hale gelecek.</p>
-          <p>• Modern Takeaway teması bu özelleştirmeleri otomatik olarak destekliyor.</p>
-          <p>• Diğer temalar için de özelleştirme desteği eklenebilir.</p>
-        </CardContent>
-      </Card>
     </div>
   )
 
