@@ -211,7 +211,7 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
 
   return (
     <>
-      <div className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-md transition-shadow w-full">
+      <div className="bg-white p-3 hover:bg-gray-50 transition-colors w-full">
         <div className="flex items-center gap-4">
           {/* Product Image - Smaller with badge overlay */}
           {product.image && (
@@ -234,7 +234,7 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
 
           {/* Product Info - More space for name */}
           <div className="flex-1 min-w-0">
-            <h3 className="font-semibold text-gray-900 text-base truncate mb-0.5">{name}</h3>
+            <h3 className="font-medium text-gray-900 text-sm leading-tight mb-0.5">{name}</h3>
             
             {description && (
               <p className="text-xs text-gray-500 line-clamp-1 mb-1">{description}</p>
@@ -257,7 +257,7 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
           {/* Price & Add Button */}
           <div className="flex items-center gap-3 flex-shrink-0">
             {/* Price */}
-            <span className="text-lg font-bold text-gray-900 whitespace-nowrap">
+            <span className="text-base font-bold text-gray-900 whitespace-nowrap">
               {getCurrentPrice().toFixed(2)}₺
             </span>
 
