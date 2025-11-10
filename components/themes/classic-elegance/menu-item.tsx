@@ -42,7 +42,7 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
           {/* Optional badge */}
           {product.badge && (
             <span className="inline-block text-[9px] sm:text-[10px] px-2 py-0.5 sm:py-1 rounded-sm mb-2 font-normal tracking-wide uppercase bg-[#2a2210] text-[#D4AF37] border border-[#D4AF37]/30">
-              {product.badge}
+              {product.badge.replace(/_/g, ' ')}
             </span>
           )}
 
