@@ -20,8 +20,22 @@ import { ModernTakeawayLayout } from "@/components/themes/modern-takeaway/modern
 type CartItem = {
   id: string
   name: string
+  name_en?: string
   price: number
   quantity: number
+  productId?: string
+  variant?: {
+    id: string
+    name: string
+    name_en?: string
+  }
+  customizations?: Array<{
+    groupName: string
+    groupName_en?: string
+    optionName: string
+    optionName_en?: string
+  }>
+  image?: string
 }
 
 type Product = {
@@ -413,9 +427,12 @@ function MenuPageContent() {
       <ModernTakeawayLayout
         categories={categoriesWithProducts}
         tenantId={tenant.id}
+        restaurantName={tenant.business_name}
         onAddToCart={(item) => {
           // Add to cart with customizations
-          const existingIndex = cart.findIndex(c => c.id === item.id)
+          const existingIndex = cart.findIndex(c => c.id === item.productId && 
+            JSON.stringify(c.variant) === JSON.stringify(item.variant) &&
+            JSON.stringify(c.customizations) === JSON.stringify(item.customizations))
           if (existingIndex >= 0) {
             const newCart = [...cart]
             newCart[existingIndex].quantity += 1
@@ -423,7 +440,7 @@ function MenuPageContent() {
           } else {
             setCart([...cart, { ...item, quantity: 1 }])
           }
-          setToastMessage(`${item.name} sepete eklendi!`)
+          setToastMessage(`${item.name} ${language === "en" ? "added to cart!" : "sepete eklendi!"}`)
           setShowToast(true)
           setTimeout(() => setShowToast(false), 2000)
         }}
