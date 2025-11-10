@@ -1054,16 +1054,22 @@ export default function AdminPanel() {
 
   const deleteWaiterCall = async (callId: string) => {
     try {
-      const { error } = await supabase.from("waiter_calls").delete().eq("id", callId)
+      const { error } = await supabase
+        .from("waiter_calls")
+        .delete()
+        .eq("id", callId)
+        .eq("tenant_id", tenantId)
 
       if (error) {
         console.error("Error deleting waiter call:", error)
+        alert("Garson çağrısı silinemedi!")
       } else {
         loadWaiterCalls()
         setDeleteId(null)
       }
     } catch (err) {
       console.error("Supabase error:", err)
+      alert("Bir hata oluştu!")
     }
   }
 
