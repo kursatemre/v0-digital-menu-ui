@@ -412,6 +412,7 @@ function MenuPageContent() {
     return (
       <ModernTakeawayLayout
         categories={categoriesWithProducts}
+        tenantId={tenant.id}
         onAddToCart={(item) => {
           // Add to cart with customizations
           const existingIndex = cart.findIndex(c => c.id === item.id)
