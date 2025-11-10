@@ -182,6 +182,11 @@ export default function LandingPage() {
       title: "Özel Tasarım",
       description: "Markanıza özel renk, logo ve tasarım. Profesyonel görünümle müşterilerinizi etkileyin.",
     },
+    {
+      icon: <Sparkles className="w-8 h-8" />,
+      title: "TV Ekran Menü",
+      description: "Restoranınızda TV ekranında menünüzü sergileyerek müşterilerinizin dikkatini çekin. Otomatik kategori geçişi ile dinamik görünüm.",
+    },
   ]
 
   const benefits = [
@@ -445,7 +450,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16 sm:mb-20">
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-700 bg-clip-text text-transparent">
-              Neden Dijital Menü?
+              Neden MenumGo Digital?
             </h2>
             <p className="text-lg sm:text-xl text-slate-600 max-w-3xl mx-auto font-medium">
               Restoranınızı dijital çağa taşıyan tüm özellikler bir arada
