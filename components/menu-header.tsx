@@ -51,21 +51,31 @@ export function MenuHeader({ title = "Menümüz", theme }: MenuHeaderProps) {
         if (headerData?.value) {
           setHeaderConfig(headerData.value)
         } else {
-          // Fallback to localStorage
-          const saved = localStorage.getItem("restaurant_header")
+          // Fallback to tenant-specific localStorage
+          const saved = localStorage.getItem(`restaurant_header_${tenantData.id}`)
           if (saved) {
             setHeaderConfig(JSON.parse(saved))
           }
         }
       } catch (err) {
         console.error("Error loading header settings:", err)
-        const saved = localStorage.getItem("restaurant_header")
-        if (saved) {
-          try {
-            setHeaderConfig(JSON.parse(saved))
-          } catch (e) {
-            console.error("Failed to load header config:", e)
+        // Try to get tenant_id from URL for fallback
+        try {
+          const slug = window.location.pathname.split('/')[1]
+          const { data: tenantData } = await supabase
+            .from("tenants")
+            .select("id")
+            .eq("slug", slug)
+            .single()
+
+          if (tenantData) {
+            const saved = localStorage.getItem(`restaurant_header_${tenantData.id}`)
+            if (saved) {
+              setHeaderConfig(JSON.parse(saved))
+            }
           }
+        } catch (e) {
+          console.error("Failed to load header config:", e)
         }
       }
     }

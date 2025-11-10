@@ -747,8 +747,8 @@ export default function AdminPanel() {
         throw headerError
       }
 
-      // LocalStorage'a header ayarlarını yaz
-      localStorage.setItem("restaurant_header", JSON.stringify(headerSettings))
+      // LocalStorage'a header ayarlarını yaz (tenant-specific key)
+      localStorage.setItem(`restaurant_header_${tenantId}`, JSON.stringify(headerSettings))
 
       // Tema ayarlarını güncelle veya ekle
       const existingTheme = existingSettings?.find(s => s.key === "theme")
@@ -769,8 +769,8 @@ export default function AdminPanel() {
         throw themeError
       }
 
-      // Tema ayarlarını localStorage'a kaydet
-      localStorage.setItem("restaurant_theme", JSON.stringify(theme))
+      // Tema ayarlarını localStorage'a kaydet (tenant-specific key)
+      localStorage.setItem(`restaurant_theme_${tenantId}`, JSON.stringify(theme))
 
       // Başarılı mesajı göster
       alert("Ayarlar başarıyla kaydedildi!")
@@ -971,9 +971,10 @@ export default function AdminPanel() {
         }
       } catch (error) {
         console.error("Error loading settings:", error)
-        const storedTheme = localStorage.getItem("restaurant_theme")
-        const storedHeader = localStorage.getItem("restaurant_header")
-        const storedQr = localStorage.getItem("restaurant_qr")
+        // Use tenant-specific localStorage keys
+        const storedTheme = localStorage.getItem(`restaurant_theme_${tenantId}`)
+        const storedHeader = localStorage.getItem(`restaurant_header_${tenantId}`)
+        const storedQr = localStorage.getItem(`restaurant_qr_${tenantId}`)
         if (storedTheme) setTheme(JSON.parse(storedTheme))
         if (storedHeader) setHeaderSettings(JSON.parse(storedHeader))
         if (storedQr) setQrSettings(JSON.parse(storedQr))
