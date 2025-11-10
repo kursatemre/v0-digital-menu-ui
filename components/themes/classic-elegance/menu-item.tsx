@@ -1,6 +1,7 @@
 "use client"
 
 import { useLanguage } from "@/contexts/language-context"
+import { Plus } from "lucide-react"
 
 interface MenuItemProps {
   product: {
@@ -14,10 +15,17 @@ interface MenuItemProps {
     badge?: string | null
   }
   featured?: boolean
+  onAddToCart?: (product: { id: string; name: string; price: number }) => void
 }
 
-export function MenuItem({ product, featured = false }: MenuItemProps) {
+export function MenuItem({ product, featured = false, onAddToCart }: MenuItemProps) {
   const { language } = useLanguage()
+
+  const handleAddToCart = () => {
+    if (onAddToCart) {
+      onAddToCart({ id: product.id, name: product.name, price: product.price })
+    }
+  }
 
   const name = language === "en" && product.name_en ? product.name_en : product.name
   const description = language === "en" && product.description_en ? product.description_en : product.description
@@ -88,6 +96,16 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
           <span className="text-sm sm:text-lg md:text-xl font-semibold whitespace-nowrap font-['Playfair_Display',serif] text-[#D4AF37]">
             {product.price} ₺
           </span>
+          {/* Add to Cart Button - Square with + icon */}
+          {onAddToCart && (
+            <button
+              onClick={handleAddToCart}
+              className="ml-2 w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center border border-[#D4AF37]/40 hover:border-[#D4AF37] bg-[#1a1a1a] hover:bg-[#2a2210]/50 transition-all duration-300 rounded-sm group"
+              aria-label="Add to cart"
+            >
+              <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-[#D4AF37] group-hover:scale-110 transition-transform duration-300" strokeWidth={2.5} />
+            </button>
+          )}
         </div>
       </div>
 

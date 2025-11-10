@@ -1,8 +1,14 @@
 "use client"
 
+import { useState } from "react"
 import { CategoryHeader } from "./category-header"
 import { MenuItem } from "./menu-item"
 import { useLanguage } from "@/contexts/language-context"
+import { ShoppingBag, Bell, X } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { CheckoutModal } from "@/components/checkout-modal"
+import { createClient } from "@/lib/supabase/client"
 
 interface Product {
   id: string
@@ -31,14 +37,104 @@ interface ClassicMenuLayoutProps {
     subtitle?: string
     logo?: string
   }
+  tenantId?: string
+}
+
+type CartItem = {
+  id: string
+  name: string
+  price: number
+  quantity: number
 }
 
 export function ClassicMenuLayout({
   categories,
   products,
-  headerSettings
+  headerSettings,
+  tenantId
 }: ClassicMenuLayoutProps) {
   const { language, setLanguage } = useLanguage()
+  const [cart, setCart] = useState<CartItem[]>([])
+  const [showCart, setShowCart] = useState(false)
+  const [waiterCallOpen, setWaiterCallOpen] = useState(false)
+  const [waiterTableNumber, setWaiterTableNumber] = useState("")
+  const [waiterName, setWaiterName] = useState("")
+  const [waiterCallLoading, setWaiterCallLoading] = useState(false)
+  const supabase = createClient()
+
+  // Cart functions
+  const addToCart = (product: { id: string; name: string; price: number }) => {
+    setCart(prevCart => {
+      const existingItem = prevCart.find(item => item.id === product.id)
+      if (existingItem) {
+        return prevCart.map(item =>
+          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+        )
+      }
+      return [...prevCart, { ...product, quantity: 1 }]
+    })
+  }
+
+  const removeFromCart = (productId: string) => {
+    setCart(prevCart => prevCart.filter(item => item.id !== productId))
+  }
+
+  const updateQuantity = (productId: string, newQuantity: number) => {
+    if (newQuantity === 0) {
+      removeFromCart(productId)
+    } else {
+      setCart(prevCart =>
+        prevCart.map(item => (item.id === productId ? { ...item, quantity: newQuantity } : item))
+      )
+    }
+  }
+
+  const clearCart = () => {
+    setCart([])
+  }
+
+  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
+  const totalPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0)
+
+  // Waiter call function
+  const handleWaiterCall = async () => {
+    if (!waiterTableNumber.trim()) {
+      alert(language === "tr" ? "Lütfen masa numaranızı girin!" : "Please enter your table number!")
+      return
+    }
+
+    if (!tenantId) {
+      alert(language === "tr" ? "Restoran bilgisi bulunamadı!" : "Restaurant information not found!")
+      return
+    }
+
+    try {
+      setWaiterCallLoading(true)
+      const { error } = await supabase.from("waiter_calls").insert({
+        tenant_id: tenantId,
+        table_number: waiterTableNumber,
+        customer_name: waiterName || null,
+        status: "pending",
+      })
+
+      if (error) throw error
+
+      alert(language === "tr" ? "Garson çağrınız iletildi!" : "Waiter call sent successfully!")
+      setWaiterCallOpen(false)
+      setWaiterTableNumber("")
+      setWaiterName("")
+    } catch (error) {
+      console.error("Error calling waiter:", error)
+      alert(language === "tr" ? "Garson çağrısı gönderilemedi!" : "Failed to send waiter call!")
+    } finally {
+      setWaiterCallLoading(false)
+    }
+  }
+
+  const handleOrderSuccess = () => {
+    setShowCart(false)
+    clearCart()
+  }
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] relative overflow-x-hidden">
@@ -78,8 +174,17 @@ export function ClassicMenuLayout({
 
       {/* Header */}
       <header className="relative py-20 px-4 text-center border-b border-[#D4AF37]/30">
-        {/* Language Toggle Button */}
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-8">
+        {/* Top Buttons: Language Toggle and Waiter Call */}
+        <div className="absolute top-4 right-4 sm:top-6 sm:right-8 flex items-center gap-2">
+          <button
+            onClick={() => setWaiterCallOpen(true)}
+            className="group relative px-4 py-2 bg-[#1a1a1a] border border-[#D4AF37]/40 rounded-sm transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#2a2210]/30 flex items-center gap-2"
+          >
+            <Bell className="w-4 h-4 text-[#D4AF37]" />
+            <span className="hidden sm:inline relative text-sm font-['Playfair_Display',serif] font-medium tracking-wider text-[#D4AF37]">
+              {language === "tr" ? "Garson Çağır" : "Call Waiter"}
+            </span>
+          </button>
           <button
             onClick={() => setLanguage(language === "tr" ? "en" : "tr")}
             className="group relative px-4 py-2 bg-[#1a1a1a] border border-[#D4AF37]/40 rounded-sm transition-all duration-300 hover:border-[#D4AF37] hover:bg-[#2a2210]/30"
@@ -205,6 +310,7 @@ export function ClassicMenuLayout({
                         key={product.id}
                         product={product}
                         featured={false}
+                        onAddToCart={addToCart}
                       />
                     ))}
                   </div>
@@ -221,6 +327,106 @@ export function ClassicMenuLayout({
           )
         })}
       </main>
+
+      {/* Cart Button - Floating */}
+      {totalItems > 0 && (
+        <button
+          onClick={() => setShowCart(true)}
+          className="fixed bottom-6 right-6 z-50 bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm p-4 hover:bg-[#2a2210]/50 transition-all duration-300 shadow-2xl group"
+        >
+          <div className="relative flex items-center gap-3">
+            <ShoppingBag className="w-6 h-6 text-[#D4AF37]" />
+            <div className="flex flex-col items-start">
+              <span className="text-[#D4AF37] font-['Playfair_Display',serif] font-semibold text-sm">
+                {totalItems} {language === "tr" ? "Ürün" : "Items"}
+              </span>
+              <span className="text-[#D4AF37] font-bold text-lg">
+                ₺{totalPrice.toFixed(2)}
+              </span>
+            </div>
+            {totalItems > 0 && (
+              <div className="absolute -top-2 -right-2 bg-[#D4AF37] text-[#1a1a1a] rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold">
+                {totalItems}
+              </div>
+            )}
+          </div>
+        </button>
+      )}
+
+      {/* Checkout Modal */}
+      {showCart && (
+        <CheckoutModal
+          isOpen={showCart}
+          onClose={() => setShowCart(false)}
+          cart={cart}
+          onUpdateQuantity={updateQuantity}
+          onRemoveItem={removeFromCart}
+          onSuccess={handleOrderSuccess}
+          onClearCart={clearCart}
+          tenantId={tenantId}
+        />
+      )}
+
+      {/* Waiter Call Modal */}
+      {waiterCallOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm max-w-md w-full p-6 relative">
+            <button
+              onClick={() => setWaiterCallOpen(false)}
+              className="absolute top-4 right-4 text-[#D4AF37] hover:text-[#FFD700] transition-colors"
+            >
+              <X className="w-6 h-6" />
+            </button>
+
+            <h2 className="text-2xl font-['Playfair_Display',serif] font-bold text-[#D4AF37] mb-6 text-center">
+              {language === "tr" ? "Garson Çağır" : "Call Waiter"}
+            </h2>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[#D4C5B0] text-sm mb-2 font-['Playfair_Display',serif]">
+                  {language === "tr" ? "Masa Numarası" : "Table Number"} <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="text"
+                  placeholder={language === "tr" ? "Örn: A5, 12..." : "e.g. A5, 12..."}
+                  value={waiterTableNumber}
+                  onChange={(e) => setWaiterTableNumber(e.target.value)}
+                  className="bg-[#1a1a1a] border-[#D4AF37]/40 text-[#D4C5B0] focus:border-[#D4AF37]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[#D4C5B0] text-sm mb-2 font-['Playfair_Display',serif]">
+                  {language === "tr" ? "İsim (İsteğe bağlı)" : "Name (Optional)"}
+                </label>
+                <Input
+                  type="text"
+                  placeholder={language === "tr" ? "Adınız" : "Your name"}
+                  value={waiterName}
+                  onChange={(e) => setWaiterName(e.target.value)}
+                  className="bg-[#1a1a1a] border-[#D4AF37]/40 text-[#D4C5B0] focus:border-[#D4AF37]"
+                />
+              </div>
+
+              <Button
+                onClick={handleWaiterCall}
+                disabled={waiterCallLoading}
+                className="w-full bg-[#D4AF37] hover:bg-[#FFD700] text-[#1a1a1a] font-['Playfair_Display',serif] font-bold py-6 text-lg"
+              >
+                {waiterCallLoading ? (
+                  <span>{language === "tr" ? "Gönderiliyor..." : "Sending..."}</span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <Bell className="w-5 h-5" />
+                    {language === "tr" ? "Garson Çağır" : "Call Waiter"}
+                  </span>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="relative py-16 px-4 text-center border-t border-[#D4AF37]/30 mt-20">

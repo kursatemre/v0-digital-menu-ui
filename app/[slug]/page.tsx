@@ -393,6 +393,7 @@ function MenuPageContent() {
         categories={categories}
         products={products}
         headerSettings={headerSettings}
+        tenantId={tenant.id}
       />
     )
   }
