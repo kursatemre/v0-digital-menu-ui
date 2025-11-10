@@ -340,6 +340,32 @@ export default function AdminPanel() {
   })
   const [editingGroup, setEditingGroup] = useState<any>(null)
 
+  // Customization options states
+  const [selectedGroup, setSelectedGroup] = useState<any>(null)
+  const [customizationOptions, setCustomizationOptions] = useState<any[]>([])
+  const [showOptionForm, setShowOptionForm] = useState(false)
+  const [optionForm, setOptionForm] = useState({
+    name: "",
+    name_en: "",
+    price_modifier: 0,
+    display_order: 0,
+    is_default: false,
+  })
+  const [editingOption, setEditingOption] = useState<any>(null)
+
+  // Product variants states
+  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [productVariants, setProductVariants] = useState<any[]>([])
+  const [showVariantForm, setShowVariantForm] = useState(false)
+  const [variantForm, setVariantForm] = useState({
+    name: "",
+    name_en: "",
+    price_modifier: 0,
+    display_order: 0,
+    is_default: false,
+  })
+  const [editingVariant, setEditingVariant] = useState<any>(null)
+
   const supabase = createClient()
 
   const [isSaving, setIsSaving] = useState(false)
@@ -1006,12 +1032,19 @@ export default function AdminPanel() {
       try {
         const { data, error } = await supabase
           .from("customization_groups")
-          .select("*")
+          .select(`
+            *,
+            options:customization_options(count)
+          `)
           .eq("tenant_id", tenantId)
           .order("display_order")
         
         if (error) throw error
-        setCustomizationGroups(data || [])
+        const groupsWithCount = (data || []).map((g: any) => ({
+          ...g,
+          options_count: g.options?.[0]?.count || 0
+        }))
+        setCustomizationGroups(groupsWithCount)
       } catch (error) {
         console.error("Error loading customization groups:", error)
       }
@@ -1090,6 +1123,112 @@ export default function AdminPanel() {
       alert("Grup silindi!")
     } catch (error) {
       console.error("Error deleting group:", error)
+      alert("Hata: " + (error as any).message)
+    }
+  }
+
+  // Load, save, delete customization options
+  const loadCustomizationOptions = async (groupId: string) => {
+    try {
+      const { data, error } = await supabase.from("customization_options").select("*")
+        .eq("group_id", groupId).eq("tenant_id", tenantId).order("display_order")
+      if (error) throw error
+      setCustomizationOptions(data || [])
+      setSelectedGroup(customizationGroups.find(g => g.id === groupId) || null)
+    } catch (error) {
+      console.error("Error loading options:", error)
+    }
+  }
+
+  const saveCustomizationOption = async () => {
+    if (!tenantId || !selectedGroup) return
+    try {
+      if (editingOption) {
+        const { error } = await supabase.from("customization_options").update({
+          name: optionForm.name, name_en: optionForm.name_en, price_modifier: optionForm.price_modifier,
+          display_order: optionForm.display_order, is_default: optionForm.is_default,
+        }).eq("id", editingOption.id).eq("tenant_id", tenantId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from("customization_options").insert({
+          tenant_id: tenantId, group_id: selectedGroup.id, name: optionForm.name, name_en: optionForm.name_en,
+          price_modifier: optionForm.price_modifier, display_order: optionForm.display_order, is_default: optionForm.is_default,
+        })
+        if (error) throw error
+      }
+      await loadCustomizationOptions(selectedGroup.id)
+      setShowOptionForm(false)
+      setEditingOption(null)
+      setOptionForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false })
+      alert(editingOption ? "Seçenek güncellendi!" : "Seçenek oluşturuldu!")
+    } catch (error) {
+      console.error("Error saving option:", error)
+      alert("Hata: " + (error as any).message)
+    }
+  }
+
+  const deleteCustomizationOption = async (id: string) => {
+    if (!confirm("Bu seçeneği silmek istediğinize emin misiniz?")) return
+    try {
+      const { error } = await supabase.from("customization_options").delete().eq("id", id).eq("tenant_id", tenantId)
+      if (error) throw error
+      setCustomizationOptions(customizationOptions.filter(o => o.id !== id))
+      alert("Seçenek silindi!")
+    } catch (error) {
+      console.error("Error deleting option:", error)
+      alert("Hata: " + (error as any).message)
+    }
+  }
+
+  // Load, save, delete product variants
+  const loadProductVariants = async (productId: string) => {
+    try {
+      const { data, error } = await supabase.from("product_variants").select("*")
+        .eq("product_id", productId).eq("tenant_id", tenantId).order("display_order")
+      if (error) throw error
+      setProductVariants(data || [])
+      setSelectedProduct(products.find(p => p.id === productId) || null)
+    } catch (error) {
+      console.error("Error loading variants:", error)
+    }
+  }
+
+  const saveProductVariant = async () => {
+    if (!tenantId || !selectedProduct) return
+    try {
+      if (editingVariant) {
+        const { error } = await supabase.from("product_variants").update({
+          name: variantForm.name, name_en: variantForm.name_en, price_modifier: variantForm.price_modifier,
+          display_order: variantForm.display_order, is_default: variantForm.is_default,
+        }).eq("id", editingVariant.id).eq("tenant_id", tenantId)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from("product_variants").insert({
+          tenant_id: tenantId, product_id: selectedProduct.id, name: variantForm.name, name_en: variantForm.name_en,
+          price_modifier: variantForm.price_modifier, display_order: variantForm.display_order, is_default: variantForm.is_default,
+        })
+        if (error) throw error
+      }
+      await loadProductVariants(selectedProduct.id)
+      setShowVariantForm(false)
+      setEditingVariant(null)
+      setVariantForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false })
+      alert(editingVariant ? "Varyant güncellendi!" : "Varyant oluşturuldu!")
+    } catch (error) {
+      console.error("Error saving variant:", error)
+      alert("Hata: " + (error as any).message)
+    }
+  }
+
+  const deleteProductVariant = async (id: string) => {
+    if (!confirm("Bu varyantı silmek istediğinize emin misiniz?")) return
+    try {
+      const { error } = await supabase.from("product_variants").delete().eq("id", id).eq("tenant_id", tenantId)
+      if (error) throw error
+      setProductVariants(productVariants.filter(v => v.id !== id))
+      alert("Varyant silindi!")
+    } catch (error) {
+      console.error("Error deleting variant:", error)
       alert("Hata: " + (error as any).message)
     }
   }
@@ -2824,7 +2963,7 @@ export default function AdminPanel() {
               <div className="space-y-2">
                 {customizationGroups.map((group) => (
                   <div key={group.id} className="flex items-center justify-between p-3 border rounded-lg">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{group.name}</p>
                       <p className="text-xs text-muted-foreground">{group.name_en}</p>
                       {group.is_required && (
@@ -2834,6 +2973,16 @@ export default function AdminPanel() {
                       )}
                     </div>
                     <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="ghost"
+                        onClick={() => {
+                          setSelectedGroup(group)
+                          loadCustomizationOptions(group.id)
+                        }}
+                      >
+                        Seçenekler ({group.options_count || 0})
+                      </Button>
                       <Button 
                         size="sm" 
                         variant="outline"
@@ -2867,17 +3016,258 @@ export default function AdminPanel() {
 
         <Card>
           <CardHeader>
-            <CardTitle>🎯 Ürün Varyantları</CardTitle>
-            <CardDescription>Küçük/Orta/Büyük gibi boyut seçenekleri</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>🎯 Ürün Varyantları</CardTitle>
+                <CardDescription>Küçük/Orta/Büyük gibi boyut seçenekleri</CardDescription>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline" disabled>
-              <Plus className="w-4 h-4 mr-2" />
-              Yeni Varyant Ekle (Yakında)
-            </Button>
+            {products.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Önce ürün ekleyin, sonra varyant tanımlayabilirsiniz.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <select
+                  className="w-full border rounded px-3 py-2 bg-background"
+                  onChange={(e) => {
+                    const product = products.find(p => p.id === e.target.value)
+                    if (product) {
+                      setSelectedProduct(product)
+                      loadProductVariants(product.id)
+                    }
+                  }}
+                  value={selectedProduct?.id || ""}
+                >
+                  <option value="">Ürün seçin...</option>
+                  {products.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+
+                {selectedProduct && productVariants.length > 0 && (
+                  <div className="space-y-2 mt-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-medium">{selectedProduct.name} - Varyantlar</h4>
+                      <Button 
+                        size="sm"
+                        onClick={() => {
+                          setEditingVariant(null)
+                          setVariantForm({ name: "", name_en: "", price_modifier: 0, display_order: productVariants.length, is_default: false })
+                          setShowVariantForm(true)
+                        }}
+                      >
+                        <Plus className="w-3 h-3 mr-1" />
+                        Ekle
+                      </Button>
+                    </div>
+                    {productVariants.map(v => (
+                      <div key={v.id} className="flex items-center justify-between p-2 border rounded">
+                        <div>
+                          <span className="font-medium">{v.name}</span>
+                          <span className="text-xs text-muted-foreground ml-2">({v.name_en})</span>
+                          {v.price_modifier !== 0 && (
+                            <span className="text-xs ml-2">+{v.price_modifier}₺</span>
+                          )}
+                          {v.is_default && (
+                            <span className="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded ml-2">Varsayılan</span>
+                          )}
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" variant="outline" onClick={() => {
+                            setEditingVariant(v)
+                            setVariantForm({ name: v.name, name_en: v.name_en || "", price_modifier: v.price_modifier, display_order: v.display_order, is_default: v.is_default })
+                            setShowVariantForm(true)
+                          }}>
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                          <Button size="sm" variant="destructive" onClick={() => deleteProductVariant(v.id)}>
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {selectedProduct && productVariants.length === 0 && (
+                  <div className="text-center py-4">
+                    <p className="text-sm text-muted-foreground mb-2">Bu ürüne henüz varyant eklenmemiş</p>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setEditingVariant(null)
+                        setVariantForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false })
+                        setShowVariantForm(true)
+                      }}
+                    >
+                      <Plus className="w-3 h-3 mr-2" />
+                      İlk Varyantı Ekle
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
+
+      {/* Options Dialog for Selected Group */}
+      {selectedGroup && !showGroupForm && (
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>{selectedGroup.name} - Seçenekler</CardTitle>
+                <CardDescription>{selectedGroup.name_en}</CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    setEditingOption(null)
+                    setOptionForm({ name: "", name_en: "", price_modifier: 0, display_order: customizationOptions.length, is_default: false })
+                    setShowOptionForm(true)
+                  }}
+                >
+                  <Plus className="w-3 h-3 mr-2" />
+                  Yeni Seçenek
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => {
+                  setSelectedGroup(null)
+                  setCustomizationOptions([])
+                }}>
+                  Kapat
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {customizationOptions.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Henüz seçenek yok. Yukarıdaki butona tıklayarak ekleyin.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {customizationOptions.map(option => (
+                  <div key={option.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{option.name}</p>
+                      <p className="text-xs text-muted-foreground">{option.name_en}</p>
+                      {option.price_modifier !== 0 && (
+                        <p className="text-sm text-green-600 mt-1">+{option.price_modifier}₺</p>
+                      )}
+                      {option.is_default && (
+                        <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded mt-1 inline-block">
+                          Varsayılan
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingOption(option)
+                          setOptionForm({
+                            name: option.name,
+                            name_en: option.name_en || "",
+                            price_modifier: option.price_modifier,
+                            display_order: option.display_order,
+                            is_default: option.is_default,
+                          })
+                          setShowOptionForm(true)
+                        }}
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteCustomizationOption(option.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Option Form Dialog */}
+      {showOptionForm && (
+        <Dialog open={showOptionForm} onOpenChange={setShowOptionForm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingOption ? "Seçeneği Düzenle" : "Yeni Seçenek Ekle"}</DialogTitle>
+              <DialogDescription>Grup: {selectedGroup?.name}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Seçenek Adı (Türkçe)</label>
+                <Input value={optionForm.name} onChange={(e) => setOptionForm({ ...optionForm, name: e.target.value })} placeholder="Örn: Yulaf Sütü" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Seçenek Adı (İngilizce)</label>
+                <Input value={optionForm.name_en} onChange={(e) => setOptionForm({ ...optionForm, name_en: e.target.value })} placeholder="e.g. Oat Milk" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Fiyat Farkı (₺)</label>
+                <Input type="number" step="0.01" value={optionForm.price_modifier} onChange={(e) => setOptionForm({ ...optionForm, price_modifier: parseFloat(e.target.value) || 0 })} />
+                <p className="text-xs text-muted-foreground mt-1">0 = Ücretsiz, Pozitif değer = Ek ücret</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={optionForm.is_default} onCheckedChange={(checked) => setOptionForm({ ...optionForm, is_default: checked })} />
+                <label className="text-sm font-medium">Varsayılan seçenek</label>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={saveCustomizationOption} className="flex-1">{editingOption ? "Güncelle" : "Oluştur"}</Button>
+                <Button variant="outline" onClick={() => { setShowOptionForm(false); setEditingOption(null); setOptionForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false }) }}>İptal</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Variant Form Dialog */}
+      {showVariantForm && (
+        <Dialog open={showVariantForm} onOpenChange={setShowVariantForm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>{editingVariant ? "Varyantı Düzenle" : "Yeni Varyant Ekle"}</DialogTitle>
+              <DialogDescription>Ürün: {selectedProduct?.name}</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Varyant Adı (Türkçe)</label>
+                <Input value={variantForm.name} onChange={(e) => setVariantForm({ ...variantForm, name: e.target.value })} placeholder="Örn: Küçük" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Varyant Adı (İngilizce)</label>
+                <Input value={variantForm.name_en} onChange={(e) => setVariantForm({ ...variantForm, name_en: e.target.value })} placeholder="e.g. Small" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Fiyat Farkı (₺)</label>
+                <Input type="number" step="0.01" value={variantForm.price_modifier} onChange={(e) => setVariantForm({ ...variantForm, price_modifier: parseFloat(e.target.value) || 0 })} />
+                <p className="text-xs text-muted-foreground mt-1">0 = Normal fiyat, Pozitif = Ek ücret</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch checked={variantForm.is_default} onCheckedChange={(checked) => setVariantForm({ ...variantForm, is_default: checked })} />
+                <label className="text-sm font-medium">Varsayılan varyant</label>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={saveProductVariant} className="flex-1">{editingVariant ? "Güncelle" : "Oluştur"}</Button>
+                <Button variant="outline" onClick={() => { setShowVariantForm(false); setEditingVariant(null); setVariantForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false }) }}>İptal</Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Group Form Dialog */}
       {showGroupForm && (
