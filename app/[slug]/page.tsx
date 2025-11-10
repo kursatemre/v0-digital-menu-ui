@@ -15,6 +15,7 @@ import { LanguageProvider, useLanguage } from "@/contexts/language-context"
 import { LanguageSwitch } from "@/components/language-switch"
 import { LanguageAwareText } from "@/components/language-aware-text"
 import { ClassicMenuLayout } from "@/components/themes/classic-elegance/classic-menu-layout"
+import { ModernTakeawayLayout } from "@/components/themes/modern-takeaway/modern-takeaway-layout"
 
 type CartItem = {
   id: string
@@ -74,7 +75,7 @@ function MenuPageContent() {
   const [toastMessage, setToastMessage] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState({
-    type: "modern" as "modern" | "classic_elegance",
+    type: "modern" as "modern" | "classic_elegance" | "modern_takeaway",
     primaryColor: "#8B5A3C",
     secondaryColor: "#C9A961",
     backgroundColor: "#FFFFFF",
@@ -394,6 +395,37 @@ function MenuPageContent() {
         products={products}
         headerSettings={headerSettings}
         tenantId={tenant.id}
+      />
+    )
+  }
+
+  // If Modern Takeaway theme is selected, render that layout
+  if (!isLoading && tenant && theme.type === "modern_takeaway") {
+    // Prepare categories with products
+    const categoriesWithProducts = categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      name_en: cat.name_en,
+      products: products.filter(p => p.categoryId === cat.id && p.is_available !== false)
+    }))
+
+    return (
+      <ModernTakeawayLayout
+        categories={categoriesWithProducts}
+        onAddToCart={(item) => {
+          // Add to cart with customizations
+          const existingIndex = cart.findIndex(c => c.id === item.id)
+          if (existingIndex >= 0) {
+            const newCart = [...cart]
+            newCart[existingIndex].quantity += 1
+            setCart(newCart)
+          } else {
+            setCart([...cart, { ...item, quantity: 1 }])
+          }
+          setToastMessage(`${item.name} sepete eklendi!`)
+          setShowToast(true)
+          setTimeout(() => setShowToast(false), 2000)
+        }}
       />
     )
   }
