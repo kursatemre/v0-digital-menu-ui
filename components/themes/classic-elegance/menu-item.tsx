@@ -22,71 +22,49 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
   const name = language === "en" && product.name_en ? product.name_en : product.name
   const description = language === "en" && product.description_en ? product.description_en : product.description
 
-  if (featured && product.image) {
-    // Öne çıkan ürün - görsel ile (sadece ilk ürün)
-    return (
-      <div className="mb-16 flex flex-col items-center">
-        <div className="w-full max-w-md mb-6">
-          {/* Ornate gold frame around featured image */}
-          <div className="relative p-2 bg-gradient-to-br from-[#C9A961] via-[#D4AF37] to-[#C9A961] rounded-sm">
-            <div className="p-1 bg-[#1a1a1a] rounded-sm">
-              <img
-                src={product.image}
-                alt={name}
-                className="w-full h-72 object-cover rounded-sm"
-              />
-            </div>
-          </div>
-        </div>
-        <div className="text-center max-w-xl">
-          <h3 className="text-2xl sm:text-3xl font-['Playfair_Display',serif] text-[#C9A961] mb-4 font-semibold">
-            {name}
-          </h3>
-          <p className="text-sm sm:text-base text-[#E8E0D5] font-light leading-relaxed mb-4 font-sans italic">
-            {description}
-          </p>
-          <span className="text-2xl text-[#C9A961] font-light font-['Playfair_Display',serif]">
-            {product.price} ₺
-          </span>
-        </div>
-      </div>
-    )
-  }
-
-  // Normal ürün - görselsiz, sadece metin
+  // Tüm ürünler görselsiz - sadece metin formatında
   return (
-    <div className="mb-8 px-4 py-6 relative group hover:bg-[#252525] transition-all duration-300 rounded-sm">
-      {/* Subtle left border accent */}
-      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-[#C9A961]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <div className="mb-6 px-5 py-6 relative group hover:bg-[#252525]/50 transition-all duration-500 rounded-sm overflow-hidden">
+      {/* Shine effect on hover - rafine parlaklık */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
+        style={{
+          background: 'linear-gradient(90deg, transparent 0%, rgba(255, 215, 0, 0.1) 50%, transparent 100%)',
+          animation: 'shine 3s infinite',
+        }}
+      />
 
-      <div className="flex justify-between items-start gap-6">
+      {/* Subtle left border accent with gold gradient */}
+      <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gradient-to-b from-transparent via-[#FFD700]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+      <div className="flex justify-between items-start gap-6 relative z-10">
         <div className="flex-1">
           {/* Optional badge */}
           {product.badge && (
-            <span className="inline-block text-xs text-[#C9A961] border border-[#C9A961]/40 px-3 py-1 rounded-full mb-3 font-light tracking-widest uppercase">
+            <span className="inline-block text-xs text-[#FFD700] border border-[#FDB931]/50 px-3 py-1 rounded-full mb-3 font-light tracking-widest uppercase shadow-sm">
               {product.badge}
             </span>
           )}
 
-          <h3 className="text-xl sm:text-2xl font-['Playfair_Display',serif] text-[#C9A961] mb-3 font-medium tracking-wide">
+          <h3 className="text-lg sm:text-xl font-['Playfair_Display',serif] text-[#FFD700] mb-2 font-semibold tracking-wide">
             {name}
           </h3>
-          <p className="text-sm sm:text-base text-[#D4C5B0] font-light leading-relaxed font-sans">
+          <p className="text-xs sm:text-sm text-[#D4C5B0] font-light leading-relaxed font-sans">
             {description}
           </p>
         </div>
 
         {/* Dotted line ve fiyat */}
         <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="hidden sm:block w-20 border-b border-dotted border-[#C9A961] opacity-40" />
-          <span className="text-xl sm:text-2xl text-[#C9A961] font-light whitespace-nowrap font-['Playfair_Display',serif]">
+          <div className="hidden sm:block w-16 border-b border-dotted border-[#FFD700] opacity-30" />
+          <span className="text-lg sm:text-xl text-[#FFD700] font-semibold whitespace-nowrap font-['Playfair_Display',serif]">
             {product.price} ₺
           </span>
         </div>
       </div>
 
-      {/* Subtle bottom border */}
-      <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[#C9A961]/10 to-transparent" />
+      {/* Subtle bottom border with shimmer */}
+      <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[#FFD700]/20 to-transparent" />
     </div>
   )
 }

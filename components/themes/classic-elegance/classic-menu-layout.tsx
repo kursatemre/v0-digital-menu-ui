@@ -42,6 +42,18 @@ export function ClassicMenuLayout({
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] relative overflow-x-hidden">
+      {/* CSS for shine animation */}
+      <style jsx global>{`
+        @keyframes shine {
+          0% { transform: translateX(-100%); }
+          100% { transform: translateX(100%); }
+        }
+        @keyframes glow {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+      `}</style>
+
       {/* Rich suede/fabric texture overlay */}
       <div
         className="absolute inset-0 opacity-[0.15] pointer-events-none"
@@ -65,20 +77,20 @@ export function ClassicMenuLayout({
       />
 
       {/* Header */}
-      <header className="relative py-20 px-4 text-center border-b border-[#C9A961]/30">
+      <header className="relative py-20 px-4 text-center border-b border-[#FFD700]/30">
         {/* Top decorative ornament */}
         <div className="flex justify-center mb-8">
           <svg width="100" height="40" viewBox="0 0 100 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 20 Q 30 15, 50 20 T 90 20" stroke="#C9A961" strokeWidth="1.5" fill="none"/>
-            <circle cx="50" cy="20" r="3" fill="#C9A961"/>
-            <circle cx="35" cy="17" r="1.5" fill="#C9A961" opacity="0.6"/>
-            <circle cx="65" cy="17" r="1.5" fill="#C9A961" opacity="0.6"/>
+            <path d="M10 20 Q 30 15, 50 20 T 90 20" stroke="#FFD700" strokeWidth="1.5" fill="none" style={{ animation: 'glow 2s ease-in-out infinite' }}/>
+            <circle cx="50" cy="20" r="3" fill="#FFD700"/>
+            <circle cx="35" cy="17" r="1.5" fill="#FDB931" opacity="0.8"/>
+            <circle cx="65" cy="17" r="1.5" fill="#FDB931" opacity="0.8"/>
           </svg>
         </div>
 
         {headerSettings?.logo && (
           <div className="flex justify-center mb-8">
-            <div className="relative p-2 bg-gradient-to-br from-[#C9A961]/20 via-transparent to-[#C9A961]/20 rounded-full">
+            <div className="relative p-2 bg-gradient-to-br from-[#FFD700]/20 via-transparent to-[#FDB931]/20 rounded-full">
               <img
                 src={headerSettings.logo}
                 alt="Logo"
@@ -88,7 +100,7 @@ export function ClassicMenuLayout({
           </div>
         )}
 
-        <h1 className="text-4xl sm:text-5xl md:text-7xl font-['Playfair_Display',serif] text-[#C9A961] tracking-[0.3em] mb-6 font-bold">
+        <h1 className="text-4xl sm:text-5xl md:text-7xl font-['Playfair_Display',serif] text-[#FFD700] tracking-[0.3em] mb-6 font-bold drop-shadow-[0_0_10px_rgba(255,215,0,0.3)]">
           {headerSettings?.title || "MENU"}
         </h1>
 
@@ -101,11 +113,11 @@ export function ClassicMenuLayout({
         {/* Decorative line */}
         <div className="flex justify-center mt-10">
           <svg width="250" height="20" viewBox="0 0 250 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M20 10 L110 10" stroke="#C9A961" strokeWidth="1" opacity="0.6"/>
-            <path d="M140 10 L230 10" stroke="#C9A961" strokeWidth="1" opacity="0.6"/>
-            <circle cx="125" cy="10" r="4" fill="#C9A961"/>
-            <circle cx="115" cy="10" r="2" fill="#C9A961" opacity="0.5"/>
-            <circle cx="135" cy="10" r="2" fill="#C9A961" opacity="0.5"/>
+            <path d="M20 10 L110 10" stroke="#FFD700" strokeWidth="1" opacity="0.6"/>
+            <path d="M140 10 L230 10" stroke="#FFD700" strokeWidth="1" opacity="0.6"/>
+            <circle cx="125" cy="10" r="4" fill="#FFD700"/>
+            <circle cx="115" cy="10" r="2" fill="#FDB931" opacity="0.7"/>
+            <circle cx="135" cy="10" r="2" fill="#FDB931" opacity="0.7"/>
           </svg>
         </div>
       </header>
@@ -126,54 +138,74 @@ export function ClassicMenuLayout({
               <CategoryHeader title={categoryName} />
 
               {/* Two-column layout: Category image on left, products on right */}
-              <div className="flex flex-col lg:flex-row gap-8 lg:gap-12 px-4">
-                {/* Left Column: Category Image */}
+              <div className="flex flex-col lg:flex-row gap-8 lg:gap-10 px-4">
+                {/* Left Column: Category Image - 540x960 Portrait */}
                 {category.image && (
-                  <div className="lg:w-80 xl:w-96 flex-shrink-0">
+                  <div className="w-full lg:w-[270px] xl:w-[320px] flex-shrink-0 mx-auto lg:mx-0">
                     <div className="sticky top-8">
-                      {/* Elegant frame for category image */}
-                      <div className="relative p-3 bg-gradient-to-br from-[#C9A961] via-[#D4AF37] to-[#C9A961] rounded-sm shadow-2xl">
-                        <div className="p-2 bg-[#1a1a1a] rounded-sm">
-                          <img
-                            src={category.image}
-                            alt={categoryName}
-                            className="w-full h-80 object-cover rounded-sm"
-                          />
+                      {/* Elegant frame with decorative thin borders */}
+                      <div className="relative p-[2px] bg-gradient-to-br from-[#FFD700] via-[#FDB931] to-[#FFD700] rounded-sm shadow-2xl overflow-hidden">
+                        {/* Shine effect overlay */}
+                        <div
+                          className="absolute inset-0 opacity-40 pointer-events-none"
+                          style={{
+                            background: 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+                            animation: 'shine 4s infinite',
+                          }}
+                        />
+
+                        {/* Inner decorative border */}
+                        <div className="relative p-[1px] bg-[#1a1a1a] rounded-sm">
+                          <div className="p-1 bg-gradient-to-br from-[#FFD700]/10 to-[#FDB931]/10 rounded-sm">
+                            <img
+                              src={category.image}
+                              alt={categoryName}
+                              className="w-full aspect-[9/16] object-cover rounded-sm"
+                              style={{ maxHeight: '480px' }}
+                            />
+                          </div>
                         </div>
+
+                        {/* Corner decorative accents */}
+                        <div className="absolute top-1 left-1 w-4 h-4 border-t-2 border-l-2 border-[#FFD700]" />
+                        <div className="absolute top-1 right-1 w-4 h-4 border-t-2 border-r-2 border-[#FFD700]" />
+                        <div className="absolute bottom-1 left-1 w-4 h-4 border-b-2 border-l-2 border-[#FFD700]" />
+                        <div className="absolute bottom-1 right-1 w-4 h-4 border-b-2 border-r-2 border-[#FFD700]" />
                       </div>
 
                       {/* Decorative element below image */}
                       <div className="flex justify-center mt-4">
-                        <svg width="120" height="20" viewBox="0 0 120 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M10 10 Q 35 6, 60 10 T 110 10" stroke="#C9A961" strokeWidth="1" fill="none" opacity="0.6"/>
-                          <circle cx="60" cy="10" r="2" fill="#C9A961" opacity="0.8"/>
+                        <svg width="150" height="24" viewBox="0 0 150 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M15 12 Q 45 8, 75 12 T 135 12" stroke="#FFD700" strokeWidth="1.2" fill="none" opacity="0.7"/>
+                          <circle cx="75" cy="12" r="2.5" fill="#FFD700"/>
+                          <circle cx="60" cy="10" r="1.5" fill="#FDB931" opacity="0.6"/>
+                          <circle cx="90" cy="10" r="1.5" fill="#FDB931" opacity="0.6"/>
                         </svg>
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* Right Column: Products */}
-                <div className="flex-1 space-y-4">
-                  {categoryProducts.map((product, index) => {
-                    // İlk ürünü featured olarak göster (eğer görseli varsa)
-                    const isFeatured = index === 0 && product.image
-
-                    return (
+                {/* Right Column: Products (2-3 items in grid) */}
+                <div className="flex-1">
+                  <div className="space-y-2">
+                    {categoryProducts.map((product, index) => (
                       <MenuItem
                         key={product.id}
                         product={product}
-                        featured={isFeatured}
+                        featured={false}
                       />
-                    )
-                  })}
+                    ))}
+                  </div>
                 </div>
               </div>
 
               {/* Category separator */}
               {categoryIndex < categories.length - 1 && (
                 <div className="flex justify-center mt-16">
-                  <div className="w-48 h-px bg-gradient-to-r from-transparent via-[#C9A961]/30 to-transparent" />
+                  <div className="w-64 h-px bg-gradient-to-r from-transparent via-[#FFD700]/40 to-transparent relative">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#FFD700]/20 to-transparent blur-sm" />
+                  </div>
                 </div>
               )}
             </section>
@@ -182,23 +214,23 @@ export function ClassicMenuLayout({
       </main>
 
       {/* Footer */}
-      <footer className="relative py-16 px-4 text-center border-t border-[#C9A961]/30 mt-20">
+      <footer className="relative py-16 px-4 text-center border-t border-[#FFD700]/30 mt-20">
         <div className="flex justify-center mb-6">
-          <svg width="200" height="40" viewBox="0 0 200 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg width="220" height="50" viewBox="0 0 220 50" fill="none" xmlns="http://www.w3.org/2000/svg">
             {/* Ornate footer decoration */}
-            <path d="M20 20 Q 50 15, 80 20 Q 110 25, 140 20" stroke="#C9A961" strokeWidth="1.2" fill="none"/>
-            <path d="M0 20 L15 20 M145 20 L200 20" stroke="#C9A961" strokeWidth="1"/>
-            <circle cx="80" cy="20" r="3" fill="#C9A961"/>
-            <circle cx="100" cy="20" r="2" fill="#C9A961" opacity="0.6"/>
-            <circle cx="60" cy="20" r="2" fill="#C9A961" opacity="0.6"/>
-            <circle cx="80" cy="12" r="1.5" fill="#C9A961" opacity="0.4"/>
-            <circle cx="80" cy="28" r="1.5" fill="#C9A961" opacity="0.4"/>
+            <path d="M30 25 Q 65 18, 95 25 Q 125 32, 155 25" stroke="#FFD700" strokeWidth="1.5" fill="none" style={{ animation: 'glow 3s ease-in-out infinite' }}/>
+            <path d="M5 25 L25 25 M160 25 L215 25" stroke="#FFD700" strokeWidth="1.2"/>
+            <circle cx="95" cy="25" r="3.5" fill="#FFD700"/>
+            <circle cx="110" cy="25" r="2" fill="#FDB931" opacity="0.7"/>
+            <circle cx="80" cy="25" r="2" fill="#FDB931" opacity="0.7"/>
+            <circle cx="95" cy="15" r="1.5" fill="#FFD700" opacity="0.5"/>
+            <circle cx="95" cy="35" r="1.5" fill="#FFD700" opacity="0.5"/>
           </svg>
         </div>
-        <p className="text-[#C9A961] text-base sm:text-lg font-light tracking-[0.4em] font-['Playfair_Display',serif] italic mb-4">
+        <p className="text-[#FFD700] text-base sm:text-lg font-light tracking-[0.4em] font-['Playfair_Display',serif] italic mb-4 drop-shadow-[0_0_8px_rgba(255,215,0,0.4)]">
           BON APPÉTIT
         </p>
-        <p className="text-[#8B7355] text-xs tracking-[0.3em] font-light uppercase">
+        <p className="text-[#B8956A] text-xs tracking-[0.3em] font-light uppercase">
           Fine Dining Experience
         </p>
       </footer>
