@@ -329,6 +329,17 @@ export default function AdminPanel() {
     confirmPassword: "",
   })
 
+  // Customizations states
+  const [customizationGroups, setCustomizationGroups] = useState<any[]>([])
+  const [showGroupForm, setShowGroupForm] = useState(false)
+  const [groupForm, setGroupForm] = useState({
+    name: "",
+    name_en: "",
+    display_order: 0,
+    is_required: false,
+  })
+  const [editingGroup, setEditingGroup] = useState<any>(null)
+
   const supabase = createClient()
 
   const [isSaving, setIsSaving] = useState(false)
@@ -986,6 +997,102 @@ export default function AdminPanel() {
 
     loadSettings()
   }, [tenantId, supabase])
+
+  // Load customization groups
+  useEffect(() => {
+    if (!tenantId) return
+    
+    const loadCustomizationGroups = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("customization_groups")
+          .select("*")
+          .eq("tenant_id", tenantId)
+          .order("display_order")
+        
+        if (error) throw error
+        setCustomizationGroups(data || [])
+      } catch (error) {
+        console.error("Error loading customization groups:", error)
+      }
+    }
+
+    loadCustomizationGroups()
+  }, [tenantId, supabase])
+
+  // Save customization group
+  const saveCustomizationGroup = async () => {
+    if (!tenantId) return
+    
+    try {
+      if (editingGroup) {
+        // Update existing
+        const { error } = await supabase
+          .from("customization_groups")
+          .update({
+            name: groupForm.name,
+            name_en: groupForm.name_en,
+            display_order: groupForm.display_order,
+            is_required: groupForm.is_required,
+          })
+          .eq("id", editingGroup.id)
+          .eq("tenant_id", tenantId)
+        
+        if (error) throw error
+      } else {
+        // Create new
+        const { error } = await supabase
+          .from("customization_groups")
+          .insert({
+            tenant_id: tenantId,
+            name: groupForm.name,
+            name_en: groupForm.name_en,
+            display_order: groupForm.display_order,
+            is_required: groupForm.is_required,
+          })
+        
+        if (error) throw error
+      }
+
+      // Reload groups
+      const { data } = await supabase
+        .from("customization_groups")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("display_order")
+      
+      setCustomizationGroups(data || [])
+      setShowGroupForm(false)
+      setEditingGroup(null)
+      setGroupForm({ name: "", name_en: "", display_order: 0, is_required: false })
+      
+      alert(editingGroup ? "Grup güncellendi!" : "Grup oluşturuldu!")
+    } catch (error) {
+      console.error("Error saving group:", error)
+      alert("Hata: " + (error as any).message)
+    }
+  }
+
+  // Delete customization group
+  const deleteCustomizationGroup = async (id: string) => {
+    if (!confirm("Bu grubu silmek istediğinize emin misiniz?")) return
+    
+    try {
+      const { error } = await supabase
+        .from("customization_groups")
+        .delete()
+        .eq("id", id)
+        .eq("tenant_id", tenantId)
+      
+      if (error) throw error
+      
+      setCustomizationGroups(customizationGroups.filter(g => g.id !== id))
+      alert("Grup silindi!")
+    } catch (error) {
+      console.error("Error deleting group:", error)
+      alert("Hata: " + (error as any).message)
+    }
+  }
 
   useEffect(() => {
     const storedTheme = localStorage.getItem("restaurant_theme")
@@ -2693,14 +2800,68 @@ export default function AdminPanel() {
       <div className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle>📦 Özelleştirme Grupları</CardTitle>
-            <CardDescription>Süt Tipi, Şurup gibi ana gruplar</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>📦 Özelleştirme Grupları</CardTitle>
+                <CardDescription>Süt Tipi, Şurup gibi ana gruplar</CardDescription>
+              </div>
+              <Button onClick={() => {
+                setEditingGroup(null)
+                setGroupForm({ name: "", name_en: "", display_order: customizationGroups.length, is_required: false })
+                setShowGroupForm(true)
+              }}>
+                <Plus className="w-4 h-4 mr-2" />
+                Yeni Grup
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
-            <Button className="w-full" variant="outline" disabled>
-              <Plus className="w-4 h-4 mr-2" />
-              Yeni Grup Ekle (Yakında)
-            </Button>
+            {customizationGroups.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">
+                Henüz grup eklenmemiş. Yukarıdaki butona tıklayarak ilk grubunuzu oluşturun.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {customizationGroups.map((group) => (
+                  <div key={group.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium">{group.name}</p>
+                      <p className="text-xs text-muted-foreground">{group.name_en}</p>
+                      {group.is_required && (
+                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-0.5 rounded mt-1 inline-block">
+                          Zorunlu
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setEditingGroup(group)
+                          setGroupForm({
+                            name: group.name,
+                            name_en: group.name_en || "",
+                            display_order: group.display_order,
+                            is_required: group.is_required,
+                          })
+                          setShowGroupForm(true)
+                        }}
+                      >
+                        <Edit2 className="w-3 h-3" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="destructive"
+                        onClick={() => deleteCustomizationGroup(group.id)}
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -2717,6 +2878,70 @@ export default function AdminPanel() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Group Form Dialog */}
+      {showGroupForm && (
+        <Dialog open={showGroupForm} onOpenChange={setShowGroupForm}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>
+                {editingGroup ? "Grubu Düzenle" : "Yeni Grup Ekle"}
+              </DialogTitle>
+              <DialogDescription>
+                Özelleştirme grubu bilgilerini girin
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">Grup Adı (Türkçe)</label>
+                <Input
+                  value={groupForm.name}
+                  onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
+                  placeholder="Örn: Süt Tipi"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Grup Adı (İngilizce)</label>
+                <Input
+                  value={groupForm.name_en}
+                  onChange={(e) => setGroupForm({ ...groupForm, name_en: e.target.value })}
+                  placeholder="e.g. Milk Type"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Sıra</label>
+                <Input
+                  type="number"
+                  value={groupForm.display_order}
+                  onChange={(e) => setGroupForm({ ...groupForm, display_order: parseInt(e.target.value) || 0 })}
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  checked={groupForm.is_required}
+                  onCheckedChange={(checked) => setGroupForm({ ...groupForm, is_required: checked })}
+                />
+                <label className="text-sm font-medium">Zorunlu mu?</label>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={saveCustomizationGroup} className="flex-1">
+                  {editingGroup ? "Güncelle" : "Oluştur"}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setShowGroupForm(false)
+                    setEditingGroup(null)
+                    setGroupForm({ name: "", name_en: "", display_order: 0, is_required: false })
+                  }}
+                >
+                  İptal
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <Card className="mt-6">
         <CardHeader>
