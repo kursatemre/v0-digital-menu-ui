@@ -366,6 +366,9 @@ export default function AdminPanel() {
   })
   const [editingVariant, setEditingVariant] = useState<any>(null)
 
+  // Product customization groups assignment
+  const [productCustomizationGroups, setProductCustomizationGroups] = useState<string[]>([])
+
   const supabase = createClient()
 
   const [isSaving, setIsSaving] = useState(false)
@@ -1348,6 +1351,25 @@ export default function AdminPanel() {
           .eq("id", editingProduct.id)
 
         if (error) throw error
+
+        // Update product customization groups
+        // First delete existing relationships
+        await supabase
+          .from("product_customization_groups")
+          .delete()
+          .eq("product_id", editingProduct.id)
+          .eq("tenant_id", tenantId)
+
+        // Then insert new relationships
+        if (productCustomizationGroups.length > 0) {
+          const relationships = productCustomizationGroups.map(groupId => ({
+            product_id: editingProduct.id,
+            group_id: groupId,
+            tenant_id: tenantId,
+          }))
+          await supabase.from("product_customization_groups").insert(relationships)
+        }
+
         setEditingProduct(null)
         await loadProducts()
       } catch (error) {
@@ -1357,7 +1379,7 @@ export default function AdminPanel() {
       if (!tenantId) return
 
       try {
-        const { error } = await supabase.from("products").insert([
+        const { data: newProduct, error } = await supabase.from("products").insert([
           {
             name: productForm.name,
             description: productForm.description,
@@ -1371,15 +1393,27 @@ export default function AdminPanel() {
             display_order: products.length,
             tenant_id: tenantId,
           },
-        ])
+        ]).select()
 
         if (error) throw error
+
+        // Insert product customization groups if any selected
+        if (newProduct && newProduct.length > 0 && productCustomizationGroups.length > 0) {
+          const relationships = productCustomizationGroups.map(groupId => ({
+            product_id: newProduct[0].id,
+            group_id: groupId,
+            tenant_id: tenantId,
+          }))
+          await supabase.from("product_customization_groups").insert(relationships)
+        }
+
         await loadProducts()
       } catch (error) {
         console.error("Error adding product:", error)
       }
     }
     setProductForm({ name: "", description: "", price: 0, categoryId: "", image: "", badge: null, is_available: true, name_en: "", description_en: "" })
+    setProductCustomizationGroups([])
     setShowProductForm(false)
   }
 
@@ -2228,6 +2262,44 @@ export default function AdminPanel() {
                 onCheckedChange={(checked) => setProductForm({ ...productForm, is_available: checked })}
               />
             </div>
+
+            {/* Customization Groups Selection */}
+            <div className="p-4 border rounded-lg bg-muted/50">
+              <label className="text-sm font-medium block mb-2">Özelleştirme Grupları</label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Bu ürün için hangi özelleştirme grupları aktif olsun? (Süt tipi, Şurup, vb.)
+              </p>
+              {customizationGroups.length === 0 ? (
+                <p className="text-xs text-muted-foreground italic">
+                  Henüz özelleştirme grubu yok. Özelleştirmeler sekmesinden ekleyebilirsiniz.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {customizationGroups.map((group: any) => (
+                    <div key={group.id} className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id={`group-${group.id}`}
+                        checked={productCustomizationGroups.includes(group.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setProductCustomizationGroups([...productCustomizationGroups, group.id])
+                          } else {
+                            setProductCustomizationGroups(productCustomizationGroups.filter(id => id !== group.id))
+                          }
+                        }}
+                        className="w-4 h-4 rounded border-gray-300"
+                      />
+                      <label htmlFor={`group-${group.id}`} className="text-sm cursor-pointer flex-1">
+                        {group.name} ({group.name_en})
+                        {group.is_required && <span className="text-orange-600 ml-1">*</span>}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="text-sm font-medium">Resim</label>
               <div className="space-y-2">
@@ -2339,9 +2411,25 @@ export default function AdminPanel() {
                     size="sm"
                     variant="outline"
                     className="flex-1 bg-transparent"
-                    onClick={() => {
+                    onClick={async () => {
                       setEditingProduct(product)
                       setProductForm(product)
+                      
+                      // Load existing customization groups for this product
+                      try {
+                        const { data } = await supabase
+                          .from("product_customization_groups")
+                          .select("group_id")
+                          .eq("product_id", product.id)
+                          .eq("tenant_id", tenantId)
+                        
+                        if (data) {
+                          setProductCustomizationGroups(data.map((item: any) => item.group_id))
+                        }
+                      } catch (error) {
+                        console.error("Error loading product customizations:", error)
+                      }
+                      
                       setShowProductForm(true)
                     }}
                   >
