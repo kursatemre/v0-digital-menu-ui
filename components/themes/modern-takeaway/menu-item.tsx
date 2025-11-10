@@ -1,18 +1,32 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useLanguage } from "@/contexts/language-context"
 import { Plus, Settings, X } from "lucide-react"
+import { createClient } from "@/lib/supabase/client"
 
 interface Variant {
-  size: string
-  price: number
+  id: string
+  name: string
+  name_en?: string
+  price_modifier: number
+  is_default: boolean
 }
 
 interface CustomizationOption {
   id: string
   name: string
-  price: number
+  name_en?: string
+  price_modifier: number
+  is_default: boolean
+}
+
+interface CustomizationGroup {
+  id: string
+  name: string
+  name_en?: string
+  is_required: boolean
+  options: CustomizationOption[]
 }
 
 interface MenuItemProps {
@@ -27,6 +41,7 @@ interface MenuItemProps {
     badge?: string | null
     variants?: Variant[]
   }
+  tenantId: string
   onAddToCart?: (item: { 
     id: string
     name: string
@@ -36,51 +51,111 @@ interface MenuItemProps {
   }) => void
 }
 
-export function MenuItem({ product, onAddToCart }: MenuItemProps) {
+export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
   const { language } = useLanguage()
-  const [selectedSize, setSelectedSize] = useState<string>(
-    product.variants?.[1]?.size || product.variants?.[0]?.size || "M"
-  )
+  const [variants, setVariants] = useState<Variant[]>([])
+  const [customizationGroups, setCustomizationGroups] = useState<CustomizationGroup[]>([])
+  const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
   const [showCustomization, setShowCustomization] = useState(false)
-  
-  // Customization states
-  const [milkType, setMilkType] = useState<string>("full")
-  const [syrup, setSyrup] = useState<string>("none")
-  const [extraShot, setExtraShot] = useState(false)
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({})
+
+  const supabase = createClient()
+
+  // Load variants and customizations from database
+  useEffect(() => {
+    const loadProductData = async () => {
+      try {
+        // Load variants
+        const { data: variantsData } = await supabase
+          .from("product_variants")
+          .select("*")
+          .eq("product_id", product.id)
+          .eq("tenant_id", tenantId)
+          .order("display_order")
+
+        if (variantsData && variantsData.length > 0) {
+          setVariants(variantsData)
+          const defaultVariant = variantsData.find(v => v.is_default) || variantsData[0]
+          setSelectedVariant(defaultVariant)
+        }
+
+        // Load customization groups with options
+        const { data: groupsData } = await supabase
+          .from("product_customization_groups")
+          .select(`
+            group_id,
+            customization_groups (
+              id,
+              name,
+              name_en,
+              is_required,
+              customization_options (
+                id,
+                name,
+                name_en,
+                price_modifier,
+                is_default,
+                display_order
+              )
+            )
+          `)
+          .eq("product_id", product.id)
+          .eq("tenant_id", tenantId)
+
+        if (groupsData && groupsData.length > 0) {
+          const groups = groupsData
+            .map((item: any) => ({
+              ...item.customization_groups,
+              options: (item.customization_groups.customization_options || [])
+                .sort((a: any, b: any) => a.display_order - b.display_order)
+            }))
+            .filter((group: any) => group.options && group.options.length > 0)
+
+          setCustomizationGroups(groups)
+
+          // Set default options
+          const defaults: Record<string, string> = {}
+          groups.forEach((group: CustomizationGroup) => {
+            const defaultOption = group.options.find(opt => opt.is_default)
+            if (defaultOption) {
+              defaults[group.id] = defaultOption.id
+            } else if (group.options.length > 0) {
+              defaults[group.id] = group.options[0].id
+            }
+          })
+          setSelectedOptions(defaults)
+        }
+      } catch (error) {
+        console.error("Error loading product data:", error)
+      }
+    }
+
+    loadProductData()
+  }, [product.id, tenantId, supabase])
 
   const name = language === "en" && product.name_en ? product.name_en : product.name
   const description = language === "en" && product.description_en ? product.description_en : product.description
 
-  // Milk options
-  const milkOptions = [
-    { id: "full", name: "Tam Yağlı", nameEn: "Whole Milk", price: 0 },
-    { id: "almond", name: "Badem Sütü", nameEn: "Almond Milk", price: 8 },
-    { id: "oat", name: "Yulaf Sütü", nameEn: "Oat Milk", price: 10 },
-  ]
-
-  // Syrup options
-  const syrupOptions = [
-    { id: "none", name: "Yok", nameEn: "None", price: 0 },
-    { id: "vanilla", name: "Vanilya", nameEn: "Vanilla", price: 5 },
-    { id: "caramel", name: "Karamel", nameEn: "Caramel", price: 5 },
-  ]
-
-  const getVariantPrice = () => {
-    if (!product.variants) return product.price
-    const variant = product.variants.find(v => v.size === selectedSize)
-    return variant?.price || product.price
-  }
-
-  const getCustomizationTotal = () => {
-    let total = getVariantPrice()
-    const milk = milkOptions.find(m => m.id === milkType)
-    const syrupItem = syrupOptions.find(s => s.id === syrup)
+  const getCurrentPrice = () => {
+    let basePrice = product.price
     
-    if (milk) total += milk.price
-    if (syrupItem) total += syrupItem.price
-    if (extraShot) total += 10
+    // Add variant price modifier
+    if (selectedVariant) {
+      basePrice += selectedVariant.price_modifier
+    }
     
-    return total
+    // Add customization prices
+    customizationGroups.forEach(group => {
+      const optionId = selectedOptions[group.id]
+      if (optionId) {
+        const option = group.options.find(opt => opt.id === optionId)
+        if (option) {
+          basePrice += option.price_modifier
+        }
+      }
+    })
+    
+    return basePrice
   }
 
   const handleQuickAdd = () => {
@@ -88,8 +163,8 @@ export function MenuItem({ product, onAddToCart }: MenuItemProps) {
       onAddToCart({
         id: product.id,
         name: product.name,
-        price: getVariantPrice(),
-        variant: selectedSize,
+        price: getCurrentPrice(),
+        variant: selectedVariant ? (language === "en" && selectedVariant.name_en ? selectedVariant.name_en : selectedVariant.name) : undefined,
       })
     }
   }
@@ -98,30 +173,32 @@ export function MenuItem({ product, onAddToCart }: MenuItemProps) {
     if (onAddToCart) {
       const customizations: { name: string; price: number }[] = []
       
-      const milk = milkOptions.find(m => m.id === milkType)
-      if (milk && milk.price > 0) {
-        customizations.push({ name: milk.name, price: milk.price })
-      }
-      
-      const syrupItem = syrupOptions.find(s => s.id === syrup)
-      if (syrupItem && syrupItem.price > 0) {
-        customizations.push({ name: syrupItem.name, price: syrupItem.price })
-      }
-      
-      if (extraShot) {
-        customizations.push({ name: "Ekstra Shot", price: 10 })
-      }
+      customizationGroups.forEach(group => {
+        const optionId = selectedOptions[group.id]
+        if (optionId) {
+          const option = group.options.find(opt => opt.id === optionId)
+          if (option && option.price_modifier > 0) {
+            customizations.push({ 
+              name: language === "en" && option.name_en ? option.name_en : option.name, 
+              price: option.price_modifier 
+            })
+          }
+        }
+      })
 
       onAddToCart({
         id: product.id,
         name: product.name,
-        price: getCustomizationTotal(),
-        variant: selectedSize,
-        customizations,
+        price: getCurrentPrice(),
+        variant: selectedVariant ? (language === "en" && selectedVariant.name_en ? selectedVariant.name_en : selectedVariant.name) : undefined,
+        customizations: customizations.length > 0 ? customizations : undefined,
       })
     }
     setShowCustomization(false)
   }
+
+  // Show customize button only if there are customization options or variants
+  const hasCustomizations = customizationGroups.length > 0 || variants.length > 0
 
   return (
     <>
@@ -155,21 +232,21 @@ export function MenuItem({ product, onAddToCart }: MenuItemProps) {
 
             {/* Size Selection & Actions */}
             <div className="flex items-center justify-between gap-3">
-              {/* Size Pills */}
-              {product.variants && product.variants.length > 0 ? (
+              {/* Variant Pills or Price */}
+              {variants.length > 0 ? (
                 <div className="flex items-center gap-2">
-                  {product.variants.map((variant) => (
+                  {variants.map((variant) => (
                     <button
-                      key={variant.size}
-                      onClick={() => setSelectedSize(variant.size)}
+                      key={variant.id}
+                      onClick={() => setSelectedVariant(variant)}
                       className={`px-3 py-1.5 rounded-full text-sm font-semibold transition-all ${
-                        selectedSize === variant.size
+                        selectedVariant?.id === variant.id
                           ? "bg-orange-500 text-white shadow-md"
                           : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                       }`}
                     >
-                      <span className="text-xs">{variant.size}</span>
-                      <span className="ml-1">{variant.price}₺</span>
+                      <span className="text-xs">{language === "en" && variant.name_en ? variant.name_en : variant.name}</span>
+                      <span className="ml-1">{(product.price + variant.price_modifier).toFixed(2)}₺</span>
                     </button>
                   ))}
                 </div>
@@ -183,19 +260,21 @@ export function MenuItem({ product, onAddToCart }: MenuItemProps) {
                 <button
                   onClick={handleQuickAdd}
                   className="w-9 h-9 rounded-full bg-orange-500 hover:bg-orange-600 text-white flex items-center justify-center shadow-md hover:shadow-lg transition-all"
-                  aria-label="Sepete Ekle"
+                  aria-label={language === "en" ? "Add to Cart" : "Sepete Ekle"}
                 >
                   <Plus className="w-5 h-5" strokeWidth={2.5} />
                 </button>
 
-                {/* Customize Button */}
-                <button
-                  onClick={() => setShowCustomization(true)}
-                  className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center transition-all"
-                  aria-label="Özelleştir"
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
+                {/* Customize Button - Only show if there are customizations */}
+                {hasCustomizations && (
+                  <button
+                    onClick={() => setShowCustomization(true)}
+                    className="w-9 h-9 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-700 flex items-center justify-center transition-all"
+                    aria-label={language === "en" ? "Customize" : "Özelleştir"}
+                  >
+                    <Settings className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -224,104 +303,68 @@ export function MenuItem({ product, onAddToCart }: MenuItemProps) {
 
             {/* Modal Content */}
             <div className="p-4 space-y-6">
-              {/* Size Selection */}
-              {product.variants && product.variants.length > 0 && (
+              {/* Variant Selection */}
+              {variants.length > 0 && (
                 <div>
-                  <h4 className="font-semibold text-gray-900 mb-3">Boyut Seçin</h4>
+                  <h4 className="font-semibold text-gray-900 mb-3">
+                    {language === "en" ? "Select Size" : "Boyut Seçin"}
+                  </h4>
                   <div className="grid grid-cols-3 gap-2">
-                    {product.variants.map((variant) => (
+                    {variants.map((variant) => (
                       <button
-                        key={variant.size}
-                        onClick={() => setSelectedSize(variant.size)}
+                        key={variant.id}
+                        onClick={() => setSelectedVariant(variant)}
                         className={`p-3 rounded-lg border-2 text-center transition-all ${
-                          selectedSize === variant.size
+                          selectedVariant?.id === variant.id
                             ? "border-orange-500 bg-orange-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
-                        <div className="font-semibold text-gray-900">{variant.size}</div>
-                        <div className="text-sm text-gray-600">{variant.price}₺</div>
+                        <div className="font-semibold text-gray-900">
+                          {language === "en" && variant.name_en ? variant.name_en : variant.name}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {(product.price + variant.price_modifier).toFixed(2)}₺
+                        </div>
                       </button>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Milk Type */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Süt Tipi</h4>
-                <div className="space-y-2">
-                  {milkOptions.map((milk) => (
-                    <button
-                      key={milk.id}
-                      onClick={() => setMilkType(milk.id)}
-                      className={`w-full p-3 rounded-lg border-2 flex items-center justify-between transition-all ${
-                        milkType === milk.id
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <span className="font-medium text-gray-900">
-                        {language === "en" ? milk.nameEn : milk.name}
-                      </span>
-                      <span className="text-sm font-semibold text-gray-600">
-                        {milk.price > 0 ? `+${milk.price}₺` : "Ücretsiz"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Syrup */}
-              <div>
-                <h4 className="font-semibold text-gray-900 mb-3">Şurup</h4>
-                <div className="space-y-2">
-                  {syrupOptions.map((syrupItem) => (
-                    <button
-                      key={syrupItem.id}
-                      onClick={() => setSyrup(syrupItem.id)}
-                      className={`w-full p-3 rounded-lg border-2 flex items-center justify-between transition-all ${
-                        syrup === syrupItem.id
-                          ? "border-orange-500 bg-orange-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <span className="font-medium text-gray-900">
-                        {language === "en" ? syrupItem.nameEn : syrupItem.name}
-                      </span>
-                      <span className="text-sm font-semibold text-gray-600">
-                        {syrupItem.price > 0 ? `+${syrupItem.price}₺` : "-"}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Extra Shot */}
-              <div>
-                <button
-                  onClick={() => setExtraShot(!extraShot)}
-                  className={`w-full p-4 rounded-lg border-2 flex items-center justify-between transition-all ${
-                    extraShot
-                      ? "border-orange-500 bg-orange-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                      extraShot ? "bg-orange-500 border-orange-500" : "border-gray-300"
-                    }`}>
-                      {extraShot && (
-                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </div>
-                    <span className="font-medium text-gray-900">Ekstra Shot</span>
+              {/* Dynamic Customization Groups */}
+              {customizationGroups.map((group) => (
+                <div key={group.id}>
+                  <h4 className="font-semibold text-gray-900 mb-3">
+                    {language === "en" && group.name_en ? group.name_en : group.name}
+                    {group.is_required && <span className="text-orange-600 ml-1">*</span>}
+                  </h4>
+                  <div className="space-y-2">
+                    {group.options.map((option) => (
+                      <button
+                        key={option.id}
+                        onClick={() => setSelectedOptions({ ...selectedOptions, [group.id]: option.id })}
+                        className={`w-full p-3 rounded-lg border-2 flex items-center justify-between transition-all ${
+                          selectedOptions[group.id] === option.id
+                            ? "border-orange-500 bg-orange-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        <span className="font-medium text-gray-900">
+                          {language === "en" && option.name_en ? option.name_en : option.name}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-600">
+                          {option.price_modifier > 0 
+                            ? `+${option.price_modifier.toFixed(2)}₺` 
+                            : option.price_modifier < 0
+                            ? `${option.price_modifier.toFixed(2)}₺`
+                            : (language === "en" ? "Free" : "Ücretsiz")}
+                        </span>
+                      </button>
+                    ))}
                   </div>
-                  <span className="text-sm font-semibold text-gray-600">+10₺</span>
-                </button>
-              </div>
+                </div>
+              ))}
             </div>
 
             {/* Modal Footer */}
@@ -331,7 +374,9 @@ export function MenuItem({ product, onAddToCart }: MenuItemProps) {
                 className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
-                <span>Sepete Ekle ({getCustomizationTotal()}₺)</span>
+                <span>
+                  {language === "en" ? "Add to Cart" : "Sepete Ekle"} ({getCurrentPrice().toFixed(2)}₺)
+                </span>
               </button>
             </div>
           </div>

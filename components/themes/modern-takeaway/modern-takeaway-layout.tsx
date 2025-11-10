@@ -26,11 +26,12 @@ interface Category {
 
 interface ModernTakeawayLayoutProps {
   categories: Category[]
+  tenantId: string
   onAddToCart?: (item: any) => void
   dealOfTheDay?: Product[]
 }
 
-export function ModernTakeawayLayout({ categories, onAddToCart, dealOfTheDay }: ModernTakeawayLayoutProps) {
+export function ModernTakeawayLayout({ categories, tenantId, onAddToCart, dealOfTheDay }: ModernTakeawayLayoutProps) {
   const { language } = useLanguage()
 
   return (
@@ -77,6 +78,7 @@ export function ModernTakeawayLayout({ categories, onAddToCart, dealOfTheDay }: 
                 <MenuItem
                   key={product.id}
                   product={product}
+                  tenantId={tenantId}
                   onAddToCart={onAddToCart}
                 />
               ))}
