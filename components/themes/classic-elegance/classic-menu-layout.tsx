@@ -184,10 +184,10 @@ export function ClassicMenuLayout({
               <CategoryHeader title={categoryName} />
 
               {/* Two-column layout: Category image on left, products on right */}
-              <div className="flex flex-col lg:flex-row gap-6 lg:gap-10 px-4">
-                {/* Left Column: Category Image - 540x960 Portrait */}
+              <div className="flex flex-row gap-4 sm:gap-6 lg:gap-10 px-4">
+                {/* Left Column: Category Image - Portrait */}
                 {category.image && (
-                  <div className="w-[180px] sm:w-[220px] lg:w-[270px] xl:w-[320px] flex-shrink-0 mx-auto lg:mx-0">
+                  <div className="w-[120px] sm:w-[180px] md:w-[220px] lg:w-[270px] xl:w-[320px] flex-shrink-0">
                     <div className="lg:sticky lg:top-8">
                       {/* Elegant frame with decorative thin borders */}
                       <div className="relative p-[2px] bg-gradient-to-br from-[#FFD700] via-[#FDB931] to-[#FFD700] rounded-sm shadow-2xl overflow-hidden">
