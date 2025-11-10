@@ -142,6 +142,7 @@ type Category = {
 }
 
 type Theme = {
+  type?: "modern" | "classic_elegance"
   primaryColor: string
   primaryTextColor: string
   secondaryColor: string
@@ -244,6 +245,7 @@ export default function AdminPanel() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [theme, setTheme] = useState<Theme>({
+    type: "modern",
     primaryColor: "#8B5A3C",
     primaryTextColor: "#FFFFFF",
     secondaryColor: "#C9A961",
@@ -2236,6 +2238,44 @@ export default function AdminPanel() {
           <p className="text-sm text-muted-foreground">Menü stilini ve renklerini özelleştirin</p>
         </div>
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Tema Seçimi</CardTitle>
+          <CardDescription>Menünüzün genel görünümünü belirleyin</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div>
+            <label className="text-sm font-medium mb-2 block">Aktif Tema</label>
+            <select
+              value={theme.type || "modern"}
+              onChange={(e) => setTheme({ ...theme, type: e.target.value as "modern" | "classic_elegance" })}
+              className="w-full border rounded px-3 py-2 bg-background"
+            >
+              <option value="modern">Modern (Kartlı Görünüm)</option>
+              <option value="classic_elegance">Klasik Zarafet (Fine Dining)</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-2">
+              {theme.type === "classic_elegance"
+                ? "Tek sayfa, kaydırmalı, zarif menü tasarımı. Elite restoranlara özel."
+                : "Kategorilere ayrılmış, kart görünümlü modern menü."}
+            </p>
+          </div>
+
+          {theme.type === "classic_elegance" && (
+            <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+              <h4 className="text-sm font-semibold text-amber-900 mb-2">ℹ️ Klasik Zarafet Teması Hakkında</h4>
+              <ul className="text-xs text-amber-800 space-y-1 list-disc list-inside">
+                <li>Koyu füme arka plan üzerine altın tonlarda başlıklar</li>
+                <li>Tek sayfa, yukarıdan aşağıya kaydırmalı düzen</li>
+                <li>Kategori başlıkları dekoratif çizgilerle ayrılır</li>
+                <li>İlk ürün görseli varsa öne çıkan olarak gösterilir</li>
+                <li>Renk ayarları bu temada kullanılmaz</li>
+              </ul>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

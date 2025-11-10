@@ -14,6 +14,7 @@ import Link from "next/link"
 import { LanguageProvider, useLanguage } from "@/contexts/language-context"
 import { LanguageSwitch } from "@/components/language-switch"
 import { LanguageAwareText } from "@/components/language-aware-text"
+import { ClassicMenuLayout } from "@/components/themes/classic-elegance/classic-menu-layout"
 
 type CartItem = {
   id: string
@@ -73,10 +74,16 @@ function MenuPageContent() {
   const [toastMessage, setToastMessage] = useState("")
   const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState({
+    type: "modern" as "modern" | "classic_elegance",
     primaryColor: "#8B5A3C",
     secondaryColor: "#C9A961",
     backgroundColor: "#FFFFFF",
     textColor: "#1A1A1A",
+  })
+  const [headerSettings, setHeaderSettings] = useState({
+    title: "",
+    subtitle: "",
+    logo: "",
   })
 
   const supabase = createClient()
@@ -142,6 +149,18 @@ function MenuPageContent() {
           setTheme(themeData.value)
           document.documentElement.style.setProperty("--primary", themeData.value.primaryColor)
           document.documentElement.style.setProperty("--secondary", themeData.value.secondaryColor)
+        }
+
+        // Load header settings
+        const { data: headerData } = await supabase
+          .from("settings")
+          .select("*")
+          .eq("key", "header")
+          .eq("tenant_id", tenantData.id)
+          .maybeSingle()
+
+        if (headerData?.value) {
+          setHeaderSettings(headerData.value)
         }
 
         // 4. Load categories (with tenant_id filter)
@@ -367,6 +386,18 @@ function MenuPageContent() {
     )
   }
 
+  // If Classic Elegance theme is selected, render that layout
+  if (!isLoading && tenant && theme.type === "classic_elegance") {
+    return (
+      <ClassicMenuLayout
+        categories={categories}
+        products={products}
+        headerSettings={headerSettings}
+      />
+    )
+  }
+
+  // Default Modern theme
   return (
       <div className="min-h-screen bg-background">
         {isLoading ? (
