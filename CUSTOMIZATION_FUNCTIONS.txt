@@ -1,0 +1,176 @@
+// Customization Options CRUD Functions for Admin Panel
+// Copy these functions after deleteCustomizationGroup function
+
+// Load customization options for a group
+const loadCustomizationOptions = async (groupId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("customization_options")
+      .select("*")
+      .eq("group_id", groupId)
+      .eq("tenant_id", tenantId)
+      .order("display_order")
+    
+    if (error) throw error
+    setCustomizationOptions(data || [])
+  } catch (error) {
+    console.error("Error loading options:", error)
+  }
+}
+
+// Save customization option
+const saveCustomizationOption = async () => {
+  if (!tenantId || !selectedGroup) return
+  
+  try {
+    if (editingOption) {
+      // Update
+      const { error } = await supabase
+        .from("customization_options")
+        .update({
+          name: optionForm.name,
+          name_en: optionForm.name_en,
+          price_modifier: optionForm.price_modifier,
+          display_order: optionForm.display_order,
+          is_default: optionForm.is_default,
+        })
+        .eq("id", editingOption.id)
+        .eq("tenant_id", tenantId)
+      
+      if (error) throw error
+    } else {
+      // Create
+      const { error } = await supabase
+        .from("customization_options")
+        .insert({
+          tenant_id: tenantId,
+          group_id: selectedGroup.id,
+          name: optionForm.name,
+          name_en: optionForm.name_en,
+          price_modifier: optionForm.price_modifier,
+          display_order: optionForm.display_order,
+          is_default: optionForm.is_default,
+        })
+      
+      if (error) throw error
+    }
+
+    await loadCustomizationOptions(selectedGroup.id)
+    setShowOptionForm(false)
+    setEditingOption(null)
+    setOptionForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false })
+    
+    alert(editingOption ? "Seçenek güncellendi!" : "Seçenek oluşturuldu!")
+  } catch (error) {
+    console.error("Error saving option:", error)
+    alert("Hata: " + (error as any).message)
+  }
+}
+
+// Delete customization option
+const deleteCustomizationOption = async (id: string) => {
+  if (!confirm("Bu seçeneği silmek istediğinize emin misiniz?")) return
+  
+  try {
+    const { error } = await supabase
+      .from("customization_options")
+      .delete()
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+    
+    if (error) throw error
+    
+    setCustomizationOptions(customizationOptions.filter(o => o.id !== id))
+    alert("Seçenek silindi!")
+  } catch (error) {
+    console.error("Error deleting option:", error)
+    alert("Hata: " + (error as any).message)
+  }
+}
+
+// Load product variants
+const loadProductVariants = async (productId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", productId)
+      .eq("tenant_id", tenantId)
+      .order("display_order")
+    
+    if (error) throw error
+    setProductVariants(data || [])
+  } catch (error) {
+    console.error("Error loading variants:", error)
+  }
+}
+
+// Save product variant
+const saveProductVariant = async () => {
+  if (!tenantId || !selectedProduct) return
+  
+  try {
+    if (editingVariant) {
+      // Update
+      const { error } = await supabase
+        .from("product_variants")
+        .update({
+          name: variantForm.name,
+          name_en: variantForm.name_en,
+          price_modifier: variantForm.price_modifier,
+          display_order: variantForm.display_order,
+          is_default: variantForm.is_default,
+        })
+        .eq("id", editingVariant.id)
+        .eq("tenant_id", tenantId)
+      
+      if (error) throw error
+    } else {
+      // Create
+      const { error } = await supabase
+        .from("product_variants")
+        .insert({
+          tenant_id: tenantId,
+          product_id: selectedProduct.id,
+          name: variantForm.name,
+          name_en: variantForm.name_en,
+          price_modifier: variantForm.price_modifier,
+          display_order: variantForm.display_order,
+          is_default: variantForm.is_default,
+        })
+      
+      if (error) throw error
+    }
+
+    await loadProductVariants(selectedProduct.id)
+    setShowVariantForm(false)
+    setEditingVariant(null)
+    setVariantForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false })
+    
+    alert(editingVariant ? "Varyant güncellendi!" : "Varyant oluşturuldu!")
+  } catch (error) {
+    console.error("Error saving variant:", error)
+    alert("Hata: " + (error as any).message)
+  }
+}
+
+// Delete product variant
+const deleteProductVariant = async (id: string) => {
+  if (!confirm("Bu varyantı silmek istediğinize emin misiniz?")) return
+  
+  try {
+    const { error } = await supabase
+      .from("product_variants")
+      .delete()
+      .eq("id", id)
+      .eq("tenant_id", tenantId)
+    
+    if (error) throw error
+    
+    setProductVariants(productVariants.filter(v => v.id !== id))
+    alert("Varyant silindi!")
+  } catch (error) {
+    console.error("Error deleting variant:", error)
+    alert("Hata: " + (error as any).message)
+  }
+}

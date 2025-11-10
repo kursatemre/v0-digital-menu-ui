@@ -354,7 +354,7 @@ export default function AdminPanel() {
   const [editingOption, setEditingOption] = useState<any>(null)
 
   // Product variants states
-  const [selectedProduct, setSelectedProduct] = useState<any>(null)
+  const [selectedProductForVariants, setSelectedProductForVariants] = useState<any>(null)
   const [productVariants, setProductVariants] = useState<any[]>([])
   const [showVariantForm, setShowVariantForm] = useState(false)
   const [variantForm, setVariantForm] = useState({
@@ -1187,14 +1187,14 @@ export default function AdminPanel() {
         .eq("product_id", productId).eq("tenant_id", tenantId).order("display_order")
       if (error) throw error
       setProductVariants(data || [])
-      setSelectedProduct(products.find(p => p.id === productId) || null)
+      setSelectedProductForVariants(products.find(p => p.id === productId) || null)
     } catch (error) {
       console.error("Error loading variants:", error)
     }
   }
 
   const saveProductVariant = async () => {
-    if (!tenantId || !selectedProduct) return
+    if (!tenantId || !selectedProductForVariants) return
     try {
       if (editingVariant) {
         const { error } = await supabase.from("product_variants").update({
@@ -1204,12 +1204,12 @@ export default function AdminPanel() {
         if (error) throw error
       } else {
         const { error } = await supabase.from("product_variants").insert({
-          tenant_id: tenantId, product_id: selectedProduct.id, name: variantForm.name, name_en: variantForm.name_en,
+          tenant_id: tenantId, product_id: selectedProductForVariants.id, name: variantForm.name, name_en: variantForm.name_en,
           price_modifier: variantForm.price_modifier, display_order: variantForm.display_order, is_default: variantForm.is_default,
         })
         if (error) throw error
       }
-      await loadProductVariants(selectedProduct.id)
+      await loadProductVariants(selectedProductForVariants.id)
       setShowVariantForm(false)
       setEditingVariant(null)
       setVariantForm({ name: "", name_en: "", price_modifier: 0, display_order: 0, is_default: false })
@@ -3035,11 +3035,11 @@ export default function AdminPanel() {
                   onChange={(e) => {
                     const product = products.find(p => p.id === e.target.value)
                     if (product) {
-                      setSelectedProduct(product)
+                      setSelectedProductForVariants(product)
                       loadProductVariants(product.id)
                     }
                   }}
-                  value={selectedProduct?.id || ""}
+                  value={selectedProductForVariants?.id || ""}
                 >
                   <option value="">Ürün seçin...</option>
                   {products.map(p => (
@@ -3047,10 +3047,10 @@ export default function AdminPanel() {
                   ))}
                 </select>
 
-                {selectedProduct && productVariants.length > 0 && (
+                {selectedProductForVariants && productVariants.length > 0 && (
                   <div className="space-y-2 mt-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="font-medium">{selectedProduct.name} - Varyantlar</h4>
+                      <h4 className="font-medium">{selectedProductForVariants.name} - Varyantlar</h4>
                       <Button 
                         size="sm"
                         onClick={() => {
@@ -3092,7 +3092,7 @@ export default function AdminPanel() {
                   </div>
                 )}
 
-                {selectedProduct && productVariants.length === 0 && (
+                {selectedProductForVariants && productVariants.length === 0 && (
                   <div className="text-center py-4">
                     <p className="text-sm text-muted-foreground mb-2">Bu ürüne henüz varyant eklenmemiş</p>
                     <Button
@@ -3240,7 +3240,7 @@ export default function AdminPanel() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>{editingVariant ? "Varyantı Düzenle" : "Yeni Varyant Ekle"}</DialogTitle>
-              <DialogDescription>Ürün: {selectedProduct?.name}</DialogDescription>
+              <DialogDescription>Ürün: {selectedProductForVariants?.name}</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div>
