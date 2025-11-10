@@ -5,6 +5,7 @@ import { CategoryHeader } from "./category-header"
 import { MenuItem } from "./menu-item"
 import { ModernTakeawayHeader } from "./header"
 import { CartModal } from "./cart-modal"
+import { OrderForm } from "@/components/order-form"
 import { useLanguage } from "@/contexts/language-context"
 import { Sparkles } from "lucide-react"
 
@@ -65,6 +66,7 @@ export function ModernTakeawayLayout({
   const { language } = useLanguage()
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [showCart, setShowCart] = useState(false)
+  const [showOrderForm, setShowOrderForm] = useState(false)
 
   const handleAddToCart = (item: any) => {
     const newItem: CartItem = {
@@ -118,14 +120,17 @@ export function ModernTakeawayLayout({
   }
 
   const handleCheckout = () => {
-    // TODO: Implement checkout logic
-    console.log("Checkout:", cartItems)
-    alert(language === "en" 
-      ? "Order functionality will be implemented soon!" 
-      : "Sipariş fonksiyonu yakında eklenecek!")
+    setShowCart(false)
+    setShowOrderForm(true)
+  }
+
+  const handleOrderSuccess = (message: string) => {
+    setCartItems([])
+    setShowOrderForm(false)
   }
 
   const cartItemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const cartTotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   return (
     <>
@@ -199,6 +204,23 @@ export function ModernTakeawayLayout({
         onRemoveItem={handleRemoveItem}
         onCheckout={handleCheckout}
       />
+
+      {/* Order Form Modal */}
+      {showOrderForm && (
+        <OrderForm
+          onClose={() => setShowOrderForm(false)}
+          total={cartTotal}
+          items={cartItems.map(item => ({
+            id: item.id,
+            name: language === "en" && item.name_en ? item.name_en : item.name,
+            price: item.price,
+            quantity: item.quantity
+          }))}
+          onSuccess={handleOrderSuccess}
+          onClearCart={() => setCartItems([])}
+          tenantId={tenantId}
+        />
+      )}
 
       {/* Custom Styles for Animation */}
       <style jsx global>{`

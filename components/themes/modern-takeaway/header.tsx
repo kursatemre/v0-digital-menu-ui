@@ -1,48 +1,37 @@
 "use client"
 
 import { useLanguage } from "@/contexts/language-context"
-import { ShoppingCart, Globe, Menu } from "lucide-react"
+import { ShoppingCart, Globe } from "lucide-react"
 import { useState } from "react"
 
 interface HeaderProps {
   restaurantName: string
   cartItemCount: number
   onCartClick: () => void
-  onMenuClick?: () => void
 }
 
 export function ModernTakeawayHeader({ 
   restaurantName, 
   cartItemCount, 
-  onCartClick,
-  onMenuClick 
+  onCartClick
 }: HeaderProps) {
   const { language, setLanguage } = useLanguage()
   const [showLangMenu, setShowLangMenu] = useState(false)
 
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-3xl mx-auto px-4">
-        <div className="flex items-center justify-between h-14">
-          {/* Left: Menu Icon (optional) */}
-          <button
-            onClick={onMenuClick}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors lg:hidden"
-            aria-label="Menu"
-          >
-            <Menu className="w-5 h-5 text-gray-700" />
-          </button>
+    <>
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
+        <div className="max-w-3xl mx-auto px-4">
+          <div className="flex items-center justify-between h-14">
+            {/* Center: Restaurant Name */}
+            <div className="flex-1 text-center">
+              <h1 className="font-bold text-lg text-gray-900 truncate px-2">
+                {restaurantName}
+              </h1>
+            </div>
 
-          {/* Center: Restaurant Name */}
-          <div className="flex-1 text-center lg:text-left lg:flex-initial">
-            <h1 className="font-bold text-lg text-gray-900 truncate px-2">
-              {restaurantName}
-            </h1>
-          </div>
-
-          {/* Right: Language Selector & Cart */}
-          <div className="flex items-center gap-2">
-            {/* Language Selector */}
+            {/* Right: Language Selector */}
             <div className="relative">
               <button
                 onClick={() => setShowLangMenu(!showLangMenu)}
@@ -89,23 +78,23 @@ export function ModernTakeawayHeader({
                 </>
               )}
             </div>
-
-            {/* Cart Button */}
-            <button
-              onClick={onCartClick}
-              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              aria-label="Shopping cart"
-            >
-              <ShoppingCart className="w-5 h-5 text-gray-700" />
-              {cartItemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                  {cartItemCount > 9 ? "9+" : cartItemCount}
-                </span>
-              )}
-            </button>
           </div>
         </div>
-      </div>
-    </header>
+      </header>
+
+      {/* Floating Cart Button */}
+      {cartItemCount > 0 && (
+        <button
+          onClick={onCartClick}
+          className="fixed bottom-6 right-6 z-50 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all p-4 flex items-center justify-center"
+          aria-label="Shopping cart"
+        >
+          <ShoppingCart className="w-6 h-6" />
+          <span className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center border-2 border-white">
+            {cartItemCount > 9 ? "9+" : cartItemCount}
+          </span>
+        </button>
+      )}
+    </>
   )
 }
