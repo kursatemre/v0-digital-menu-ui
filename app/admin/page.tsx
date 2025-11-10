@@ -33,6 +33,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { QRCodeSVG } from "qrcode.react"
+import QRCode from "qrcode"
 import { createClient } from "@/lib/supabase/client"
 
 type Order = {
@@ -1821,9 +1822,6 @@ export default function AdminPanel() {
 
   const renderQRTab = () => {
     const downloadQRCode = async () => {
-      const svg = document.getElementById("qr-code-svg")
-      if (!svg) return
-
       try {
         const canvas = document.createElement("canvas")
         const ctx = canvas.getContext("2d")
@@ -1833,23 +1831,16 @@ export default function AdminPanel() {
         canvas.width = size
         canvas.height = size
 
-        // First, draw the QR code SVG
-        const svgData = new XMLSerializer().serializeToString(svg)
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' })
-        const svgUrl = URL.createObjectURL(svgBlob)
-
-        const qrImage = new Image()
-
-        // Wait for QR code to load
-        await new Promise<void>((resolve, reject) => {
-          qrImage.onload = () => resolve()
-          qrImage.onerror = reject
-          qrImage.src = svgUrl
+        // Draw QR code directly to canvas using qrcode library
+        await QRCode.toCanvas(canvas, qrSettings.url, {
+          width: size,
+          margin: 1,
+          color: {
+            dark: qrSettings.fgColor,
+            light: qrSettings.bgColor,
+          },
+          errorCorrectionLevel: 'H',
         })
-
-        // Draw QR code
-        ctx.drawImage(qrImage, 0, 0, size, size)
-        URL.revokeObjectURL(svgUrl)
 
         // If there's a logo, draw it on top
         if (qrSettings.logoUrl) {
