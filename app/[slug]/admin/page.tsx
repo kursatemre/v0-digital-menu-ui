@@ -2529,15 +2529,15 @@ export default function AdminPanel() {
             logoImage.src = qrSettings.logoUrl
           })
 
-          // Draw logo in center with white background
+          // Draw logo in center with excavation (clear QR code behind it)
           if (logoImage.complete && logoImage.naturalWidth > 0) {
             const logoSize = qrSettings.logoSize
             const logoX = (size - logoSize) / 2
             const logoY = (size - logoSize) / 2
             const padding = 8
 
-            // Draw white background with padding
-            ctx.fillStyle = 'white'
+            // Excavate area (clear QR code behind logo with background color)
+            ctx.fillStyle = qrSettings.bgColor
             ctx.fillRect(
               logoX - padding,
               logoY - padding,
