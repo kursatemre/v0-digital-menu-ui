@@ -24,7 +24,7 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
 
   // Tüm ürünler görselsiz - sadece metin formatında
   return (
-    <div className="mb-6 px-5 py-6 relative group hover:bg-[#252525]/50 transition-all duration-500 rounded-sm overflow-hidden">
+    <div className="mb-4 sm:mb-6 px-2 sm:px-5 py-4 sm:py-6 relative group hover:bg-[#252525]/50 transition-all duration-500 rounded-sm overflow-hidden">
       {/* Shine effect on hover - rafine parlaklık */}
       <div
         className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"
@@ -37,12 +37,12 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
       {/* Subtle left border accent with gold gradient */}
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-transparent via-[#FFD700]/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-      <div className="flex justify-between items-start gap-6 relative z-10">
-        <div className="flex-1">
+      <div className="flex justify-between items-start gap-2 sm:gap-6 relative z-10">
+        <div className="flex-1 min-w-0">
           {/* Optional badge */}
           {product.badge && (
             <span
-              className="inline-block text-xs px-4 py-1.5 rounded-full mb-3 font-medium tracking-widest uppercase shadow-lg relative overflow-hidden"
+              className="inline-block text-[10px] sm:text-xs px-2 sm:px-4 py-1 sm:py-1.5 rounded-full mb-2 sm:mb-3 font-medium tracking-widest uppercase shadow-lg relative overflow-hidden"
               style={{
                 border: '2px solid transparent',
                 borderImage: 'linear-gradient(135deg, #FDB931, #FFD700, #FFED4E) 1',
@@ -71,7 +71,7 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
           )}
 
           <h3
-            className="text-lg sm:text-xl font-['Playfair_Display',serif] mb-2 font-bold tracking-wide"
+            className="text-sm sm:text-lg md:text-xl font-['Playfair_Display',serif] mb-1 sm:mb-2 font-bold tracking-wide"
             style={{
               background: 'radial-gradient(circle, #FDB931 0%, #FFD700 50%, #FFED4E 100%)',
               WebkitBackgroundClip: 'text',
@@ -81,16 +81,16 @@ export function MenuItem({ product, featured = false }: MenuItemProps) {
           >
             {name}
           </h3>
-          <p className="text-xs sm:text-sm text-[#D4C5B0] font-light leading-relaxed font-sans">
+          <p className="text-[10px] sm:text-xs md:text-sm text-[#D4C5B0] font-light leading-relaxed font-sans line-clamp-2 sm:line-clamp-none">
             {description}
           </p>
         </div>
 
         {/* Dotted line ve fiyat */}
-        <div className="flex items-center gap-3 flex-shrink-0">
-          <div className="hidden sm:block w-16 border-b border-dotted border-[#FFD700] opacity-30" />
+        <div className="flex items-center gap-1 sm:gap-3 flex-shrink-0">
+          <div className="hidden md:block w-12 lg:w-16 border-b border-dotted border-[#FFD700] opacity-30" />
           <span
-            className="text-lg sm:text-xl font-bold whitespace-nowrap font-['Playfair_Display',serif]"
+            className="text-sm sm:text-lg md:text-xl font-bold whitespace-nowrap font-['Playfair_Display',serif]"
             style={{
               background: 'linear-gradient(135deg, #FDB931, #FFD700, #FFED4E)',
               WebkitBackgroundClip: 'text',
