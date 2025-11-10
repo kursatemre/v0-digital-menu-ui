@@ -164,7 +164,6 @@ export function ClassicMenuLayout({
         customer_name: orderCustomerName || null,
         notes: orderNotes || null,
         items: orderItems,
-        total_amount: totalPrice,
         status: "pending",
       })
 
