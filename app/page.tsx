@@ -26,6 +26,7 @@ import {
   ChevronDown,
   HelpCircle,
   Languages,
+  Sparkles,
 } from "lucide-react"
 import Link from "next/link"
 import { ScrollToTop } from "@/components/scroll-to-top"
