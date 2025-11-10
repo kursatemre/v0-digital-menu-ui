@@ -48,6 +48,7 @@ import {
   Calendar,
   Tv,
   ExternalLink,
+  Sliders,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -239,7 +240,7 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
-    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings"
+    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings" | "customizations"
   >("orders")
   const [orders, setOrders] = useState<Order[]>([])
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
@@ -1371,6 +1372,8 @@ export default function AdminPanel() {
         return renderCategoriesTab()
       case "appearance":
         return renderAppearanceTab()
+      case "customizations":
+        return renderCustomizationsTab()
       case "qr":
         return renderQRTab()
       case "users":
@@ -2599,6 +2602,135 @@ export default function AdminPanel() {
     </div>
   )
 
+  const renderCustomizationsTab = () => (
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <Sliders className="w-6 h-6 text-primary" />
+        <div>
+          <h2 className="text-2xl font-bold">Ürün Özelleştirmeleri</h2>
+          <p className="text-sm text-muted-foreground">Varyantlar ve özelleştirme seçeneklerini yönetin</p>
+        </div>
+      </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>📋 Nasıl Kullanılır?</CardTitle>
+          <CardDescription>Adım adım özelleştirme kurulumu</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-3">
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                1
+              </div>
+              <div>
+                <h4 className="font-semibold">Özelleştirme Grupları Oluşturun</h4>
+                <p className="text-sm text-muted-foreground">
+                  Önce "Süt Tipi", "Şurup", "Extra Shot" gibi ana gruplar oluşturun.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                2
+              </div>
+              <div>
+                <h4 className="font-semibold">Grup Seçeneklerini Ekleyin</h4>
+                <p className="text-sm text-muted-foreground">
+                  Her gruba seçenekler ekleyin: "Yulaf Sütü (+8₺)", "Badem Sütü (+10₺)", "Vanilya Şurup (+5₺)" vs.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                3
+              </div>
+              <div>
+                <h4 className="font-semibold">Ürünlere Varyant Ekleyin</h4>
+                <p className="text-sm text-muted-foreground">
+                  "Küçük", "Orta", "Büyük" gibi beden seçenekleri ekleyin ve fiyat farkları belirleyin.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary text-white flex items-center justify-center font-bold">
+                4
+              </div>
+              <div>
+                <h4 className="font-semibold">Ürünlere Grupları Atayın</h4>
+                <p className="text-sm text-muted-foreground">
+                  Hangi ürünlerde hangi özelleştirme gruplarının görüneceğini belirleyin.
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6 bg-blue-50 border-blue-200">
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-3">
+            <div className="text-3xl">🚀</div>
+            <div>
+              <h3 className="font-semibold text-blue-900 mb-2">Veritabanı Migrasyonu Gerekli</h3>
+              <p className="text-sm text-blue-800 mb-3">
+                Bu özelliği kullanabilmek için önce aşağıdaki SQL script'ini Supabase SQL Editor'de çalıştırmanız gerekiyor:
+              </p>
+              <code className="block bg-white p-3 rounded text-xs overflow-x-auto">
+                scripts/028_create_product_variants_and_customizations.sql
+              </code>
+              <p className="text-xs text-blue-700 mt-2">
+                💡 Script dosyası proje kök dizininde scripts/ klasöründe bulunmaktadır.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>📦 Özelleştirme Grupları</CardTitle>
+            <CardDescription>Süt Tipi, Şurup gibi ana gruplar</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" variant="outline" disabled>
+              <Plus className="w-4 h-4 mr-2" />
+              Yeni Grup Ekle (Yakında)
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>🎯 Ürün Varyantları</CardTitle>
+            <CardDescription>Küçük/Orta/Büyük gibi boyut seçenekleri</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" variant="outline" disabled>
+              <Plus className="w-4 h-4 mr-2" />
+              Yeni Varyant Ekle (Yakında)
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle>📝 Geliştirme Notları</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm text-muted-foreground">
+          <p>• Veritabanı migration uygulandıktan sonra bu sayfa tam fonksiyonel hale gelecek.</p>
+          <p>• Modern Takeaway teması bu özelleştirmeleri otomatik olarak destekliyor.</p>
+          <p>• Diğer temalar için de özelleştirme desteği eklenebilir.</p>
+        </CardContent>
+      </Card>
+    </div>
+  )
+
   const renderQRTab = () => {
     const downloadQRCode = async () => {
       try {
@@ -3676,6 +3808,15 @@ export default function AdminPanel() {
               label="Görünüm"
               active={activeTab === "appearance"}
               onClick={() => setActiveTab("appearance")}
+            />
+          )}
+          {/* Customizations - admin only */}
+          {canView(["admin"]) && (
+            <NavItem
+              icon={<Sliders className="w-5 h-5" />}
+              label="Özelleştirmeler"
+              active={activeTab === "customizations"}
+              onClick={() => setActiveTab("customizations")}
             />
           )}
           {/* QR Code - admin only */}
