@@ -2219,17 +2219,63 @@ export default function AdminPanel() {
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
+      canvas.width = qrSettings.size
+      canvas.height = qrSettings.size
+
       const svgData = new XMLSerializer().serializeToString(svg)
       const img = new Image()
+
       img.onload = () => {
-        canvas.width = qrSettings.size
-        canvas.height = qrSettings.size
-        ctx.drawImage(img, 0, 0)
-        const link = document.createElement("a")
-        link.download = "menu-qr-code.png"
-        link.href = canvas.toDataURL("image/png")
-        link.click()
+        // Draw QR code first
+        ctx.drawImage(img, 0, 0, qrSettings.size, qrSettings.size)
+
+        // If there's a logo, draw it on top
+        if (qrSettings.logoUrl) {
+          const logo = new Image()
+          logo.crossOrigin = "anonymous" // Handle CORS
+
+          logo.onload = () => {
+            const logoX = (qrSettings.size - qrSettings.logoSize) / 2
+            const logoY = (qrSettings.size - qrSettings.logoSize) / 2
+
+            // Draw white background for logo
+            ctx.fillStyle = "#FFFFFF"
+            const padding = 8
+            ctx.fillRect(
+              logoX - padding,
+              logoY - padding,
+              qrSettings.logoSize + padding * 2,
+              qrSettings.logoSize + padding * 2
+            )
+
+            // Draw logo
+            ctx.drawImage(logo, logoX, logoY, qrSettings.logoSize, qrSettings.logoSize)
+
+            // Download
+            const link = document.createElement("a")
+            link.download = "menu-qr-code.png"
+            link.href = canvas.toDataURL("image/png")
+            link.click()
+          }
+
+          logo.onerror = () => {
+            // If logo fails to load, just download QR code without logo
+            const link = document.createElement("a")
+            link.download = "menu-qr-code.png"
+            link.href = canvas.toDataURL("image/png")
+            link.click()
+          }
+
+          logo.src = qrSettings.logoUrl
+        } else {
+          // No logo, just download QR code
+          const link = document.createElement("a")
+          link.download = "menu-qr-code.png"
+          link.href = canvas.toDataURL("image/png")
+          link.click()
+        }
       }
+
       img.src = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))
     }
 
