@@ -529,7 +529,7 @@ function MenuPageContent() {
                       )}
                       <div className="flex items-center gap-2 sm:gap-3">
                         <h2 className="text-lg sm:text-xl font-serif font-bold text-foreground tracking-wide">{displayName}</h2>
-                        <span className="text-xs sm:text-sm text-secondary-foreground bg-secondary/20 px-3 py-1 rounded-full font-semibold border border-secondary/30">
+                        <span className="text-xs sm:text-sm text-white bg-primary px-3 py-1 rounded-full font-bold shadow-md">
                           {categoryProducts.length}
                         </span>
                       </div>
