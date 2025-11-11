@@ -522,29 +522,41 @@ export default function LandingPage() {
             <div className="relative">
               <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-2xl shadow-2xl p-6 sm:p-8">
                 <h3 className="text-lg sm:text-xl font-bold text-center mb-6">Demo QR Kod Önizlemesi</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Menu Page Preview */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Fast Food Demo */}
                   <div className="flex flex-col items-center">
-                    <div className="relative w-full max-w-[345px] aspect-[345/825] rounded-xl overflow-hidden shadow-lg bg-white">
-                      <img 
-                        src="https://i.ibb.co/Kp7BHVZd/qrmenusayfas-1.png" 
-                        alt="Menü Sayfası Önizlemesi"
+                    <div className="relative w-full aspect-[345/825] rounded-xl overflow-hidden shadow-lg bg-white">
+                      <img
+                        src="https://i.ibb.co/rntJwMH/fastfood-demo.png"
+                        alt="Fast Food Demo"
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3 text-center">Müşteri Menü Görünümü</p>
+                    <p className="text-sm text-muted-foreground mt-3 text-center font-semibold">Fast Food Demo</p>
                   </div>
-                  
-                  {/* Admin Panel Preview */}
+
+                  {/* Restaurant Classic Demo */}
                   <div className="flex flex-col items-center">
-                    <div className="relative w-full max-w-[640px] aspect-[640/447] rounded-xl overflow-hidden shadow-lg bg-white">
-                      <img 
-                        src="https://i.ibb.co/rR8sQhgG/qradminsayfas.png" 
-                        alt="Admin Paneli Önizlemesi"
+                    <div className="relative w-full aspect-[345/825] rounded-xl overflow-hidden shadow-lg bg-white">
+                      <img
+                        src="https://i.ibb.co/ZzDNb8Qz/restoranklask-demo.png"
+                        alt="Restoran Classic Demo"
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground mt-3 text-center">Yönetim Paneli</p>
+                    <p className="text-sm text-muted-foreground mt-3 text-center font-semibold">Fine Dining Demo</p>
+                  </div>
+
+                  {/* Take Away Demo */}
+                  <div className="flex flex-col items-center">
+                    <div className="relative w-full aspect-[345/825] rounded-xl overflow-hidden shadow-lg bg-white">
+                      <img
+                        src="https://i.ibb.co/RkVpcL32/take-away-demo.png"
+                        alt="Take Away Coffee Demo"
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-3 text-center font-semibold">Coffee Shop Demo</p>
                   </div>
                 </div>
 
