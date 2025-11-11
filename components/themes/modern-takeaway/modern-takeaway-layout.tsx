@@ -56,17 +56,19 @@ interface ModernTakeawayLayoutProps {
   dealOfTheDay?: Product[]
 }
 
-export function ModernTakeawayLayout({ 
-  categories, 
-  tenantId, 
+export function ModernTakeawayLayout({
+  categories,
+  tenantId,
   restaurantName,
-  onAddToCart, 
-  dealOfTheDay 
+  onAddToCart,
+  dealOfTheDay
 }: ModernTakeawayLayoutProps) {
   const { language } = useLanguage()
   const [cartItems, setCartItems] = useState<CartItem[]>([])
   const [showCart, setShowCart] = useState(false)
   const [showOrderForm, setShowOrderForm] = useState(false)
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState("")
 
   const handleAddToCart = (item: any) => {
     const newItem: CartItem = {
@@ -100,6 +102,11 @@ export function ModernTakeawayLayout({
         return [...prev, newItem]
       }
     })
+
+    // Show success toast
+    setToastMessage(`${item.name} ${language === "en" ? "added to cart!" : "sepete eklendi!"}`)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 2000)
 
     // Call parent callback if provided
     if (onAddToCart) {
@@ -222,6 +229,18 @@ export function ModernTakeawayLayout({
         />
       )}
 
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] animate-fade-in">
+          <div className="bg-orange-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-2">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            <span className="font-semibold">{toastMessage}</span>
+          </div>
+        </div>
+      )}
+
       {/* Custom Styles for Animation */}
       <style jsx global>{`
         @keyframes slide-up {
@@ -233,8 +252,23 @@ export function ModernTakeawayLayout({
           }
         }
 
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+            transform: translate(-50%, -20px);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, 0);
+          }
+        }
+
         .animate-slide-up {
           animation: slide-up 0.3s ease-out;
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out;
         }
       `}</style>
     </>

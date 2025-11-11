@@ -60,6 +60,10 @@ export function ClassicMenuLayout({
   const [waiterName, setWaiterName] = useState("")
   const [waiterCallLoading, setWaiterCallLoading] = useState(false)
 
+  // Toast states
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState("")
+
   // Order form states
   const [orderTableNumber, setOrderTableNumber] = useState("")
   const [orderCustomerName, setOrderCustomerName] = useState("")
@@ -91,6 +95,11 @@ export function ClassicMenuLayout({
       }
       return [...prevCart, { ...product, quantity: 1 }]
     })
+
+    // Show success toast
+    setToastMessage(`${product.name} ${language === "en" ? "added to cart!" : "sepete eklendi!"}`)
+    setShowToast(true)
+    setTimeout(() => setShowToast(false), 2000)
   }
 
   const removeFromCart = (productId: string) => {
@@ -640,6 +649,17 @@ export function ClassicMenuLayout({
                 )}
               </Button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {showToast && (
+        <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-[60] animate-slide-down">
+          <div className="bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm px-6 py-3 shadow-2xl">
+            <p className="text-[#D4AF37] font-['Playfair_Display',serif] font-semibold">
+              {toastMessage}
+            </p>
           </div>
         </div>
       )}
