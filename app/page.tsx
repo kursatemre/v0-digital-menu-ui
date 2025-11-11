@@ -46,7 +46,7 @@ export default function LandingPage() {
   const [heroContent, setHeroContent] = useState({
     title: "Kağıt Menü Derdine Son Verin!",
     subtitle: "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
-    logoUrl: "",
+    logoUrl: "/menumgo-logo.png",
     backgroundImage: "",
     badgeText: "🎉 3 Gün Boyunca Tamamen Ücretsiz!",
     buttonText: "3 Gün Ücretsiz Dene",
@@ -102,7 +102,7 @@ export default function LandingPage() {
         setHeroContent({
           title: data.content.title || "Kağıt Menü Derdine Son Verin!",
           subtitle: data.content.subtitle || "Saniyeler içinde dijital menünüzü yayımlayın. QR kod ile müşterileriniz kolayca sipariş versin. Kod bilgisi gerektirmez, kullanımı kolaydır!",
-          logoUrl: data.content.logoUrl || "",
+          logoUrl: data.content.logoUrl || "/menumgo-logo.png",
           backgroundImage: data.content.backgroundImage || "",
           badgeText: data.content.badgeText || "🎉 3 Gün Boyunca Tamamen Ücretsiz!",
           buttonText: data.content.buttonText || "3 Gün Ücretsiz Dene",

@@ -77,9 +77,9 @@ export const metadata: Metadata = {
   },
   category: 'technology',
   icons: {
-    icon: '/placeholder-logo.png',
-    shortcut: '/placeholder-logo.png',
-    apple: '/placeholder-logo.png',
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.ico',
   },
   manifest: '/site.webmanifest',
   viewport: {
