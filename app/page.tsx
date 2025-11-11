@@ -292,12 +292,6 @@ export default function LandingPage() {
                   <MenuIcon className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                 </div>
               )}
-              <div>
-                <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                  Menumgo
-                </h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">menumgo.digital</p>
-              </div>
             </div>
 
             {/* Desktop Navigation */}
