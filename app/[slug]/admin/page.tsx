@@ -764,25 +764,17 @@ export default function AdminPanel() {
     try {
       setIsSaving(true)
 
-      // Önce mevcut ayarları kontrol et
-      const { data: existingSettings } = await supabase
-        .from("settings")
-        .select("*")
-        .eq("tenant_id", tenantId)
-        .in("key", ["header", "theme"])
-
       // Header ayarlarını güncelle veya ekle
-      const existingHeader = existingSettings?.find(s => s.key === "header")
       const { error: headerError } = await supabase
         .from("settings")
         .upsert({
-          id: existingHeader?.id, // Eğer varsa mevcut kaydın ID'sini kullan
           key: "header",
-          value: headerSettings, // State'teki güncel headerSettings değerini kullan
+          value: headerSettings,
           tenant_id: tenantId,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: "id"
+          onConflict: "tenant_id,key", // UNIQUE constraint: (tenant_id, key)
+          ignoreDuplicates: false // Always update if exists
         })
 
       if (headerError) {
@@ -794,17 +786,16 @@ export default function AdminPanel() {
       localStorage.setItem(`restaurant_header_${tenantId}`, JSON.stringify(headerSettings))
 
       // Tema ayarlarını güncelle veya ekle
-      const existingTheme = existingSettings?.find(s => s.key === "theme")
       const { error: themeError } = await supabase
         .from("settings")
         .upsert({
-          id: existingTheme?.id, // Eğer varsa mevcut kaydın ID'sini kullan
           key: "theme",
-          value: theme, // State'teki güncel theme değerini kullan
+          value: theme,
           tenant_id: tenantId,
           updated_at: new Date().toISOString()
         }, {
-          onConflict: "id"
+          onConflict: "tenant_id,key", // UNIQUE constraint: (tenant_id, key)
+          ignoreDuplicates: false // Always update if exists
         })
 
       if (themeError) {
