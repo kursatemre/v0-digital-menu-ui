@@ -621,62 +621,170 @@ export default function LandingPage() {
 
       {/* Pricing Section */}
       <section id="fiyatlandirma" className="py-12 sm:py-20 lg:py-28">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12 sm:mb-16">
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-4">
               Basit ve Şeffaf Fiyatlandırma
             </h2>
             <p className="text-base sm:text-lg text-muted-foreground">
-              3 gün ücretsiz deneyin, beğenirseniz devam edin!
+              İhtiyacınıza uygun planı seçin, 3 gün ücretsiz deneyin!
             </p>
           </div>
 
-          <Card className="border-2 border-primary shadow-2xl">
-            <CardContent className="p-6 sm:p-12">
-              <div className="text-center mb-8">
-                <div className="inline-block px-4 py-2 bg-primary/10 rounded-full mb-4 sm:mb-6">
-                  <span className="text-sm font-semibold text-primary">EN POPÜLER</span>
-                </div>
-                <h3 className="text-2xl sm:text-3xl font-bold mb-2">Başlangıç Paketi</h3>
-                <div className="flex items-baseline justify-center gap-2 mb-4">
-                  <span className="text-4xl sm:text-5xl lg:text-6xl font-bold">₺{premiumPriceTry}</span>
-                  <span className="text-lg sm:text-xl text-muted-foreground">/ay</span>
-                </div>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                  İlk 3 gün tamamen ücretsiz, kredi kartı gerektirmez
-                </p>
-              </div>
-
-              <div className="space-y-3 sm:space-y-4 mb-8">
-                {[
-                  "Sınırsız kategori ve ürün",
-                  "QR kod özelleştirme",
-                  "Gerçek zamanlı sipariş takibi",
-                  "Garson çağırma sistemi",
-                  "TV ekran menü görünümü",
-                  "Çoklu dil desteği (TR/EN)",
-                  "Ürün varyantları ve özelleştirmeler",
-                  "Sepete eklendi bildirimleri",
-                  "Gelişmiş raporlama ve analiz",
-                  "Çoklu kullanıcı yönetimi",
-                  "Mobil optimizasyon",
-                  "7/24 teknik destek",
-                ].map((item, index) => (
-                  <div key={index} className="flex items-center gap-3">
-                    <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6 text-green-600 flex-shrink-0" />
-                    <span className="text-sm sm:text-base">{item}</span>
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+            {/* Standard Plan */}
+            <Card className="border-2 hover:border-primary/50 transition-all">
+              <CardContent className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <div className="inline-block px-3 py-1 bg-gray-100 rounded-full mb-4">
+                    <span className="text-xs font-semibold text-gray-700">TEMEL</span>
                   </div>
-                ))}
-              </div>
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2">Standart</h3>
+                  <div className="flex items-baseline justify-center gap-2 mb-3">
+                    <span className="text-3xl sm:text-4xl font-bold">₺{Math.round((premiumPriceTry || 299) * 0.5)}</span>
+                    <span className="text-base text-muted-foreground">/ay</span>
+                  </div>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Temel menü yönetimi
+                  </p>
+                </div>
 
-              <Link href="/register">
-                <Button size="lg" className="w-full text-base sm:text-lg py-5 sm:py-6 gap-2 shadow-lg">
-                  3 Gün Ücretsiz Başla
-                  <ArrowRight className="w-5 h-5" />
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+                <div className="space-y-3 mb-6">
+                  {[
+                    { text: "Sınırsız kategori ve ürün", included: true },
+                    { text: "Tema özelleştirme", included: true },
+                    { text: "Mobil optimizasyon", included: true },
+                    { text: "TV ekran menü görünümü", included: true },
+                    { text: "Sipariş yönetimi", included: false },
+                    { text: "Garson çağırma", included: false },
+                    { text: "QR kod oluşturma", included: false },
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      {item.included ? (
+                        <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      ) : (
+                        <div className="w-4 h-4 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                      )}
+                      <span className={`text-xs sm:text-sm ${!item.included && "text-muted-foreground"}`}>
+                        {item.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link href="/register">
+                  <Button size="lg" variant="outline" className="w-full">
+                    Başla
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Premium Monthly Plan */}
+            <Card className="border-2 border-primary shadow-2xl relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <div className="px-4 py-1 bg-primary rounded-full">
+                  <span className="text-xs font-semibold text-white">EN POPÜLER</span>
+                </div>
+              </div>
+              <CardContent className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 mt-2">Premium Aylık</h3>
+                  <div className="flex items-baseline justify-center gap-2 mb-1">
+                    <span className="text-3xl sm:text-4xl font-bold">₺{Math.round((premiumPriceTry || 299) * 0.5)}</span>
+                    <span className="text-base text-muted-foreground line-through">₺{premiumPriceTry || 299}</span>
+                  </div>
+                  <p className="text-xs text-green-600 font-semibold mb-2">İlk ay %50 indirim!</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Sonraki aylar ₺{premiumPriceTry || 299}/ay
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  {[
+                    "Sınırsız kategori ve ürün",
+                    "QR kod özelleştirme",
+                    "Gerçek zamanlı sipariş takibi",
+                    "Garson çağırma sistemi",
+                    "TV ekran menü görünümü",
+                    "Çoklu dil desteği (TR/EN)",
+                    "Ürün varyantları",
+                    "Gelişmiş raporlama",
+                    "Çoklu kullanıcı yönetimi",
+                    "7/24 teknik destek",
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm">{item}</span>
+                    </div>
+                  ))}
+                </div>
+
+                <Link href="/register">
+                  <Button size="lg" className="w-full shadow-lg">
+                    3 Gün Ücretsiz Başla
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+
+            {/* Premium Yearly Plan */}
+            <Card className="border-2 border-green-500 hover:border-green-600 transition-all relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <div className="px-4 py-1 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full">
+                  <span className="text-xs font-semibold text-white">EN AVANTAJLI</span>
+                </div>
+              </div>
+              <CardContent className="p-6 sm:p-8">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl sm:text-2xl font-bold mb-2 mt-2">Premium Yıllık</h3>
+                  <div className="flex items-baseline justify-center gap-2 mb-1">
+                    <span className="text-3xl sm:text-4xl font-bold">₺{Math.round((premiumPriceTry || 299) * 10)}</span>
+                    <span className="text-base text-muted-foreground line-through">₺{Math.round((premiumPriceTry || 299) * 12)}</span>
+                  </div>
+                  <p className="text-xs text-green-600 font-semibold mb-2">2 ay bedava!</p>
+                  <p className="text-xs sm:text-sm text-muted-foreground">
+                    Sadece ₺{Math.round((premiumPriceTry || 299) * 10 / 12)}/ay
+                  </p>
+                </div>
+
+                <div className="space-y-3 mb-6">
+                  {[
+                    "Tüm Premium özellikler",
+                    "Yıllık 2 ay tasarruf",
+                    "Öncelikli destek",
+                    "Özel eğitim ve danışmanlık",
+                    "API erişimi (yakında)",
+                    "Özel raporlar",
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />
+                      <span className="text-xs sm:text-sm font-medium">{item}</span>
+                    </div>
+                  ))}
+                  <div className="pt-3 border-t">
+                    <p className="text-xs text-center text-green-600 font-semibold">
+                      💰 ₺{Math.round((premiumPriceTry || 299) * 2)} tasarruf edin!
+                    </p>
+                  </div>
+                </div>
+
+                <Link href="/register">
+                  <Button size="lg" className="w-full bg-green-600 hover:bg-green-700">
+                    Hemen Başla
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="text-center mt-8 sm:mt-12">
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Tüm planlar 3 gün ücretsiz deneme içerir • Kredi kartı gerektirmez • İstediğiniz zaman iptal edebilirsiniz
+            </p>
+          </div>
         </div>
       </section>
 
