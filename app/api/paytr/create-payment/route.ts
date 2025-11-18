@@ -14,6 +14,7 @@ interface PaymentRequest {
   amount: number
   plan_type?: string
   plan_name?: string
+  subscription_plan?: 'standard' | 'premium'
 }
 
 export async function POST(request: Request) {
@@ -149,6 +150,7 @@ export async function POST(request: Request) {
         order_details: {
           product: body.plan_name || 'Premium Abonelik',
           plan_type: body.plan_type || 'monthly',
+          subscription_plan: body.subscription_plan || 'premium',
           amount: body.amount
         }
       })

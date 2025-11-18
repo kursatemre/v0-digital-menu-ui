@@ -165,7 +165,7 @@ export default function AdminPanel() {
 
   const [activeTab, setActiveTab] = useState<
     "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "settings"
-  >("orders")
+  >("products")
   const [orders, setOrders] = useState<Order[]>([])
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -243,6 +243,10 @@ export default function AdminPanel() {
   const previousOrderCountRef = useRef<number>(0)
   const previousWaiterCallCountRef = useRef<number>(0)
 
+  // Subscription restriction states
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+  const [restrictedFeature, setRestrictedFeature] = useState("")
+
   // Check if user is already logged in
   useEffect(() => {
     const checkSession = async () => {
@@ -312,6 +316,37 @@ export default function AdminPanel() {
       console.error("Login error:", err)
       setLoginError("Giriş yapılırken bir hata oluştu!")
     }
+  }
+
+  // Subscription restriction helpers
+  const isFeatureRestricted = (feature: "orders" | "waiter-calls" | "qr") => {
+    if (!currentTenant) return false
+    const plan = currentTenant.subscription_plan
+
+    // Standard plan restrictions
+    if (plan === "standard") {
+      return ["orders", "waiter-calls", "qr"].includes(feature)
+    }
+
+    // Trial and premium have full access
+    return false
+  }
+
+  const handleTabClick = (tab: "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "settings") => {
+    // Check if feature is restricted
+    if ((tab === "orders" || tab === "waiter-calls" || tab === "qr") && isFeatureRestricted(tab)) {
+      const featureNames = {
+        "orders": "Sipariş Yönetimi",
+        "waiter-calls": "Garson Çağırma",
+        "qr": "QR Kod Oluşturma"
+      }
+      setRestrictedFeature(featureNames[tab])
+      setShowUpgradeDialog(true)
+      return
+    }
+
+    // Otherwise, switch to the tab
+    setActiveTab(tab)
   }
 
   // Logout handler
@@ -2389,43 +2424,46 @@ export default function AdminPanel() {
             icon={<ShoppingCart className="w-5 h-5" />}
             label="Siparişler"
             active={activeTab === "orders"}
-            onClick={() => setActiveTab("orders")}
+            onClick={() => handleTabClick("orders")}
+            restricted={isFeatureRestricted("orders")}
           />
           <NavItem
             icon={<Bell className="w-5 h-5" />}
             label="Garson Çağrıları"
             active={activeTab === "waiter-calls"}
-            onClick={() => setActiveTab("waiter-calls")}
+            onClick={() => handleTabClick("waiter-calls")}
+            restricted={isFeatureRestricted("waiter-calls")}
           />
           <NavItem
             icon={<Layers className="w-5 h-5" />}
             label="Ürünler"
             active={activeTab === "products"}
-            onClick={() => setActiveTab("products")}
+            onClick={() => handleTabClick("products")}
           />
           <NavItem
             icon={<Layers className="w-5 h-5" />}
             label="Kategoriler"
             active={activeTab === "categories"}
-            onClick={() => setActiveTab("categories")}
+            onClick={() => handleTabClick("categories")}
           />
           <NavItem
             icon={<Settings className="w-5 h-5" />}
             label="Görünüm"
             active={activeTab === "appearance"}
-            onClick={() => setActiveTab("appearance")}
+            onClick={() => handleTabClick("appearance")}
           />
           <NavItem
             icon={<QrCode className="w-5 h-5" />}
             label="QR Kod"
             active={activeTab === "qr"}
-            onClick={() => setActiveTab("qr")}
+            onClick={() => handleTabClick("qr")}
+            restricted={isFeatureRestricted("qr")}
           />
           <NavItem
             icon={<Key className="w-5 h-5" />}
             label="Ayarlar"
             active={activeTab === "settings"}
-            onClick={() => setActiveTab("settings")}
+            onClick={() => handleTabClick("settings")}
           />
         </nav>
 
@@ -2470,6 +2508,55 @@ export default function AdminPanel() {
           <AlertDialogAction onClick={() => deleteId && deleteOrder(deleteId)}>Sil</AlertDialogAction>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Upgrade Dialog for Restricted Features */}
+      <AlertDialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <div className="flex items-center justify-center mb-4">
+              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            <AlertDialogTitle className="text-center text-xl">
+              {restrictedFeature} Özelliği Kilitli
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center space-y-3">
+              <p>
+                Bu özellik <span className="font-semibold">Standart</span> paketinizde bulunmamaktadır.
+              </p>
+              <p className="text-sm">
+                <span className="font-semibold">{restrictedFeature}</span> özelliğini kullanmak için premium pakete yükseltme yapın.
+              </p>
+              <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 mt-4">
+                <p className="font-semibold text-primary mb-2">Premium Paket Avantajları:</p>
+                <ul className="text-sm space-y-1 text-left">
+                  <li>✓ Sipariş yönetimi</li>
+                  <li>✓ Garson çağırma sistemi</li>
+                  <li>✓ QR kod oluşturma</li>
+                  <li>✓ Tüm premium özellikler</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button
+              onClick={() => {
+                setShowUpgradeDialog(false)
+                if (currentTenant?.slug) {
+                  window.location.href = `/${currentTenant.slug}/payment`
+                }
+              }}
+              className="w-full"
+            >
+              Premium'a Yükselt
+            </Button>
+            <AlertDialogCancel className="w-full m-0">Daha Sonra</AlertDialogCancel>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -2479,21 +2566,30 @@ function NavItem({
   label,
   active,
   onClick,
+  restricted = false,
 }: {
   icon: React.ReactNode
   label: string
   active: boolean
   onClick: () => void
+  restricted?: boolean
 }) {
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center justify-center md:justify-start gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-        active ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        active ? "bg-primary text-white" : restricted ? "text-muted-foreground/50 hover:bg-muted/50 cursor-pointer" : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
       {icon}
-      <span className="hidden md:inline text-sm font-medium">{label}</span>
+      <span className="hidden md:inline text-sm font-medium flex items-center gap-2">
+        {label}
+        {restricted && (
+          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </svg>
+        )}
+      </span>
     </button>
   )
 }

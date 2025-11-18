@@ -20,7 +20,7 @@ import {
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 
-type PlanType = "monthly" | "yearly"
+type PlanType = "standard" | "monthly" | "yearly"
 
 export default function PaymentPage() {
   const params = useParams()
@@ -67,12 +67,25 @@ export default function PaymentPage() {
   
   const loadPaytrIframe = async () => {
     setProcessing(true)
-    
+
     try {
-      const amount = selectedPlan === "monthly" ? discountedFirstMonth : yearlyPrice
-      const planName = selectedPlan === "monthly"
-        ? "Premium Abonelik - Aylık (İlk Ay %50 İndirim)"
-        : "Premium Abonelik - Yıllık (2 Ay Bedava)"
+      let amount: number
+      let planName: string
+      let subscriptionPlan: string
+
+      if (selectedPlan === "standard") {
+        amount = standardPrice
+        planName = "Standart Abonelik - Aylık"
+        subscriptionPlan = "standard"
+      } else if (selectedPlan === "monthly") {
+        amount = discountedFirstMonth
+        planName = "Premium Abonelik - Aylık (İlk Ay %50 İndirim)"
+        subscriptionPlan = "premium"
+      } else {
+        amount = yearlyPrice
+        planName = "Premium Abonelik - Yıllık (2 Ay Bedava)"
+        subscriptionPlan = "premium"
+      }
 
       console.log('Auto-loading PayTR iframe:', {
         tenant_id: tenant.id,
@@ -92,6 +105,7 @@ export default function PaymentPage() {
           amount,
           plan_type: selectedPlan,
           plan_name: planName,
+          subscription_plan: subscriptionPlan,
         }),
       })
 
@@ -116,6 +130,7 @@ export default function PaymentPage() {
 
   // Calculate prices
   const monthlyPrice = pricing?.premium_price_try || 299
+  const standardPrice = Math.round(monthlyPrice * 0.5) // Standard is 50% of premium
   const discountedFirstMonth = Math.round(monthlyPrice * 0.5) // %50 first month discount
   const yearlyPrice = Math.round(monthlyPrice * 10) // 10 months price (2 months free)
   const yearlySavings = monthlyPrice * 2 // 2 months savings
@@ -190,7 +205,41 @@ export default function PaymentPage() {
                 <CardDescription>Size en uygun planı seçin</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Monthly Plan */}
+                {/* Standard Plan */}
+                <div
+                  onClick={() => setSelectedPlan("standard")}
+                  className={`border-2 rounded-xl p-5 cursor-pointer transition-all ${
+                    selectedPlan === "standard"
+                      ? "border-primary bg-primary/5 shadow-lg scale-105"
+                      : "border-border hover:border-primary/50 hover:shadow"
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div>
+                      <h3 className="text-lg font-bold">Standart Plan</h3>
+                      <p className="text-sm text-muted-foreground">Temel özellikler</p>
+                    </div>
+                    {selectedPlan === "standard" && (
+                      <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0" />
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-2xl font-bold text-primary">₺{standardPrice}</span>
+                      <span className="text-xs text-muted-foreground">/ay</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">Temel menü ve kategori yönetimi</p>
+                  </div>
+                  <div className="mt-3 pt-3 border-t text-xs space-y-1">
+                    <p className="text-green-600">✓ Sınırsız ürün ve kategori</p>
+                    <p className="text-green-600">✓ Tema özelleştirme</p>
+                    <p className="text-red-600">✗ Sipariş yönetimi</p>
+                    <p className="text-red-600">✗ Garson çağırma</p>
+                    <p className="text-red-600">✗ QR kod oluşturma</p>
+                  </div>
+                </div>
+
+                {/* Premium Monthly Plan */}
                 <div
                   onClick={() => setSelectedPlan("monthly")}
                   className={`border-2 rounded-xl p-5 cursor-pointer transition-all ${
@@ -201,8 +250,8 @@ export default function PaymentPage() {
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-bold">Aylık Plan</h3>
-                      <p className="text-sm text-muted-foreground">Esnek ve iptal edilebilir</p>
+                      <h3 className="text-lg font-bold">Premium Aylık</h3>
+                      <p className="text-sm text-muted-foreground">Tüm özellikler dahil</p>
                     </div>
                     {selectedPlan === "monthly" && (
                       <CheckCircle2 className="w-6 h-6 text-primary flex-shrink-0" />
@@ -218,7 +267,7 @@ export default function PaymentPage() {
                   </div>
                 </div>
 
-                {/* Yearly Plan */}
+                {/* Premium Yearly Plan */}
                 <div
                   onClick={() => setSelectedPlan("yearly")}
                   className={`border-2 rounded-xl p-5 cursor-pointer transition-all relative ${
@@ -232,7 +281,7 @@ export default function PaymentPage() {
                   </div>
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <h3 className="text-lg font-bold">Yıllık Plan</h3>
+                      <h3 className="text-lg font-bold">Premium Yıllık</h3>
                       <p className="text-sm text-muted-foreground">2 ay bedava kazanın</p>
                     </div>
                     {selectedPlan === "yearly" && (
@@ -470,7 +519,7 @@ export default function PaymentPage() {
                       <div className="flex justify-between items-center">
                         <span className="text-muted-foreground">Seçilen Plan</span>
                         <span className="font-semibold">
-                          {selectedPlan === "monthly" ? "Aylık Premium" : "Yıllık Premium"}
+                          {selectedPlan === "standard" ? "Standart" : selectedPlan === "monthly" ? "Premium Aylık" : "Premium Yıllık"}
                         </span>
                       </div>
                       {selectedPlan === "monthly" && (
@@ -489,10 +538,15 @@ export default function PaymentPage() {
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-semibold">Toplam Tutar</span>
                           <span className="text-3xl font-bold text-primary">
-                            ₺{selectedPlan === "monthly" ? discountedFirstMonth : yearlyPrice}
+                            ₺{selectedPlan === "standard" ? standardPrice : selectedPlan === "monthly" ? discountedFirstMonth : yearlyPrice}
                           </span>
                         </div>
                       </div>
+                      {selectedPlan === "standard" && (
+                        <p className="text-xs text-center text-muted-foreground">
+                          Aylık ₺{standardPrice} olarak faturalandırılacak
+                        </p>
+                      )}
                       {selectedPlan === "monthly" && (
                         <p className="text-xs text-center text-muted-foreground">
                           Sonraki aylık ödemeler ₺{monthlyPrice} olacaktır

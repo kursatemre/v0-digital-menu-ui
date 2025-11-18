@@ -18,12 +18,12 @@ export async function POST(request: Request) {
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    console.log('Activating premium for tenant:', tenant_id)
+    console.log('Activating subscription for tenant:', tenant_id)
 
-    // Verify payment exists
+    // Verify payment exists and get subscription plan
     const { data: payment } = await supabase
       .from('payment_transactions')
-      .select('payment_status')
+      .select('payment_status, order_details')
       .eq('merchant_oid', merchant_oid)
       .eq('tenant_id', tenant_id)
       .single()
@@ -44,14 +44,17 @@ export async function POST(request: Request) {
       )
     }
 
-    // Activate premium
+    // Get subscription plan from payment details
+    const subscriptionPlan = (payment.order_details as any)?.subscription_plan || 'premium'
+
+    // Activate subscription (standard or premium)
     const subscriptionEndDate = new Date()
     subscriptionEndDate.setDate(subscriptionEndDate.getDate() + 30)
 
     const { data: tenant, error: updateError } = await supabase
       .from('tenants')
       .update({
-        subscription_plan: 'premium',
+        subscription_plan: subscriptionPlan,
         subscription_status: 'active',
         subscription_end_date: subscriptionEndDate.toISOString(),
         updated_at: new Date().toISOString()
@@ -68,7 +71,7 @@ export async function POST(request: Request) {
       )
     }
 
-    console.log('Premium activated successfully for tenant:', tenant_id)
+    console.log(`${subscriptionPlan.charAt(0).toUpperCase() + subscriptionPlan.slice(1)} plan activated successfully for tenant:`, tenant_id)
 
     return NextResponse.json({
       success: true,
