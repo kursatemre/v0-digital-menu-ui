@@ -224,11 +224,10 @@ export default function PaymentPage() {
                     )}
                   </div>
                   <div className="space-y-1">
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold text-primary">₺{standardPrice}</span>
-                      <span className="text-xs text-muted-foreground">/ay</span>
+                    <div className="flex items-baseline justify-center gap-2">
+                      <span className="text-2xl font-bold text-green-600">Ücretsiz</span>
                     </div>
-                    <p className="text-xs text-muted-foreground">Temel menü ve kategori yönetimi</p>
+                    <p className="text-xs text-muted-foreground text-center">Sonsuza kadar ücretsiz</p>
                   </div>
                   <div className="mt-3 pt-3 border-t text-xs space-y-1">
                     <p className="text-green-600">✓ Sınırsız ürün ve kategori</p>
@@ -390,14 +389,118 @@ export default function PaymentPage() {
             <Card className="shadow-2xl border-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-2xl">
-                  <CreditCard className="w-6 h-6" />
-                  Fatura ve Ödeme Bilgileri
+                  {selectedPlan === "standard" ? (
+                    <>
+                      <Sparkles className="w-6 h-6" />
+                      Ücretsiz Başlayın
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-6 h-6" />
+                      Fatura ve Ödeme Bilgileri
+                    </>
+                  )}
                 </CardTitle>
-                <CardDescription>Güvenli ödeme ile hemen başlayın</CardDescription>
+                <CardDescription>
+                  {selectedPlan === "standard"
+                    ? "Kredi kartı gerektirmez, hemen başlayın!"
+                    : "Güvenli ödeme ile hemen başlayın"}
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
-                  {/* Personal Information */}
+                  {/* Standard Plan - Free Activation */}
+                  {selectedPlan === "standard" && (
+                    <div className="space-y-6">
+                      <div className="bg-green-50 border-2 border-green-200 rounded-xl p-6 text-center space-y-4">
+                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                          <CheckCircle2 className="w-10 h-10 text-green-600" />
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-green-800 mb-2">
+                            Standart Plan Tamamen Ücretsiz!
+                          </h3>
+                          <p className="text-sm text-green-700">
+                            Kredi kartı bilgisi gerektirmez. İstediğiniz zaman premium'a yükseltebilirsiniz.
+                          </p>
+                        </div>
+                        <div className="space-y-2 text-left bg-white rounded-lg p-4">
+                          <p className="text-sm font-semibold text-gray-700">Standart Plan'da neler var:</p>
+                          <ul className="space-y-1 text-xs text-gray-600">
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
+                              Sınırsız ürün ve kategori ekleyin
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
+                              Tema ve renkleri özelleştirin
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
+                              TV ekran menüsü kullanın
+                            </li>
+                            <li className="flex items-center gap-2">
+                              <CheckCircle2 className="w-3 h-3 text-green-600 flex-shrink-0" />
+                              Mobil uyumlu dijital menü
+                            </li>
+                          </ul>
+                        </div>
+                        <Button
+                          size="lg"
+                          className="w-full text-lg py-6 bg-green-600 hover:bg-green-700"
+                          onClick={async () => {
+                            try {
+                              setProcessing(true)
+                              // Activate standard plan directly
+                              const { error } = await supabase
+                                .from('tenants')
+                                .update({
+                                  subscription_plan: 'standard',
+                                  subscription_status: 'active',
+                                  subscription_end_date: null, // No expiry for free plan
+                                })
+                                .eq('id', tenant.id)
+
+                              if (error) {
+                                alert('Bir hata oluştu. Lütfen tekrar deneyin.')
+                                console.error(error)
+                                return
+                              }
+
+                              // Redirect to admin panel
+                              router.push(`/${slug}/admin`)
+                            } catch (error) {
+                              console.error('Free activation error:', error)
+                              alert('Bir hata oluştu. Lütfen tekrar deneyin.')
+                            } finally {
+                              setProcessing(false)
+                            }
+                          }}
+                          disabled={processing}
+                        >
+                          {processing ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              Aktive Ediliyor...
+                            </>
+                          ) : (
+                            <>
+                              Ücretsiz Başla
+                              <ArrowRight className="w-5 h-5 ml-2" />
+                            </>
+                          )}
+                        </Button>
+                        <p className="text-xs text-gray-500">
+                          Premium özelliklere ihtiyacınız olursa istediğiniz zaman yükseltme yapabilirsiniz
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Premium Plans - Show Billing Form */}
+                  {selectedPlan !== "standard" && (
+                    <>
+                      {/* Personal Information */}
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold border-b pb-2">Kişisel Bilgiler</h3>
                     <div className="grid md:grid-cols-2 gap-4">
@@ -537,14 +640,18 @@ export default function PaymentPage() {
                       <div className="border-t pt-2 mt-2">
                         <div className="flex justify-between items-center">
                           <span className="text-lg font-semibold">Toplam Tutar</span>
-                          <span className="text-3xl font-bold text-primary">
-                            ₺{selectedPlan === "standard" ? standardPrice : selectedPlan === "monthly" ? discountedFirstMonth : yearlyPrice}
-                          </span>
+                          {selectedPlan === "standard" ? (
+                            <span className="text-3xl font-bold text-green-600">Ücretsiz</span>
+                          ) : (
+                            <span className="text-3xl font-bold text-primary">
+                              ₺{selectedPlan === "monthly" ? discountedFirstMonth : yearlyPrice}
+                            </span>
+                          )}
                         </div>
                       </div>
                       {selectedPlan === "standard" && (
-                        <p className="text-xs text-center text-muted-foreground">
-                          Aylık ₺{standardPrice} olarak faturalandırılacak
+                        <p className="text-xs text-center text-green-600 font-semibold">
+                          🎉 Kredi kartı gerektirmez, sonsuza kadar ücretsiz!
                         </p>
                       )}
                       {selectedPlan === "monthly" && (
@@ -616,6 +723,8 @@ export default function PaymentPage() {
                         </p>
                       </div>
                     </div>
+                  )}
+                    </>
                   )}
                 </div>
               </CardContent>
