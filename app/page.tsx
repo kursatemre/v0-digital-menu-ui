@@ -641,11 +641,10 @@ export default function LandingPage() {
                   </div>
                   <h3 className="text-xl sm:text-2xl font-bold mb-2">Standart</h3>
                   <div className="flex items-baseline justify-center gap-2 mb-3">
-                    <span className="text-3xl sm:text-4xl font-bold">₺{Math.round((premiumPriceTry || 299) * 0.5)}</span>
-                    <span className="text-base text-muted-foreground">/ay</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-green-600">Ücretsiz</span>
                   </div>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    Temel menü yönetimi
+                    Sonsuza kadar ücretsiz
                   </p>
                 </div>
 

@@ -313,10 +313,11 @@ export default function RegisterPage() {
           owner_name: formData.ownerName,
           owner_email: formData.ownerEmail,
           auth_user_id: authData.user.id,
-          subscription_status: "trial",
-          subscription_plan: "trial",
+          subscription_status: "active",
+          subscription_plan: "standard", // Free standard plan by default
           is_active: false, // Will be activated after email confirmation
-          trial_end_date: null, // Will be set after email confirmation
+          trial_end_date: null,
+          subscription_end_date: null, // No expiry for free standard plan
         })
         .select()
         .single()

@@ -132,14 +132,15 @@ export default function ConfirmPage() {
         const trialEndDate = new Date()
         trialEndDate.setDate(trialEndDate.getDate() + 3)
 
-        // Activate the tenant and set trial period
+        // Activate the tenant with free standard plan
         const { error: updateError } = await supabase
           .from("tenants")
           .update({
             is_active: true,
-            trial_end_date: trialEndDate.toISOString(),
-            subscription_status: "trial",
-            subscription_plan: "trial",
+            trial_end_date: null, // No trial needed for free plan
+            subscription_status: "active",
+            subscription_plan: "standard", // Free standard plan
+            subscription_end_date: null, // No expiry for free plan
           })
           .eq("id", tenant.id)
 
@@ -153,7 +154,7 @@ export default function ConfirmPage() {
         // Success!
         setRestaurantSlug(tenant.slug)
         setStatus("success")
-        setMessage("E-posta adresiniz başarıyla doğrulandı! 3 günlük ücretsiz deneme süreniz başladı.")
+        setMessage("E-posta adresiniz başarıyla doğrulandı! Ücretsiz Standart plan hesabınız aktif edildi.")
 
         // Redirect to admin panel after 3 seconds
         setTimeout(() => {
