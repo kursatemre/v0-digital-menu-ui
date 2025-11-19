@@ -3993,7 +3993,12 @@ export default function AdminPanel() {
 
     const now = new Date()
     const isTrial = tenantData.subscription_status === "trial"
-    const isPremium = tenantData.subscription_status === "active"
+    const isStandard = tenantData.subscription_status === "active" && tenantData.subscription_plan === "standard"
+    const isPremium = tenantData.subscription_status === "active" && (
+      tenantData.subscription_plan === "premium" ||
+      tenantData.subscription_plan === "monthly" ||
+      tenantData.subscription_plan === "yearly"
+    )
 
     // Calculate remaining days
     let daysRemaining = 0
@@ -4002,7 +4007,7 @@ export default function AdminPanel() {
     if (isTrial && tenantData.trial_end_date) {
       endDate = new Date(tenantData.trial_end_date)
       daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    } else if (isPremium && tenantData.subscription_end_date) {
+    } else if ((isPremium || isStandard) && tenantData.subscription_end_date) {
       endDate = new Date(tenantData.subscription_end_date)
       daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     }
@@ -4121,7 +4126,9 @@ export default function AdminPanel() {
                   <div className="p-4 bg-white/70 rounded-lg">
                     <p className="text-sm text-muted-foreground">Plan</p>
                     <p className="text-lg font-semibold capitalize">
-                      {tenantData.subscription_plan === "monthly" ? "Aylık" : "Yıllık"}
+                      {tenantData.subscription_plan === "standard" ? "Standart" :
+                       tenantData.subscription_plan === "monthly" ? "Premium Aylık" :
+                       tenantData.subscription_plan === "yearly" ? "Premium Yıllık" : "Premium"}
                     </p>
                   </div>
                   <div className="p-4 bg-white/70 rounded-lg">
@@ -4183,7 +4190,115 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {!isTrial && !isPremium && (
+        {isStandard && (
+          <div className="space-y-6">
+            <Card className="border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-cyan-50">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-xl">Standart Paket</CardTitle>
+                  <div className="px-3 py-1 bg-blue-500 text-white text-xs font-bold rounded-full">
+                    AKTİF
+                  </div>
+                </div>
+                <CardDescription>QR menü özelliklerine erişiminiz var</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-white/70 rounded-lg">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Kalan Süre</p>
+                    <p className="text-3xl font-bold text-blue-600">{daysRemaining} Gün</p>
+                  </div>
+                  <CheckCircle2 className="w-12 h-12 text-blue-600 opacity-50" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-white/70 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Plan</p>
+                    <p className="text-lg font-semibold">Standart</p>
+                  </div>
+                  <div className="p-4 bg-white/70 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Bitiş Tarihi</p>
+                    <p className="text-lg font-semibold">
+                      {endDate?.toLocaleDateString("tr-TR", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="p-4 bg-white/70 rounded-lg border-l-4 border-blue-500">
+                  <p className="text-sm text-muted-foreground mb-1">Aktif Özellikler</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                      <span>Sınırsız ürün</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                      <span>QR menü</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                      <span>Çoklu dil desteği</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                      <span>Tema özelleştirme</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
+                  <p className="text-sm font-medium text-orange-800 mb-2">🔒 Premium Özelliklere Geçin</p>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-orange-700 mb-3">
+                    <div className="flex items-center gap-1">
+                      <span>• Sipariş sistemi</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span>• Garson çağrı sistemi</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span>• QR kod özelleştirme</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span>• Gelişmiş raporlama</span>
+                    </div>
+                  </div>
+                  <Button
+                    className="w-full mt-2"
+                    size="sm"
+                    onClick={() => window.location.href = `/${slug}/payment`}
+                  >
+                    Premium'a Yükselt
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Destek ve Yardım</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Standart paketinizle ilgili herhangi bir sorunuz mu var?
+                </p>
+                <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg">
+                  <Shield className="w-5 h-5 text-primary" />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">Standart Destek</p>
+                    <a
+                      href="mailto:destek@menumgo.digital"
+                      className="text-sm text-primary hover:underline"
+                    >
+                      destek@menumgo.digital
+                    </a>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {!isTrial && !isPremium && !isStandard && (
           <Card>
             <CardHeader>
               <CardTitle>Abonelik Durumu</CardTitle>
