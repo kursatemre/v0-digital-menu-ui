@@ -49,6 +49,7 @@ import {
   Tv,
   ExternalLink,
   Sliders,
+  Lock,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -241,7 +242,9 @@ export default function AdminPanel() {
 
   const [activeTab, setActiveTab] = useState<
     "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings" | "customizations"
-  >("orders")
+  >("products")
+  const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
+  const [upgradeFeatureName, setUpgradeFeatureName] = useState("")
   const [orders, setOrders] = useState<Order[]>([])
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
   const [products, setProducts] = useState<Product[]>([])
@@ -410,6 +413,22 @@ export default function AdminPanel() {
 
     loadTenant()
   }, [slug, router, supabase])
+
+  // Check if user has standard plan
+  const isStandardPlan = tenantData?.subscription_status === "active" && tenantData?.subscription_plan === "standard"
+
+  // Premium-only features
+  const restrictedTabs = isStandardPlan ? ["orders", "waiter-calls", "qr"] : []
+
+  // Handle tab click with premium check
+  const handleTabClick = (tab: typeof activeTab, featureName: string) => {
+    if (restrictedTabs.includes(tab)) {
+      setUpgradeFeatureName(featureName)
+      setShowUpgradeDialog(true)
+      return
+    }
+    setActiveTab(tab)
+  }
 
   // Load dynamic pricing
   useEffect(() => {
@@ -4548,8 +4567,9 @@ export default function AdminPanel() {
             icon={<ShoppingCart className="w-5 h-5" />}
             label="Siparişler"
             active={activeTab === "orders"}
-            onClick={() => setActiveTab("orders")}
+            onClick={() => handleTabClick("orders", "Sipariş Yönetimi")}
             badge={orders.filter((o) => o.status === "pending").length}
+            isLocked={restrictedTabs.includes("orders")}
           />
           {/* Waiter Calls - admin, garson */}
           {canView(["admin", "garson"]) && (
@@ -4557,8 +4577,9 @@ export default function AdminPanel() {
               icon={<Bell className="w-5 h-5" />}
               label="Garson Çağrıları"
               active={activeTab === "waiter-calls"}
-              onClick={() => setActiveTab("waiter-calls")}
+              onClick={() => handleTabClick("waiter-calls", "Garson Çağırma Sistemi")}
               badge={waiterCalls.filter((c) => c.status === "pending").length}
+              isLocked={restrictedTabs.includes("waiter-calls")}
             />
           )}
           {/* Products - admin, kasa */}
@@ -4603,7 +4624,8 @@ export default function AdminPanel() {
               icon={<QrCode className="w-5 h-5" />}
               label="QR Kod"
               active={activeTab === "qr"}
-              onClick={() => setActiveTab("qr")}
+              onClick={() => handleTabClick("qr", "QR Kod Oluşturma")}
+              isLocked={restrictedTabs.includes("qr")}
             />
           )}
           {/* TV Display - admin only */}
@@ -4694,6 +4716,71 @@ export default function AdminPanel() {
           <AlertDialogAction onClick={() => deleteId && deleteOrder(deleteId)}>Sil</AlertDialogAction>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Upgrade to Premium Dialog */}
+      <Dialog open={showUpgradeDialog} onOpenChange={setShowUpgradeDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-3 bg-orange-100 rounded-full">
+                <Lock className="w-6 h-6 text-orange-600" />
+              </div>
+              <div>
+                <DialogTitle className="text-xl">{upgradeFeatureName} Özelliği Kilitli</DialogTitle>
+                <DialogDescription className="text-sm mt-1">
+                  Bu özellik Standart paketinizde bulunmamaktadır
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-lg p-4 border border-orange-200">
+              <p className="text-sm font-semibold text-orange-900 mb-3">
+                🚀 Premium Pakete Geçin ve Tüm Özelliklerin Kilidini Açın:
+              </p>
+              <ul className="space-y-2 text-sm text-orange-800">
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-600" />
+                  <span><strong>Sipariş Yönetimi:</strong> Müşteri siparişlerini anlık takip edin</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-600" />
+                  <span><strong>Garson Çağırma:</strong> Masalardan garson çağrılarını yönetin</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-600" />
+                  <span><strong>QR Kod Oluşturma:</strong> Özel QR kodlar oluşturun ve indirin</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 mt-0.5 flex-shrink-0 text-green-600" />
+                  <span><strong>Gelişmiş Raporlama:</strong> Detaylı satış ve performans raporları</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setShowUpgradeDialog(false)}
+                className="flex-1"
+              >
+                Daha Sonra
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowUpgradeDialog(false)
+                  window.location.href = `/${slug}/payment`
+                }}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Premium'a Yükselt
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
@@ -4704,23 +4791,31 @@ function NavItem({
   active,
   onClick,
   badge,
+  isLocked = false,
 }: {
   icon: React.ReactNode
   label: string
   active: boolean
   onClick: () => void
   badge?: number
+  isLocked?: boolean
 }) {
   return (
     <button
       onClick={onClick}
       className={`w-full flex items-center justify-center md:justify-start gap-3 px-3 py-2.5 rounded-lg transition-colors relative ${
-        active ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+        isLocked
+          ? "opacity-50 cursor-not-allowed text-muted-foreground"
+          : active
+          ? "bg-primary text-white"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
+      disabled={isLocked}
     >
       {icon}
       <span className="hidden md:inline text-sm font-medium">{label}</span>
-      {badge !== undefined && badge > 0 && (
+      {isLocked && <Lock className="w-4 h-4 ml-auto hidden md:inline text-orange-500" />}
+      {badge !== undefined && badge > 0 && !isLocked && (
         <span className={`absolute top-1 left-1 md:static md:ml-auto text-xs font-bold px-2 py-0.5 rounded-full ${
           active ? "bg-white text-primary" : "bg-red-500 text-white"
         }`}>
