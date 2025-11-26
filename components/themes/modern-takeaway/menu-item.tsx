@@ -236,9 +236,9 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
 
           {/* Product Info */}
           <div className="flex-1 min-w-0 text-gray-900">
-            <h3 className="font-semibold text-xl truncate leading-tight">{name}</h3>
+            <h3 className="font-medium text-sm leading-tight truncate">{name}</h3>
             {description && (
-              <p className="text-sm text-gray-600 truncate">{description}</p>
+              <p className="text-xs text-gray-600 truncate">{description}</p>
             )}
           </div>
 
