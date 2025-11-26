@@ -6,20 +6,21 @@ import { LanguageAwareText } from "./language-aware-text"
 
 interface FeedbackButtonProps {
   onClick: () => void
+  className?: string
 }
 
-export function FeedbackButton({ onClick }: FeedbackButtonProps) {
+export function FeedbackButton({ onClick, className = "" }: FeedbackButtonProps) {
   const { language } = useLanguage()
 
   return (
     <button
       onClick={onClick}
-      className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold py-3 px-5 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2 active:scale-95 border border-primary/30"
+      className={`w-full bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2 active:scale-95 border border-primary/30 ${className}`}
       aria-label={language === "tr" ? "Geri Bildirim Gönder" : "Send Feedback"}
     >
       <MessageSquare className="w-5 h-5" />
-      <span className="hidden sm:inline">
-        <LanguageAwareText tr="Geri Bildirim" en="Feedback" />
+      <span>
+        <LanguageAwareText tr="Yorum, Öneri veya Şikayet Bildir" en="Send Feedback or Complaint" />
       </span>
     </button>
   )
