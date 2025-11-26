@@ -8,6 +8,8 @@ import { CartModal } from "./cart-modal"
 import { OrderForm } from "@/components/order-form"
 import { useLanguage } from "@/contexts/language-context"
 import { Sparkles } from "lucide-react"
+import { FeedbackButton } from "@/components/feedback-button"
+import { FeedbackModal } from "@/components/feedback-modal"
 
 interface Product {
   id: string
@@ -69,6 +71,7 @@ export function ModernTakeawayLayout({
   const [showOrderForm, setShowOrderForm] = useState(false)
   const [showToast, setShowToast] = useState(false)
   const [toastMessage, setToastMessage] = useState("")
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   const handleAddToCart = (item: any) => {
     const newItem: CartItem = {
@@ -226,6 +229,23 @@ export function ModernTakeawayLayout({
           onSuccess={handleOrderSuccess}
           onClearCart={() => setCartItems([])}
           tenantId={tenantId}
+        />
+      )}
+
+      {/* Feedback Button */}
+      <FeedbackButton onClick={() => setFeedbackOpen(true)} />
+
+      {/* Feedback Modal */}
+      {feedbackOpen && (
+        <FeedbackModal
+          isOpen={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          tenantId={tenantId}
+          onSuccess={(message) => {
+            setToastMessage(message)
+            setShowToast(true)
+            setTimeout(() => setShowToast(false), 3000)
+          }}
         />
       )}
 

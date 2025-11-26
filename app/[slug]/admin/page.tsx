@@ -50,6 +50,7 @@ import {
   ExternalLink,
   Sliders,
   Lock,
+  MessageSquare,
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -108,6 +109,18 @@ type WaiterCall = {
   table_number: string
   customer_name: string | null
   status: "pending" | "responded" | "completed"
+  created_at: string
+  updated_at: string
+}
+
+type Feedback = {
+  id: string
+  customer_name: string | null
+  email: string | null
+  phone: string | null
+  feedback_type: "comment" | "suggestion" | "complaint"
+  message: string
+  status: "new" | "reviewed" | "resolved"
   created_at: string
   updated_at: string
 }
@@ -241,12 +254,13 @@ export default function AdminPanel() {
   const [loginError, setLoginError] = useState("")
 
   const [activeTab, setActiveTab] = useState<
-    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings" | "customizations"
+    "orders" | "waiter-calls" | "products" | "categories" | "appearance" | "qr" | "users" | "license" | "reports" | "settings" | "customizations" | "feedback"
   >("products")
   const [showUpgradeDialog, setShowUpgradeDialog] = useState(false)
   const [upgradeFeatureName, setUpgradeFeatureName] = useState("")
   const [orders, setOrders] = useState<Order[]>([])
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([])
+  const [feedbackList, setFeedbackList] = useState<Feedback[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [theme, setTheme] = useState<Theme>({
@@ -840,11 +854,13 @@ export default function AdminPanel() {
 
     loadOrders()
     loadWaiterCalls()
+    loadFeedback()
 
     // Polling: Her 5 saniyede bir kontrol et (Realtime yok)
     const pollingInterval = setInterval(() => {
       loadOrders()
       loadWaiterCalls()
+      loadFeedback()
     }, 5000) // 5 saniye
 
     return () => {
@@ -915,6 +931,26 @@ export default function AdminPanel() {
       }
     } catch (err) {
       console.error("Error loading waiter calls:", err)
+    }
+  }
+
+  const loadFeedback = async () => {
+    if (!tenantId) return
+
+    try {
+      const { data, error } = await supabase
+        .from("feedback")
+        .select("*")
+        .eq("tenant_id", tenantId)
+        .order("created_at", { ascending: false })
+
+      if (error) {
+        console.error("Error loading feedback:", error)
+      } else {
+        setFeedbackList(data || [])
+      }
+    } catch (err) {
+      console.error("Error loading feedback:", err)
     }
   }
 
@@ -1314,6 +1350,41 @@ export default function AdminPanel() {
     }
   }
 
+  const updateFeedbackStatus = async (feedbackId: string, newStatus: Feedback["status"]) => {
+    try {
+      const { error } = await supabase
+        .from("feedback")
+        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .eq("id", feedbackId)
+
+      if (error) {
+        console.error("Error updating feedback:", error)
+      } else {
+        loadFeedback()
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
+  }
+
+  const deleteFeedback = async (feedbackId: string) => {
+    try {
+      const { error } = await supabase
+        .from("feedback")
+        .delete()
+        .eq("id", feedbackId)
+        .eq("tenant_id", tenantId)
+
+      if (error) {
+        console.error("Error deleting feedback:", error)
+      } else {
+        loadFeedback()
+      }
+    } catch (err) {
+      console.error("Supabase error:", err)
+    }
+  }
+
   const deleteWaiterCall = async (callId: string) => {
     try {
       console.log("Deleting waiter call:", { callId, tenantId })
@@ -1656,6 +1727,8 @@ export default function AdminPanel() {
         return renderOrdersTab()
       case "waiter-calls":
         return renderWaiterCallsTab()
+      case "feedback":
+        return renderFeedbackTab()
       case "products":
         return renderProductsTab()
       case "categories":
@@ -2123,6 +2196,145 @@ export default function AdminPanel() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderFeedbackTab = () => (
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <MessageSquare className="w-6 h-6 text-primary" />
+          <div>
+            <h2 className="text-2xl font-bold">Geri Bildirimler</h2>
+            <p className="text-sm text-muted-foreground">Müşteri yorumlarını, önerilerini ve şikayetlerini görüntüleyin</p>
+          </div>
+        </div>
+      </div>
+
+      {feedbackList.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <MessageSquare className="w-12 h-12 text-muted-foreground mb-4" />
+            <p className="text-muted-foreground text-center">Henüz geri bildirim bulunmamaktadır.</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {feedbackList.map((feedback) => (
+            <Card key={feedback.id} className="overflow-hidden">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Badge
+                        className={
+                          feedback.status === "new"
+                            ? "bg-blue-100 text-blue-800"
+                            : feedback.status === "reviewed"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-green-100 text-green-800"
+                        }
+                      >
+                        {feedback.status === "new"
+                          ? "Yeni"
+                          : feedback.status === "reviewed"
+                            ? "İncelendi"
+                            : "Çözüldü"}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className={
+                          feedback.feedback_type === "comment"
+                            ? "border-blue-300 text-blue-700"
+                            : feedback.feedback_type === "suggestion"
+                              ? "border-green-300 text-green-700"
+                              : "border-red-300 text-red-700"
+                        }
+                      >
+                        {feedback.feedback_type === "comment"
+                          ? "💬 Yorum"
+                          : feedback.feedback_type === "suggestion"
+                            ? "💡 Öneri"
+                            : "⚠️ Şikayet"}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        {new Date(feedback.created_at).toLocaleString("tr-TR")}
+                      </span>
+                    </div>
+
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <p className="text-gray-800 whitespace-pre-wrap">{feedback.message}</p>
+                    </div>
+
+                    {(feedback.customer_name || feedback.email || feedback.phone) && (
+                      <div className="space-y-1 text-sm">
+                        {feedback.customer_name && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">Müşteri:</span>
+                            <span>{feedback.customer_name}</span>
+                          </div>
+                        )}
+                        {feedback.email && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">E-posta:</span>
+                            <span>{feedback.email}</span>
+                          </div>
+                        )}
+                        {feedback.phone && (
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold">Telefon:</span>
+                            <span>{feedback.phone}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="flex gap-2 flex-wrap">
+                      {feedback.status === "new" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateFeedbackStatus(feedback.id, "reviewed")}
+                          className="bg-yellow-600 hover:bg-yellow-700"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          İncelendiğini İşaretle
+                        </Button>
+                      )}
+                      {feedback.status === "reviewed" && (
+                        <Button
+                          size="sm"
+                          onClick={() => updateFeedbackStatus(feedback.id, "resolved")}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          <CheckCircle2 className="w-4 h-4 mr-1" />
+                          Çözüldü Olarak İşaretle
+                        </Button>
+                      )}
+                      {feedback.status !== "new" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => updateFeedbackStatus(feedback.id, "new")}
+                        >
+                          Yeni Olarak İşaretle
+                        </Button>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteFeedback(feedback.id)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-1" />
+                        Sil
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
     </div>
@@ -4580,6 +4792,16 @@ export default function AdminPanel() {
               onClick={() => handleTabClick("waiter-calls", "Garson Çağırma Sistemi")}
               badge={waiterCalls.filter((c) => c.status === "pending").length}
               isLocked={restrictedTabs.includes("waiter-calls")}
+            />
+          )}
+          {/* Feedback - admin only */}
+          {canView(["admin"]) && (
+            <NavItem
+              icon={<MessageSquare className="w-5 h-5" />}
+              label="Geri Bildirimler"
+              active={activeTab === "feedback"}
+              onClick={() => setActiveTab("feedback")}
+              badge={feedbackList.filter((f) => f.status === "new").length}
             />
           )}
           {/* Products - admin, kasa */}

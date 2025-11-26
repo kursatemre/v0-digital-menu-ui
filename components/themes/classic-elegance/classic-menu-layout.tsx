@@ -8,6 +8,8 @@ import { ShoppingBag, Bell, X, Minus, Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { createClient } from "@/lib/supabase/client"
+import { FeedbackButton } from "@/components/feedback-button"
+import { FeedbackModal } from "@/components/feedback-modal"
 
 interface Product {
   id: string
@@ -59,6 +61,7 @@ export function ClassicMenuLayout({
   const [waiterTableNumber, setWaiterTableNumber] = useState("")
   const [waiterName, setWaiterName] = useState("")
   const [waiterCallLoading, setWaiterCallLoading] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
 
   // Toast states
   const [showToast, setShowToast] = useState(false)
@@ -74,7 +77,7 @@ export function ClassicMenuLayout({
 
   // Prevent body scroll when modals are open
   useEffect(() => {
-    if (showCart || waiterCallOpen) {
+    if (showCart || waiterCallOpen || feedbackOpen) {
       document.body.style.overflow = "hidden"
     } else {
       document.body.style.overflow = "unset"
@@ -82,7 +85,7 @@ export function ClassicMenuLayout({
     return () => {
       document.body.style.overflow = "unset"
     }
-  }, [showCart, waiterCallOpen])
+  }, [showCart, waiterCallOpen, feedbackOpen])
 
   // Cart functions
   const addToCart = (product: { id: string; name: string; price: number }) => {
@@ -392,6 +395,11 @@ export function ClassicMenuLayout({
 
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
+        {/* Feedback Button */}
+        <div className="bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm hover:bg-[#2a2210]/50 transition-all duration-300 shadow-2xl">
+          <FeedbackButton onClick={() => setFeedbackOpen(true)} />
+        </div>
+
         {/* Waiter Call Button */}
         <button
           onClick={() => setWaiterCallOpen(true)}
@@ -428,6 +436,20 @@ export function ClassicMenuLayout({
           </button>
         )}
       </div>
+
+      {/* Feedback Modal */}
+      {feedbackOpen && tenantId && (
+        <FeedbackModal
+          isOpen={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          tenantId={tenantId}
+          onSuccess={(message) => {
+            setToastMessage(message)
+            setShowToast(true)
+            setTimeout(() => setShowToast(false), 3000)
+          }}
+        />
+      )}
 
       {/* Cart & Checkout Modal */}
       {showCart && (
