@@ -1,7 +1,7 @@
 "use client"
 
 import { useLanguage } from "@/contexts/language-context"
-import { ShoppingCart, Globe } from "lucide-react"
+import { Globe, Award } from "lucide-react"
 import { useState } from "react"
 
 interface HeaderProps {
@@ -10,9 +10,9 @@ interface HeaderProps {
   onCartClick: () => void
 }
 
-export function ModernTakeawayHeader({ 
-  restaurantName, 
-  cartItemCount, 
+export function ModernTakeawayHeader({
+  restaurantName,
+  cartItemCount,
   onCartClick
 }: HeaderProps) {
   const { language, setLanguage } = useLanguage()
@@ -20,81 +20,76 @@ export function ModernTakeawayHeader({
 
   return (
     <>
-      {/* Header */}
-      <header className="sticky top-0 z-40 bg-white border-b border-gray-200 shadow-sm">
-        <div className="max-w-3xl mx-auto px-4">
-          <div className="flex items-center justify-between h-14">
-            {/* Center: Restaurant Name */}
-            <div className="flex-1 text-center">
-              <h1 className="font-bold text-lg text-gray-900 truncate px-2">
-                {restaurantName}
-              </h1>
-            </div>
+      {/* Header with Background Image */}
+      <header className="relative h-48 bg-cover bg-center flex flex-col justify-center items-center text-center shadow-xl"
+        style={{
+          backgroundImage: `url('https://images.unsplash.com/photo-1511920170033-de892677d292?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w1NjU0NzJ8MHwxfHNlYXJjaHwxfHxjYWZmZWluZSUyMGJlYW5zfGVufDB8fHx8MTcwODY0MzMzNHww&ixlib=rb-4.0.3&q=80&w=1080')`
+        }}
+      >
+        {/* Dark Overlay */}
+        <div className="absolute inset-0 bg-black/45" />
 
-            {/* Right: Language Selector */}
-            <div className="relative">
-              <button
-                onClick={() => setShowLangMenu(!showLangMenu)}
-                className="flex items-center gap-1.5 px-3 py-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-                aria-label="Change language"
-              >
-                <Globe className="w-4 h-4 text-gray-600" />
-                <span className="text-sm font-medium text-gray-700 uppercase">
-                  {language}
-                </span>
-              </button>
-
-              {/* Language Dropdown */}
-              {showLangMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowLangMenu(false)}
-                  />
-                  <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
-                    <button
-                      onClick={() => {
-                        setLanguage("tr")
-                        setShowLangMenu(false)
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                        language === "tr" ? "bg-orange-50 text-orange-600 font-semibold" : "text-gray-700"
-                      }`}
-                    >
-                      🇹🇷 Türkçe
-                    </button>
-                    <button
-                      onClick={() => {
-                        setLanguage("en")
-                        setShowLangMenu(false)
-                      }}
-                      className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
-                        language === "en" ? "bg-orange-50 text-orange-600 font-semibold" : "text-gray-700"
-                      }`}
-                    >
-                      🇬🇧 English
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+        {/* Content */}
+        <div className="relative z-10 text-white px-4">
+          <div className="flex items-center justify-center space-x-4 mb-2">
+            <Award className="text-emerald-400 h-10 w-10" />
+            <h1 className="text-4xl font-extrabold tracking-wider uppercase" style={{ textShadow: '0px 1px 3px rgba(0, 0, 0, 0.7)' }}>
+              {restaurantName}
+            </h1>
           </div>
+          <p className="text-base font-light" style={{ textShadow: '0px 1px 3px rgba(0, 0, 0, 0.7)' }}>
+            {language === "en" ? "Digital Take Away Menu" : "Dijital Take Away Menüsü"}
+          </p>
+        </div>
+
+        {/* Language Selector - Top Right */}
+        <div className="absolute top-4 right-4 z-20">
+          <button
+            onClick={() => setShowLangMenu(!showLangMenu)}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-white/20 backdrop-blur-sm hover:bg-white/30 rounded-lg transition-colors"
+            aria-label="Change language"
+          >
+            <Globe className="w-4 h-4 text-white" />
+            <span className="text-sm font-medium text-white uppercase">
+              {language}
+            </span>
+          </button>
+
+          {/* Language Dropdown */}
+          {showLangMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setShowLangMenu(false)}
+              />
+              <div className="absolute right-0 mt-1 w-32 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <button
+                  onClick={() => {
+                    setLanguage("tr")
+                    setShowLangMenu(false)
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === "tr" ? "bg-emerald-50 text-emerald-600 font-semibold" : "text-gray-700"
+                  }`}
+                >
+                  🇹🇷 Türkçe
+                </button>
+                <button
+                  onClick={() => {
+                    setLanguage("en")
+                    setShowLangMenu(false)
+                  }}
+                  className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors ${
+                    language === "en" ? "bg-emerald-50 text-emerald-600 font-semibold" : "text-gray-700"
+                  }`}
+                >
+                  🇬🇧 English
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </header>
-
-      {/* Floating Cart Button */}
-      {cartItemCount > 0 && (
-        <button
-          onClick={onCartClick}
-          className="fixed bottom-6 right-6 z-50 bg-orange-500 hover:bg-orange-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all p-4 flex items-center justify-center"
-          aria-label="Shopping cart"
-        >
-          <ShoppingCart className="w-6 h-6" />
-          <span className="absolute -top-2 -right-2 w-7 h-7 bg-red-500 text-white text-sm font-bold rounded-full flex items-center justify-center border-2 border-white">
-            {cartItemCount > 9 ? "9+" : cartItemCount}
-          </span>
-        </button>
-      )}
     </>
   )
 }

@@ -223,65 +223,36 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
 
   return (
     <>
-      <div className="bg-white p-3 hover:bg-gray-50 transition-colors w-full">
+      <div className="bg-white p-4 shadow-md rounded-lg hover:shadow-lg transition-all border-l-4 border-emerald-500">
         <div className="flex items-center gap-4">
-          {/* Product Image - Smaller with badge overlay */}
-          {product.image && (
-            <div className="relative w-12 h-12 flex-shrink-0 rounded-lg overflow-hidden">
-              <img
-                src={product.image}
-                alt={name}
-                className="w-full h-full object-cover"
-              />
-              {/* Badge on image */}
-              {product.badge && (
-                <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-orange-500 to-orange-600 px-1.5 py-0.5">
-                  <span className="text-[10px] font-bold text-white uppercase tracking-wide block text-center leading-tight">
-                    {product.badge}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Product Image - 64x64 rounded */}
+          <div className="w-16 h-16 flex-shrink-0 rounded-md overflow-hidden">
+            <img
+              src={product.image || `https://placehold.co/64x64/4CAF50/ffffff/png?text=${name.charAt(0)}`}
+              alt={name}
+              className="w-full h-full object-cover"
+            />
+          </div>
 
-          {/* Product Info - More space for name */}
-          <div className="flex-1 min-w-0">
-            <h3 className="font-medium text-gray-900 text-sm leading-tight mb-0.5">{name}</h3>
-            
+          {/* Product Info */}
+          <div className="flex-1 min-w-0 text-gray-900">
+            <h3 className="font-semibold text-xl truncate leading-tight">{name}</h3>
             {description && (
-              <p className="text-xs text-gray-500 line-clamp-1 mb-1">{description}</p>
+              <p className="text-sm text-gray-600 truncate">{description}</p>
             )}
-
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              {variants.length > 0 && (
-                <span>
-                  {variants.length} {language === "en" ? "sizes" : "boyut"}
-                </span>
-              )}
-              {customizationGroups.length > 0 && (
-                <span>
-                  • {customizationGroups.length} {language === "en" ? "options" : "seçenek"}
-                </span>
-              )}
-            </div>
           </div>
 
-          {/* Price & Add Button */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            {/* Price */}
-            <span className="text-base font-bold text-gray-900 whitespace-nowrap">
-              {getCurrentPrice().toFixed(2)}₺
+          {/* Price & Add Button (Pill/Chip Style) */}
+          <button
+            onClick={handleAddClick}
+            className="flex items-center bg-gray-100 text-gray-900 py-2 px-3 rounded-full hover:bg-gray-200 transition duration-150 flex-shrink-0"
+            aria-label={language === "en" ? "Add to Cart" : "Sepete Ekle"}
+          >
+            <span className="text-base font-bold mr-2 whitespace-nowrap">
+              {getCurrentPrice().toFixed(0)} TL
             </span>
-
-            {/* Add Button - Opens modal if has customizations */}
-            <button
-              onClick={handleAddClick}
-              className="w-10 h-10 rounded-full bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all flex items-center justify-center"
-              aria-label={language === "en" ? "Add to Cart" : "Sepete Ekle"}
-            >
-              <Plus className="w-5 h-5" strokeWidth={2.5} />
-            </button>
-          </div>
+            <Plus className="h-5 w-5 text-emerald-500 stroke-[3]" />
+          </button>
         </div>
       </div>
 
@@ -320,7 +291,7 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
                         onClick={() => setSelectedVariant(variant)}
                         className={`p-3 rounded-lg border-2 text-center transition-all ${
                           selectedVariant?.id === variant.id
-                            ? "border-orange-500 bg-orange-50"
+                            ? "border-emerald-500 bg-emerald-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
@@ -341,7 +312,7 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
                 <div key={group.id}>
                   <h4 className="font-semibold text-gray-900 mb-3">
                     {language === "en" && group.name_en ? group.name_en : group.name}
-                    {group.is_required && <span className="text-orange-600 ml-1">*</span>}
+                    {group.is_required && <span className="text-emerald-600 ml-1">*</span>}
                   </h4>
                   <div className="space-y-2">
                     {group.options.map((option) => (
@@ -350,7 +321,7 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
                         onClick={() => setSelectedOptions({ ...selectedOptions, [group.id]: option.id })}
                         className={`w-full p-3 rounded-lg border-2 flex items-center justify-between transition-all ${
                           selectedOptions[group.id] === option.id
-                            ? "border-orange-500 bg-orange-50"
+                            ? "border-emerald-500 bg-emerald-50"
                             : "border-gray-200 hover:border-gray-300"
                         }`}
                       >
@@ -375,7 +346,7 @@ export function MenuItem({ product, tenantId, onAddToCart }: MenuItemProps) {
             <div className="sticky bottom-0 bg-white border-t border-gray-200 p-4">
               <button
                 onClick={handleCustomizedAdd}
-                className="w-full py-4 rounded-xl bg-orange-500 hover:bg-orange-600 text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
+                className="w-full py-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-lg shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2"
               >
                 <Plus className="w-6 h-6" strokeWidth={2.5} />
                 <span>
