@@ -393,13 +393,13 @@ export function ClassicMenuLayout({
         })}
       </main>
 
+      {/* Feedback Section - Before Footer */}
+      <div className="max-w-7xl mx-auto px-4 py-12">
+        <FeedbackButton onClick={() => setFeedbackOpen(true)} />
+      </div>
+
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-3">
-        {/* Feedback Button */}
-        <div className="bg-[#1a1a1a] border-2 border-[#D4AF37] rounded-sm hover:bg-[#2a2210]/50 transition-all duration-300 shadow-2xl">
-          <FeedbackButton onClick={() => setFeedbackOpen(true)} />
-        </div>
-
         {/* Waiter Call Button */}
         <button
           onClick={() => setWaiterCallOpen(true)}

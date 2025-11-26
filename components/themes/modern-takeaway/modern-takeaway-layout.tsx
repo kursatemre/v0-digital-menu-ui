@@ -203,6 +203,11 @@ export function ModernTakeawayLayout({
           </div>
         ))}
         </div>
+
+        {/* Feedback Section - Bottom of Menu */}
+        <div className="px-4 pb-8">
+          <FeedbackButton onClick={() => setFeedbackOpen(true)} />
+        </div>
       </div>
 
       {/* Cart Modal */}
@@ -231,9 +236,6 @@ export function ModernTakeawayLayout({
           tenantId={tenantId}
         />
       )}
-
-      {/* Feedback Button */}
-      <FeedbackButton onClick={() => setFeedbackOpen(true)} />
 
       {/* Feedback Modal */}
       {feedbackOpen && (
