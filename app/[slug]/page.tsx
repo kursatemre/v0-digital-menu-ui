@@ -16,6 +16,8 @@ import { LanguageSwitch } from "@/components/language-switch"
 import { LanguageAwareText } from "@/components/language-aware-text"
 import { ClassicMenuLayout } from "@/components/themes/classic-elegance/classic-menu-layout"
 import { ModernTakeawayLayout } from "@/components/themes/modern-takeaway/modern-takeaway-layout"
+import { FeedbackButton } from "@/components/feedback-button"
+import { FeedbackModal } from "@/components/feedback-modal"
 
 type CartItem = {
   id: string
@@ -82,6 +84,7 @@ function MenuPageContent() {
   const [waiterTableNumber, setWaiterTableNumber] = useState("")
   const [waiterName, setWaiterName] = useState("")
   const [waiterCallLoading, setWaiterCallLoading] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
@@ -673,6 +676,23 @@ function MenuPageContent() {
       </main>
 
       <CartButton itemCount={totalItems} total={totalPrice} onClick={() => setCartOpen(true)} />
+
+      {/* Feedback Button */}
+      <FeedbackButton onClick={() => setFeedbackOpen(true)} />
+
+      {/* Feedback Modal */}
+      {feedbackOpen && tenant && (
+        <FeedbackModal
+          isOpen={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          tenantId={tenant.id}
+          onSuccess={(message) => {
+            setToastMessage(message)
+            setShowToast(true)
+            setTimeout(() => setShowToast(false), 3000)
+          }}
+        />
+      )}
 
       {cartOpen && (
         <CartDetailView
